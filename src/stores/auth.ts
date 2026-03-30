@@ -9,11 +9,81 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const isInitialized = ref(false)
+  const personalProjectId = ref<string | null>(null)
   let initPromise: Promise<void> | null = null
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
   const userId = computed(() => user.value?.id ?? null)
+
+  // Helper function to create personal project
+  async function createPersonalProject() {
+    if (!user.value) return
+    
+    try {
+      const { data, error: projectError } = await supabase
+        .from('projects')
+        .insert({
+          name: 'My Songs',
+          type: 'personal',
+          owner_id: user.value.id,
+        })
+        .select('id')
+        .single()
+      
+      if (projectError) throw projectError
+      
+      if (data) {
+        personalProjectId.value = data.id
+      }
+    } catch (err) {
+      console.error('Failed to create personal project:', err)
+    }
+  }
+
+  // Helper function to load personal project
+  async function loadPersonalProject() {
+    if (!user.value) {
+      return
+    }
+    
+    try {
+      // Get all personal projects for this user with song counts
+      const { data: projects, error: projectError } = await supabase
+        .from('projects')
+        .select('id, created_at')
+        .eq('owner_id', user.value.id)
+        .eq('type', 'personal')
+        .order('created_at', { ascending: true })
+      
+      if (projectError) throw projectError
+      
+      if (!projects || projects.length === 0) {
+        await createPersonalProject()
+        return
+      }
+      
+      // For each project, count how many songs it has
+      let projectWithMostSongs = projects[0]
+      let maxSongCount = 0
+      
+      for (const project of projects.slice(0, 10)) { // Check first 10 projects
+        const { count } = await supabase
+          .from('songs')
+          .select('*', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+        
+        if (count && count > maxSongCount) {
+          maxSongCount = count
+          projectWithMostSongs = project
+        }
+      }
+      
+      personalProjectId.value = projectWithMostSongs.id
+    } catch (err) {
+      console.error('Failed to load personal project:', err)
+    }
+  }
 
   // Actions
   async function initialize() {
@@ -38,7 +108,17 @@ export const useAuthStore = defineStore('auth', () => {
         // Listen to auth state changes
         supabase.auth.onAuthStateChange(async (_event, session) => {
           user.value = session?.user ?? null
+          if (session?.user) {
+            await loadPersonalProject()
+          } else {
+            personalProjectId.value = null
+          }
         })
+        
+        // Load personal project if user is logged in
+        if (session?.user) {
+          await loadPersonalProject()
+        }
         
         isInitialized.value = true
       } catch (err) {
@@ -94,6 +174,11 @@ export const useAuthStore = defineStore('auth', () => {
       
       user.value = data.user
       
+      // Load personal project after login
+      if (user.value) {
+        await loadPersonalProject()
+      }
+      
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
@@ -132,6 +217,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (logoutError) throw logoutError
       
       user.value = null
+      personalProjectId.value = null
       
       return { success: true }
     } catch (err) {
@@ -142,22 +228,18 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function createPersonalProject() {
-    if (!user.value) return
-    
-    try {
-      const { error: projectError } = await supabase
-        .from('projects')
-        .insert({
-          name: 'My Songs',
-          type: 'personal',
-          owner_id: user.value.id,
-        })
-      
-      if (projectError) throw projectError
-    } catch (err) {
-      console.error('Failed to create personal project:', err)
+  async function getPersonalProjectId(): Promise<string | null> {
+    // Ensure auth is initialized
+    if (!isInitialized.value) {
+      await initialize()
     }
+    
+    if (personalProjectId.value) {
+      return personalProjectId.value
+    }
+    
+    await loadPersonalProject()
+    return personalProjectId.value
   }
 
   return {
@@ -166,6 +248,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     isInitialized,
+    personalProjectId,
     // Getters
     isAuthenticated,
     userId,
@@ -175,5 +258,6 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     loginWithOAuth,
     logout,
+    getPersonalProjectId,
   }
 })

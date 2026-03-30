@@ -55,17 +55,21 @@ export const useSongsStore = defineStore('songs', () => {
           *,
           tags:song_tags(
             tag:tags(*)
+          ),
+          lists:list_items(
+            list:lists(*)
           )
         `)
         .eq('project_id', projectId)
-        .order('created_at', { ascending: false })
+        .order('title', { ascending: true })
       
       if (fetchError) throw fetchError
       
-      // Transform the data to flatten tags
-      songs.value = data.map(song => ({
+      // Transform the data to flatten tags and lists
+      songs.value = (data || []).map(song => ({
         ...song,
-        tags: song.tags?.map((st: any) => st.tag) ?? []
+        tags: song.tags?.map((st: any) => st.tag).filter(Boolean) ?? [],
+        lists: song.lists?.map((li: any) => li.list).filter(Boolean) ?? []
       }))
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch songs'
@@ -158,7 +162,7 @@ export const useSongsStore = defineStore('songs', () => {
     }
   }
 
-  async function updateSong(songId: string, songData: Partial<Song>, tagIds?: string[]) {
+  async function updateSong(songId: string, songData: Partial<Song>, projectId: string, tagIds?: string[]) {
     const authStore = useAuthStore()
     if (!authStore.userId) {
       error.value = 'User not authenticated'
@@ -183,7 +187,7 @@ export const useSongsStore = defineStore('songs', () => {
       if (updateError) throw updateError
       
       // Update tags if provided
-      if (tagIds !== undefined) {
+      if (tagIds !== undefined && Array.isArray(tagIds)) {
         // Remove existing tags
         await supabase
           .from('song_tags')
@@ -206,9 +210,7 @@ export const useSongsStore = defineStore('songs', () => {
       }
       
       // Refresh songs list
-      if (updatedSong.project_id) {
-        await fetchSongs(updatedSong.project_id)
-      }
+      await fetchSongs(projectId)
       
       return { success: true, data: updatedSong }
     } catch (err) {
