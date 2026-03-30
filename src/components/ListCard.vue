@@ -1,27 +1,32 @@
 <template>
-  <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+  <div 
+    @click="handleClick"
+    class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+  >
     <div class="flex items-start justify-between gap-3">
-      <!-- Tag Info -->
+      <!-- List Info -->
       <div class="flex-1 min-w-0">
-        <!-- Tag Name -->
-        <h3 class="text-lg font-semibold text-white mb-1 truncate flex items-center gap-2">
-          <svg class="w-5 h-5 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+        <!-- Name -->
+        <div class="flex items-center gap-2 mb-1">
+          <svg class="w-5 h-5 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
           </svg>
-          {{ tag.name }}
-        </h3>
+          <h3 class="text-lg font-semibold text-white truncate">
+            {{ list.name }}
+          </h3>
+        </div>
 
         <!-- Song Count -->
-        <p class="text-gray-400 text-sm ml-7">
+        <p class="text-sm text-gray-400 ml-7">
           {{ songCount }} {{ songCount === 1 ? 'song' : 'songs' }}
         </p>
       </div>
 
       <!-- Dropdown Menu Button -->
       <button
-        @click.stop.prevent="toggleDropdown"
+        @click.stop="toggleDropdown"
         class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-        aria-label="Tag options"
+        aria-label="List options"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
@@ -40,7 +45,7 @@
       <div
         v-if="isDropdownOpen"
         class="fixed z-50 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
-        :style="menuPosition"
+        :style="dropdownPosition"
       >
         <div class="py-1">
           <button
@@ -71,44 +76,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import type { Tag } from '@/types/database'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import type { List } from '@/types/database'
 import { supabase } from '@/utils/supabase'
+import { ROUTES } from '@/constants/routes'
 
 const props = defineProps<{
-  tag: Tag
+  list: List
 }>()
 
 const emit = defineEmits<{
-  rename: [tag: Tag]
-  delete: [tag: Tag]
+  rename: [list: List]
+  delete: [list: List]
 }>()
 
+const router = useRouter()
 const isDropdownOpen = ref(false)
-const menuPosition = ref({ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' })
+const dropdownPosition = ref({ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' })
 const songCount = ref(0)
 
 onMounted(async () => {
-  // Load song count for this tag
-  const { count } = await supabase
-    .from('song_tags')
+  // Load song count for this list
+  const { count, error } = await supabase
+    .from('list_items')
     .select('*', { count: 'exact', head: true })
-    .eq('tag_id', props.tag.id)
+    .eq('list_id', props.list.id)
   
-  songCount.value = count || 0
+  if (!error && count !== null) {
+    songCount.value = count
+  }
 })
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value
 }
 
+function handleClick() {
+  // Navigate to list detail page
+  router.push(`${ROUTES.LISTS}/${props.list.id}`)
+}
+
 function handleRename() {
-  emit('rename', props.tag)
   isDropdownOpen.value = false
+  emit('rename', props.list)
 }
 
 function handleDelete() {
-  emit('delete', props.tag)
   isDropdownOpen.value = false
+  emit('delete', props.list)
 }
 </script>

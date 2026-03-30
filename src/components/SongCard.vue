@@ -44,7 +44,7 @@
 
       <!-- Dropdown Menu Button -->
       <button
-        @click="toggleDropdown"
+        @click.stop.prevent="toggleDropdown"
         class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
         aria-label="Song options"
       >

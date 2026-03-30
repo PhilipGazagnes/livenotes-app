@@ -16,7 +16,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 class="text-xl font-semibold text-white truncate pr-4">
-            Manage Tags - {{ songTitle }}
+            Manage Lists - {{ songTitle }}
           </h2>
           <button
             @click="handleCancel"
@@ -28,24 +28,24 @@
           </button>
         </div>
 
-        <!-- Create New Tag -->
+        <!-- Create New List -->
         <div class="p-6 border-b border-gray-700">
           <label class="block text-sm font-medium text-gray-300 mb-2">
-            Create new tag:
+            Create new list:
           </label>
           <div class="flex gap-2">
             <input
-              v-model="newTagName"
+              v-model="newListName"
               type="text"
               maxlength="50"
               class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               :class="createError ? 'border-red-500' : 'border-gray-700'"
-              placeholder="Tag name..."
-              @keyup.enter="handleCreateTag"
+              placeholder="List name..."
+              @keyup.enter="handleCreateList"
             />
             <button
-              @click="handleCreateTag"
-              :disabled="isCreatingTag"
+              @click="handleCreateList"
+              :disabled="isCreatingList"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Add
@@ -56,45 +56,45 @@
           </p>
         </div>
 
-        <!-- Available Tags (scrollable) -->
+        <!-- Available Lists (scrollable) -->
         <div class="flex-1 overflow-y-auto p-6">
           <label class="block text-sm font-medium text-gray-300 mb-4">
-            Available tags:
+            Available lists:
           </label>
           
-          <div v-if="tagsStore.tags.length === 0" class="text-center py-8 text-gray-400">
-            No tags yet. Create one above!
+          <div v-if="listsStore.lists.length === 0" class="text-center py-8 text-gray-400">
+            No lists yet. Create one above!
           </div>
           
           <div v-else class="space-y-3">
             <label
-              v-for="tag in sortedTags"
-              :key="tag.id"
+              v-for="list in sortedLists"
+              :key="list.id"
               class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
             >
               <input
                 type="checkbox"
-                :checked="selectedTagIds.includes(tag.id)"
-                @change="toggleTag(tag.id)"
+                :checked="selectedListIds.includes(list.id)"
+                @change="toggleList(list.id)"
                 class="w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
               />
-              <span class="text-white">{{ tag.name }}</span>
+              <span class="text-white">{{ list.name }}</span>
             </label>
           </div>
         </div>
 
-        <!-- Footer Buttons -->
+        <!-- Footer -->
         <div class="flex gap-3 p-6 border-t border-gray-700">
           <button
             @click="handleCancel"
-            class="flex-1 px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+            class="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             Cancel
           </button>
           <button
             @click="handleSave"
             :disabled="isSaving"
-            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {{ isSaving ? 'Saving...' : 'Save' }}
           </button>
@@ -106,18 +106,18 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useTagsStore } from '@/stores/tags'
+import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { supabase } from '@/utils/supabase'
 import { MESSAGES } from '@/constants/messages'
-import type { Tag } from '@/types/database'
+import { normalizeText } from '@/utils/validation'
+import { supabase } from '@/utils/supabase'
 
 const props = defineProps<{
   isOpen: boolean
   songId: string
   songTitle: string
-  initialTagIds: string[]
+  initialListIds: string[]
 }>()
 
 const emit = defineEmits<{
@@ -125,115 +125,118 @@ const emit = defineEmits<{
   saved: []
 }>()
 
-const tagsStore = useTagsStore()
+const listsStore = useListsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
-const selectedTagIds = ref<string[]>([])
-const newTagName = ref('')
+const selectedListIds = ref<string[]>([])
+const newListName = ref('')
 const createError = ref('')
-const isCreatingTag = ref(false)
+const isCreatingList = ref(false)
 const isSaving = ref(false)
 
-const sortedTags = computed(() => {
-  return [...tagsStore.tags].sort((a, b) => a.name.localeCompare(b.name))
+// Sort lists alphabetically
+const sortedLists = computed(() => {
+  return [...listsStore.lists].sort((a, b) => a.name.localeCompare(b.name))
 })
 
-// Initialize selected tags when modal opens
+// Initialize selectedListIds when modal opens
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    selectedTagIds.value = [...props.initialTagIds]
-    newTagName.value = ''
+    selectedListIds.value = [...props.initialListIds]
+    newListName.value = ''
     createError.value = ''
   }
 })
 
-function toggleTag(tagId: string) {
-  const index = selectedTagIds.value.indexOf(tagId)
+function toggleList(listId: string) {
+  const index = selectedListIds.value.indexOf(listId)
   if (index > -1) {
-    selectedTagIds.value.splice(index, 1)
+    selectedListIds.value.splice(index, 1)
   } else {
-    selectedTagIds.value.push(tagId)
+    selectedListIds.value.push(listId)
   }
 }
 
-async function handleCreateTag() {
-  createError.value = ''
+async function handleCreateList() {
+  const name = normalizeText(newListName.value)
   
-  const trimmed = newTagName.value.trim()
-  
-  if (!trimmed) {
-    createError.value = MESSAGES.ERROR.TAG_NAME_REQUIRED
+  if (!name) {
+    createError.value = 'List name is required'
     return
   }
   
-  if (trimmed.length > 50) {
-    createError.value = MESSAGES.ERROR.TAG_NAME_TOO_LONG
+  if (name.length > 50) {
+    createError.value = 'List name must be 50 characters or less'
     return
   }
   
-  // Check for duplicates (case-sensitive)
-  if (tagsStore.tags.some(t => t.name === trimmed)) {
-    uiStore.showToast(MESSAGES.ERROR.TAG_ALREADY_EXISTS, 'error')
+  // Check for duplicate names
+  const duplicate = listsStore.lists.find(
+    list => normalizeText(list.name) === name
+  )
+  if (duplicate) {
+    createError.value = 'A list with this name already exists'
     return
   }
   
-  isCreatingTag.value = true
-  
+  isCreatingList.value = true
   const personalProjectId = await authStore.getPersonalProjectId()
-  if (!personalProjectId) return
   
-  const result = await tagsStore.createTag(personalProjectId, trimmed)
+  if (!personalProjectId) {
+    createError.value = 'Project not found'
+    isCreatingList.value = false
+    return
+  }
+  
+  const result = await listsStore.createList(personalProjectId, newListName.value)
+  isCreatingList.value = false
   
   if (result.success && result.data) {
-    // Automatically select the newly created tag
-    selectedTagIds.value.push(result.data.id)
-    newTagName.value = ''
+    // Automatically select the newly created list
+    selectedListIds.value.push(result.data.id)
+    newListName.value = ''
+    createError.value = ''
   } else {
-    createError.value = result.error || MESSAGES.ERROR.SAVE_FAILED
+    createError.value = result.error || 'Failed to create list'
   }
-  
-  isCreatingTag.value = false
 }
 
 async function handleSave() {
   isSaving.value = true
   
   try {
-    // Determine which tags to add and which to remove
-    const tagsToAdd = selectedTagIds.value.filter(id => !props.initialTagIds.includes(id))
-    const tagsToRemove = props.initialTagIds.filter(id => !selectedTagIds.value.includes(id))
+    // Determine which lists to add to and which to remove from
+    const listsToAdd = selectedListIds.value.filter(
+      id => !props.initialListIds.includes(id)
+    )
+    const listsToRemove = props.initialListIds.filter(
+      id => !selectedListIds.value.includes(id)
+    )
     
-    // Remove tags
-    if (tagsToRemove.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('song_tags')
-        .delete()
-        .eq('song_id', props.songId)
-        .in('tag_id', tagsToRemove)
-      
-      if (deleteError) throw deleteError
+    // Add song to new lists
+    for (const listId of listsToAdd) {
+      const result = await listsStore.addSongToList(listId, props.songId)
+      if (!result.success) {
+        uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
+        isSaving.value = false
+        return
+      }
     }
     
-    // Add tags
-    if (tagsToAdd.length > 0) {
-      const inserts = tagsToAdd.map(tagId => ({
-        song_id: props.songId,
-        tag_id: tagId,
-      }))
-      
-      const { error: insertError } = await supabase
-        .from('song_tags')
-        .insert(inserts)
-      
-      if (insertError) throw insertError
+    // Remove song from deselected lists
+    for (const listId of listsToRemove) {
+      const result = await listsStore.removeSongFromList(listId, props.songId)
+      if (!result.success) {
+        uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
+        isSaving.value = false
+        return
+      }
     }
     
-    uiStore.showToast(MESSAGES.SUCCESS.TAGS_UPDATED, 'success')
+    uiStore.showToast(MESSAGES.SUCCESS.LISTS_UPDATED, 'success')
     emit('saved')
-    emit('close')
   } catch (err) {
-    console.error('Failed to save tags:', err)
     uiStore.showToast(MESSAGES.ERROR.SAVE_FAILED, 'error')
   } finally {
     isSaving.value = false

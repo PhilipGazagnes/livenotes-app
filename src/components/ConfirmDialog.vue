@@ -9,7 +9,7 @@
       <div
         v-if="uiStore.confirmDialog"
         class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50"
-        @click="handleCancel"
+        @mousedown.self="handleCancel"
       >
         <Transition
           enter-active-class="transition-all duration-200"

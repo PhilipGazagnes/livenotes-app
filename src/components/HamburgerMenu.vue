@@ -9,7 +9,7 @@
       <div
         v-if="uiStore.isHamburgerMenuOpen"
         class="fixed inset-0 z-[100] bg-black/50"
-        @click="closeMenu"
+        @mousedown.self="closeMenu"
       >
         <Transition
           enter-active-class="transition-transform duration-200"

@@ -15,6 +15,18 @@
     >
       <div class="py-1">
         <button
+          @click="handleRemoveFromList"
+          class="w-full flex items-center gap-3 px-4 py-3 text-left text-yellow-400 hover:text-yellow-300 hover:bg-gray-700 transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>Remove from List</span>
+        </button>
+
+        <div class="border-t border-gray-700 my-1"></div>
+
+        <button
           @click="handleEdit"
           class="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
         >
@@ -91,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { SongWithTags } from '@/types/database'
 import { useSongsStore } from '@/stores/songs'
@@ -110,6 +122,9 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  remove: []
+  tagsUpdated: []
+  listsUpdated: []
 }>()
 
 const router = useRouter()
@@ -137,6 +152,11 @@ onMounted(() => {
 function handleClose() {
   isOpen.value = false
   emit('close')
+}
+
+function handleRemoveFromList() {
+  emit('remove')
+  handleClose()
 }
 
 function handleEdit() {
@@ -178,23 +198,19 @@ async function handleManageTags() {
     await tagsStore.fetchTags(personalProjectId)
   }
   showManageTagsModal.value = true
-  // Don't close the dropdown immediately - let the modal appear first
-  // The dropdown will close when user interacts with backdrop or modal
 }
 
 function handleModalClose() {
   showManageTagsModal.value = false
-  handleClose()
+  isOpen.value = false
+  emit('close')
 }
 
 async function handleTagsSaved() {
-  // Refresh the song list to show updated tags
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await songsStore.fetchSongs(personalProjectId)
-  }
-  // Close dropdown after saving
-  handleClose()
+  showManageTagsModal.value = false
+  isOpen.value = false
+  emit('tagsUpdated')
+  emit('close')
 }
 
 async function handleManageLists() {
@@ -204,17 +220,13 @@ async function handleManageLists() {
     await listsStore.fetchLists(personalProjectId)
   }
   showManageListsModal.value = true
-  // Don't close the dropdown immediately - let the modal appear first
 }
 
 async function handleListsSaved() {
-  // Refresh the song list to show updated lists
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await songsStore.fetchSongs(personalProjectId)
-  }
-  // Close dropdown after saving
-  handleClose()
+  showManageListsModal.value = false
+  isOpen.value = false
+  emit('listsUpdated')
+  emit('close')
 }
 
 async function handleDelete() {
@@ -230,6 +242,8 @@ async function handleDelete() {
     
     if (result.success) {
       uiStore.showToast(MESSAGES.SUCCESS.SONG_DELETED, 'success')
+      // Refresh the list to remove deleted song from UI
+      emit('tagsUpdated') // Reusing this event to trigger refresh
     } else {
       uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
     }

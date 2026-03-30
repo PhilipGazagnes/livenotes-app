@@ -13,6 +13,9 @@ export const useListsStore = defineStore('lists', () => {
 
   // Getters
   const listCount = computed(() => lists.value.length)
+  const listsByName = computed(() => {
+    return [...lists.value].sort((a, b) => a.name.localeCompare(b.name))
+  })
 
   // Actions
   async function fetchLists(projectId: string) {
@@ -52,16 +55,28 @@ export const useListsStore = defineStore('lists', () => {
         .from('list_items')
         .select(`
           *,
-          song:songs(*)
+          song:songs(
+            *,
+            tags:song_tags(tag:tags(*))
+          )
         `)
         .eq('list_id', listId)
         .order('position', { ascending: true })
       
       if (itemsError) throw itemsError
       
+      // Transform the nested tags structure
+      const transformedItems = itemsData?.map(item => ({
+        ...item,
+        song: item.song ? {
+          ...item.song,
+          tags: item.song.tags?.map((st: any) => st.tag) || []
+        } : null
+      })) || []
+      
       currentList.value = {
         ...listData,
-        items: itemsData
+        items: transformedItems
       }
       
       return currentList.value
@@ -244,19 +259,27 @@ export const useListsStore = defineStore('lists', () => {
     error.value = null
     
     try {
-      // Update positions for all items
-      const updates = itemIds.map((itemId, index) => ({
-        id: itemId,
-        position: index,
-      }))
+      // Strategy: First move all items to temporary negative positions to avoid conflicts
+      // Then move them to their final positions
       
-      for (const update of updates) {
-        const { error: updateError } = await supabase
+      // Step 1: Move all to negative positions (temporary)
+      for (let i = 0; i < itemIds.length; i++) {
+        const { error: tempError } = await supabase
           .from('list_items')
-          .update({ position: update.position })
-          .eq('id', update.id)
+          .update({ position: -(i + 1) })
+          .eq('id', itemIds[i])
         
-        if (updateError) throw updateError
+        if (tempError) throw tempError
+      }
+      
+      // Step 2: Move to final positions
+      for (let i = 0; i < itemIds.length; i++) {
+        const { error: finalError } = await supabase
+          .from('list_items')
+          .update({ position: i })
+          .eq('id', itemIds[i])
+        
+        if (finalError) throw finalError
       }
       
       // Refresh current list
@@ -281,6 +304,7 @@ export const useListsStore = defineStore('lists', () => {
     error,
     // Getters
     listCount,
+    listsByName,
     // Actions
     fetchLists,
     fetchListById,
