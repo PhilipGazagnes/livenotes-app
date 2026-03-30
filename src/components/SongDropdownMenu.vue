@@ -2,14 +2,14 @@
   <Teleport to="body">
     <!-- Backdrop -->
     <div
-      v-if="isOpen"
+      v-if="isOpen && !showManageTagsModal"
       class="fixed inset-0 z-40"
       @click="handleClose"
     ></div>
 
     <!-- Dropdown Menu -->
     <div
-      v-if="isOpen"
+      v-if="isOpen && !showManageTagsModal"
       class="fixed z-50 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
       :style="menuPosition"
     >
@@ -67,6 +67,16 @@
         </button>
       </div>
     </div>
+
+    <!-- Manage Tags Modal -->
+    <ManageTagsModal
+      :isOpen="showManageTagsModal"
+      :songId="props.song.id"
+      :songTitle="props.song.title"
+      :initialTagIds="props.song.tags?.map(t => t.id) || []"
+      @close="handleModalClose"
+      @saved="handleTagsSaved"
+    />
   </Teleport>
 </template>
 
@@ -75,9 +85,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { SongWithTags } from '@/types/database'
 import { useSongsStore } from '@/stores/songs'
+import { useAuthStore } from '@/stores/auth'
+import { useTagsStore } from '@/stores/tags'
 import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
+import ManageTagsModal from './ManageTagsModal.vue'
 
 const props = defineProps<{
   song: SongWithTags
@@ -89,18 +102,27 @@ const emit = defineEmits<{
 
 const router = useRouter()
 const songsStore = useSongsStore()
+const authStore = useAuthStore()
+const tagsStore = useTagsStore()
 const uiStore = useUiStore()
 
 const isOpen = ref(true)
 const menuPosition = ref({ top: '0px', left: '0px' })
+const showManageTagsModal = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   // Position menu near cursor
   // For now, center it on screen
   menuPosition.value = {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)'
+  }
+  
+  // Load tags for the modal
+  const personalProjectId = await authStore.getPersonalProjectId()
+  if (personalProjectId) {
+    await tagsStore.fetchTags(personalProjectId)
   }
 })
 
@@ -142,8 +164,23 @@ async function handleDuplicate() {
 }
 
 function handleManageTags() {
-  // TODO: Implement in Phase 3
-  uiStore.showToast('Manage Tags - Coming in Phase 3', 'success')
+  showManageTagsModal.value = true
+  // Don't close the dropdown immediately - let the modal appear first
+  // The dropdown will close when user interacts with backdrop or modal
+}
+
+function handleModalClose() {
+  showManageTagsModal.value = false
+  handleClose()
+}
+
+async function handleTagsSaved() {
+  // Refresh the song list to show updated tags
+  const personalProjectId = await authStore.getPersonalProjectId()
+  if (personalProjectId) {
+    await songsStore.fetchSongs(personalProjectId)
+  }
+  // Close dropdown after saving
   handleClose()
 }
 
