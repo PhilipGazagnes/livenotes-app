@@ -187,11 +187,8 @@ function handleModalClose() {
 }
 
 async function handleTagsSaved() {
-  // Refresh the song list to show updated tags
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await songsStore.fetchSongs(personalProjectId)
-  }
+  // Refresh only this song's tags to avoid scroll reset
+  await songsStore.refreshSongTags(props.song.id)
   // Close dropdown after saving
   handleClose()
 }
@@ -207,11 +204,8 @@ async function handleManageLists() {
 }
 
 async function handleListsSaved() {
-  // Refresh the song list to show updated lists
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await songsStore.fetchSongs(personalProjectId)
-  }
+  // Refresh only this song's lists to avoid scroll reset
+  await songsStore.refreshSongLists(props.song.id)
   // Close dropdown after saving
   handleClose()
 }

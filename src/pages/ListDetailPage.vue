@@ -78,7 +78,6 @@
           @moveUp="handleMoveUp(index)"
           @moveDown="handleMoveDown(index)"
           @remove="handleRemove(item)"
-          @refresh="handleRefresh"
         />
         
         <!-- Empty state for filtered results -->

@@ -206,9 +206,10 @@ function handleModalClose() {
 }
 
 async function handleTagsSaved() {
+  // Refresh only this song's tags locally to avoid scroll reset
+  await songsStore.refreshSongTags(props.song.id)
   showManageTagsModal.value = false
   isOpen.value = false
-  emit('tagsUpdated')
   emit('close')
 }
 
@@ -222,9 +223,10 @@ async function handleManageLists() {
 }
 
 async function handleListsSaved() {
+  // Refresh only this song's lists locally to avoid scroll reset
+  await songsStore.refreshSongLists(props.song.id)
   showManageListsModal.value = false
   isOpen.value = false
-  emit('listsUpdated')
   emit('close')
 }
 

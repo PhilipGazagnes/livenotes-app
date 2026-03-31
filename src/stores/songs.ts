@@ -282,6 +282,56 @@ export const useSongsStore = defineStore('songs', () => {
     selectedTagIds.value = []
   }
 
+  async function refreshSongTags(songId: string) {
+    // Fetch updated tags for a single song without refetching entire list
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('songs')
+        .select(`
+          tags:song_tags(
+            tag:tags(*)
+          )
+        `)
+        .eq('id', songId)
+        .single()
+      
+      if (fetchError) throw fetchError
+      
+      // Update the song in the local store
+      const songIndex = songs.value.findIndex(s => s.id === songId)
+      if (songIndex !== -1) {
+        songs.value[songIndex].tags = data.tags?.map((st: any) => st.tag).filter(Boolean) ?? []
+      }
+    } catch (err) {
+      console.error('Failed to refresh song tags:', err)
+    }
+  }
+
+  async function refreshSongLists(songId: string) {
+    // Fetch updated lists for a single song without refetching entire list
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('songs')
+        .select(`
+          lists:list_items(
+            list:lists(*)
+          )
+        `)
+        .eq('id', songId)
+        .single()
+      
+      if (fetchError) throw fetchError
+      
+      // Update the song in the local store
+      const songIndex = songs.value.findIndex(s => s.id === songId)
+      if (songIndex !== -1) {
+        songs.value[songIndex].lists = data.lists?.map((li: any) => li.list).filter(Boolean) ?? []
+      }
+    } catch (err) {
+      console.error('Failed to refresh song lists:', err)
+    }
+  }
+
   return {
     // State
     songs,
@@ -304,5 +354,7 @@ export const useSongsStore = defineStore('songs', () => {
     setSearchQuery,
     setSelectedTags,
     clearFilters,
+    refreshSongTags,
+    refreshSongLists,
   }
 })

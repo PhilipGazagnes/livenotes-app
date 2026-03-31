@@ -89,8 +89,6 @@
       :song="song"
       @close="isDropdownOpen = false"
       @remove="handleRemove"
-      @tags-updated="handleRefresh"
-      @lists-updated="handleRefresh"
     />
   </div>
 </template>
@@ -112,7 +110,6 @@ const emit = defineEmits<{
   moveUp: []
   moveDown: []
   remove: []
-  refresh: []
 }>()
 
 const uiStore = useUiStore()
@@ -134,9 +131,5 @@ function handleCardClick() {
 function handleRemove() {
   isDropdownOpen.value = false
   emit('remove')
-}
-
-function handleRefresh() {
-  emit('refresh')
 }
 </script>
