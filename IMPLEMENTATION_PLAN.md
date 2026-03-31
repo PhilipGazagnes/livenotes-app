@@ -1,9 +1,24 @@
 # Livenotes V1 - Implementation Plan
 
-**Status**: Ready to start  
-**Last Updated**: March 30, 2026
+**Status**: ~95% Complete - Artists Implementation Remaining  
+**Last Updated**: March 31, 2026
 
 This document provides a step-by-step implementation plan for Livenotes V1.
+
+## ✅ Completed Phases
+
+- **Phase 0**: Project Setup ✓
+- **Phase 1**: Authentication & Core Infrastructure ✓
+- **Phase 2**: Song Management (CRUD) ✓
+- **Phase 3**: Tags System ✓
+- **Phase 4**: Lists System ✓
+- **Phase 5**: Search & Filtering ✓
+- **Phase 6**: Bulk Actions ✓
+- **Phase 7**: Polish & UX ✓
+
+## 🚧 Current Work
+
+- **Phase 8**: Artists Implementation (NEW - in progress)
 
 ## 📚 Reference Documentation
 
@@ -818,6 +833,258 @@ Use the checklist from technical spec:
 
 ---
 
+## Phase 8: Artists Implementation
+
+**Goal:** Replace single artist field with many-to-many artist relationship system.
+
+### 8.1 Database Migration
+
+- [ ] Create database migration for artists tables
+  ```sql
+  -- Artists table
+  CREATE TABLE artists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_artist_per_project UNIQUE (project_id, name)
+  );
+
+  -- SongArtist junction table with ordering
+  CREATE TABLE song_artists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    song_id UUID NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
+    artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
+    position INTEGER NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_song_artist UNIQUE (song_id, artist_id),
+    CONSTRAINT unique_song_artist_position UNIQUE (song_id, position)
+  );
+  ```
+
+- [ ] Add indexes
+  ```sql
+  CREATE INDEX idx_artists_project_id ON artists(project_id);
+  CREATE INDEX idx_artists_name ON artists(name);
+  CREATE INDEX idx_song_artists_song_id ON song_artists(song_id);
+  CREATE INDEX idx_song_artists_artist_id ON song_artists(artist_id);
+  CREATE INDEX idx_song_artists_song_position ON song_artists(song_id, position);
+  ```
+
+- [ ] Add RLS policies for artists and song_artists tables
+- [ ] Add updated_at trigger for artists table
+- [ ] Migrate existing song.artist data to new structure
+  - For each song with artist value, create artist record (or reuse existing)
+  - Create song_artists entry with position = 1
+- [ ] Remove artist column from songs table (after migration complete)
+
+**Reference:** [Data Model - Artists & SongArtist](../livenotes-documentation/app/data-model.md#artists)
+
+---
+
+### 8.2 TypeScript Types
+
+- [ ] Update `src/types/database.ts`
+  ```typescript
+  interface Artist {
+    id: string
+    project_id: string
+    name: string
+    created_at: string
+    updated_at: string
+  }
+
+  interface SongArtist {
+    id: string
+    song_id: string
+    artist_id: string
+    position: number
+    created_at: string
+  }
+
+  interface SongWithArtists extends Song {
+    artists: Array<Artist & { position: number }>
+    // Keep existing: tags, lists
+  }
+  ```
+
+**Reference:** [V1 Technical Spec - TypeScript Interfaces](../livenotes-documentation/app/v1-technical-spec.md#typescript-interfaces)
+
+---
+
+### 8.3 Artists Store
+
+- [ ] Create `src/stores/artists.ts`
+  - State: artists array, isLoading, error
+  - Actions:
+    - fetchArtists(projectId)
+    - createArtist(projectId, name)
+    - updateArtist(artistId, name)
+    - deleteArtist(artistId) - only if not used by songs
+    - searchArtists(query) - for autocomplete
+  - Getters:
+    - sortedArtists (alphabetically)
+    - artistCount
+    - getArtistById(id)
+
+**Reference:** [V1 Technical Spec - Store Architecture](../livenotes-documentation/app/v1-technical-spec.md#pinia-stores)
+
+---
+
+### 8.4 Update Songs Store
+
+- [ ] Modify fetchSongs query to include artists via song_artists
+  ```typescript
+  .select(`
+    *,
+    tags:song_tags(tag:tags(*)),
+    lists:list_items(list:lists(*)),
+    artists:song_artists(
+      position,
+      artist:artists(*)
+    )
+  `)
+  ```
+
+- [ ] Transform artists data to sorted array by position
+- [ ] Update createSong to accept artistIds array
+- [ ] Update updateSong to manage song_artists relationships
+- [ ] Add helper method: updateSongArtists(songId, artistIds[])
+  - Clear existing song_artists for song
+  - Insert new entries with positions 1, 2, 3...
+
+**Reference:** [V1 Technical Spec - Data Operations](../livenotes-documentation/app/v1-technical-spec.md#song-crud-operations)
+
+---
+
+### 8.5 Artists Management Page
+
+- [ ] Create ArtistsPage.vue
+  - Similar to TagsPage structure
+  - List all artists with song count
+  - "+ New Artist" button
+  - Dropdown menu per artist (Edit, Delete)
+  - Alphabetical sort
+  - Empty state
+
+- [ ] Create ArtistCard.vue
+  - Display artist name and song count
+  - Dropdown menu button
+  - Edit/Delete actions
+
+- [ ] Add route: `/artists` → ArtistsPage
+
+- [ ] Add "Artists" link to HamburgerMenu
+
+**Reference:** [V1 MVP Spec - Artists Management](../livenotes-documentation/app/v1-mvp-spec.md#artists)
+
+---
+
+### 8.6 Artist Input Component (Autocomplete)
+
+- [ ] Create ArtistInput.vue component
+  - Text input with dropdown suggestions
+  - Filters artists as user types (case-insensitive)
+  - Click suggestion to select
+  - Show "Create new: [name]" option if no exact match
+  - Support for multiple artists (repeatable component)
+  - Shows position number (Artist 1, Artist 2, etc.)
+  - Reorder controls (up/down arrows or drag)
+  - Remove button per artist
+
+- [ ] Implement autocomplete logic
+  - Debounced search (200ms)
+  - Show top 5 matches
+  - Highlight partial matches
+  - Similar name detection (optional: "Did you mean...?")
+
+**Reference:** [V1 MVP Spec - Autocomplete Behavior](../livenotes-documentation/app/v1-mvp-spec.md#autocomplete-behavior)
+
+---
+
+### 8.7 Update Song Forms
+
+- [ ] Update SongNewPage.vue
+  - Replace single artist text input with ArtistInput component(s)
+  - "Add Another Artist" button
+  - Pass artist IDs to createSong
+
+- [ ] Update SongEditPage.vue
+  - Load existing artists for song (sorted by position)
+  - Display as multiple ArtistInput components
+  - Allow reordering (position changes)
+  - Allow adding/removing artists
+  - Save artist associations on submit
+
+**Reference:** [V1 UI Spec - Song Form](../livenotes-documentation/app/v1-ui-spec.md#create-edit-song-form)
+
+---
+
+### 8.8 Update Song Card Display
+
+- [ ] Update SongCard.vue
+  - Display artists as comma-separated list (sorted by position)
+  - Format: "Artist 1, Artist 2, Artist 3"
+  - Hide row if no artists
+  - Style consistently with tags/lists
+
+- [ ] Update ListSongCard.vue similarly
+
+**Reference:** [V1 UI Spec - Song Card](../livenotes-documentation/app/v1-ui-spec.md#song-card-design)
+
+---
+
+### 8.9 Search & Filter Updates
+
+- [ ] Update search to include artist names
+  - Search songs by: title OR artist name(s) OR notes OR POC ID
+  - Case-insensitive, partial match
+
+- [ ] Test combined search with multiple artists
+  - Song with "The Beatles, Paul McCartney" matches "paul"
+
+**Reference:** [V1 Technical Spec - Search](../livenotes-documentation/app/v1-technical-spec.md#search-implementation)
+
+---
+
+### 8.10 Testing
+
+- [ ] Test artist CRUD operations
+  - Create artist from Artists page
+  - Edit artist name → updates all songs
+  - Delete artist → only works if no songs use it
+  - Delete protection shows error toast
+
+- [ ] Test song-artist associations
+  - Create song with one artist
+  - Create song with multiple artists (ordered)
+  - Edit song to add/remove artists
+  - Reorder artists on song
+  - Verify position is maintained
+
+- [ ] Test autocomplete
+  - Type partial name → suggestions appear
+  - Select suggestion → populates field
+  - Create new artist inline
+  - Similar name detection works
+
+- [ ] Test search with artists
+  - Search by artist name finds songs
+  - Partial match works
+  - Multiple artists on song (any match returns song)
+
+- [ ] Test edge cases
+  - Song with no artists (allowed)
+  - Multiple songs sharing same artist
+  - Special characters in artist names
+  - Very long artist names (truncation)
+  - Duplicate artist prevention
+
+**Reference:** [V1 Technical Spec - Testing](../livenotes-documentation/app/v1-technical-spec.md#testing-checklist)
+
+---
+
 ## Phase 9: Deployment
 
 **Goal:** Deploy V1 to production.
@@ -870,7 +1137,9 @@ Use the checklist from technical spec:
 V1 is complete when all these are true:
 
 - ✅ I can sign up and log in (email + Google/Facebook)
-- ✅ I can create songs with metadata (title, artist, notes, POC ID)
+- ✅ I can create songs with metadata (title, notes, POC ID)
+- ⏳ I can assign multiple artists to songs (with autocomplete and ordering)
+- ⏳ I can manage artists (create, edit, delete with protection)
 - ✅ I can see a list of all my songs
 - ✅ I can edit song metadata
 - ✅ I can delete songs (with confirmation)
@@ -879,7 +1148,7 @@ V1 is complete when all these are true:
 - ✅ I can assign multiple tags to songs
 - ✅ I can create and manage lists/setlists
 - ✅ I can add songs to lists with custom ordering (drag-drop + arrows)
-- ✅ I can search songs by title (real-time, debounced)
+- ✅ I can search songs by title and artist names (real-time, debounced)
 - ✅ I can filter songs by tags (AND logic, multi-select)
 - ✅ Search and tag filtering work together
 - ✅ I can bulk delete songs, bulk add to lists, bulk assign/remove tags
@@ -887,6 +1156,8 @@ V1 is complete when all these are true:
 - ✅ The app works in a web browser (mobile-first, responsive)
 - ✅ Dark mode UI with Tailwind CSS
 - ✅ All confirmations, toasts, and empty states work correctly
+
+**Legend**: ✅ Complete | ⏳ In Progress
 
 **Reference:** [V1 MVP Spec - Success Criteria](../livenotes-documentation/app/v1-mvp-spec.md#success-criteria)
 
@@ -912,4 +1183,4 @@ Once V1 is deployed and being used:
 
 ---
 
-**Last Updated**: March 30, 2026
+**Last Updated**: March 31, 2026
