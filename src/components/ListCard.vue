@@ -1,9 +1,23 @@
 <template>
   <div 
     @click="handleClick"
-    class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors cursor-pointer"
+    class="bg-gray-800 rounded-lg p-4 border transition-colors"
+    :class="{
+      'border-blue-500 bg-gray-700': uiStore.selectionMode && isSelected,
+      'border-gray-700 hover:border-gray-600': !uiStore.selectionMode || !isSelected,
+      'cursor-pointer': true
+    }"
   >
     <div class="flex items-start justify-between gap-3">
+      <!-- Checkbox (Selection Mode) -->
+      <div v-if="uiStore.selectionMode" class="flex-shrink-0 pt-1">
+        <div class="w-5 h-5 rounded border-2 flex items-center justify-center"
+             :class="isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-400'">
+          <svg v-if="isSelected" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+      </div>
       <!-- List Info -->
       <div class="flex-1 min-w-0">
         <!-- Name -->
@@ -24,6 +38,7 @@
 
       <!-- Dropdown Menu Button -->
       <button
+        v-if="!uiStore.selectionMode"
         @click.stop="toggleDropdown"
         class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
         :aria-label="I18N.ARIA.LIST_OPTIONS"
@@ -76,10 +91,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { List } from '@/types/database'
 import { supabase } from '@/utils/supabase'
+import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 
@@ -93,9 +109,12 @@ const emit = defineEmits<{
 }>()
 
 const router = useRouter()
+const uiStore = useUiStore()
 const isDropdownOpen = ref(false)
 const dropdownPosition = ref({ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' })
 const songCount = ref(0)
+
+const isSelected = computed(() => uiStore.isSelected(props.list.id))
 
 onMounted(async () => {
   // Load song count for this list
@@ -114,8 +133,12 @@ function toggleDropdown() {
 }
 
 function handleClick() {
-  // Navigate to list detail page
-  router.push(`${ROUTES.LISTS}/${props.list.id}`)
+  if (uiStore.selectionMode) {
+    uiStore.toggleSelection(props.list.id)
+  } else {
+    // Navigate to list detail page
+    router.push(`${ROUTES.LISTS}/${props.list.id}`)
+  }
 }
 
 function handleRename() {

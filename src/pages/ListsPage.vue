@@ -8,14 +8,49 @@
         :show-menu="true"
       >
         <template #action>
-          <button
-            @click="showCreateModal = true"
-            class="p-2 text-white hover:text-gray-300 transition-colors"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-          </button>
+          <div v-if="!uiStore.selectionMode" class="relative">
+            <!-- Dropdown Button -->
+            <button
+              @click="isPageMenuOpen = !isPageMenuOpen"
+              class="p-2 text-white hover:text-gray-300 transition-colors"
+              :aria-label="'Page menu'"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div
+              v-if="isPageMenuOpen"
+              @click="isPageMenuOpen = false"
+              class="fixed inset-0 z-40"
+            />
+            <div
+              v-if="isPageMenuOpen"
+              class="absolute right-0 top-12 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden"
+            >
+              <button
+                @click="handleCreateClick"
+                class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                {{ I18N.DROPDOWN.CREATE_NEW_LIST }}
+              </button>
+              <button
+                v-if="listsStore.listCount > 0"
+                @click="handleEnterSelectionMode"
+                class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                {{ I18N.DROPDOWN.SELECT_LISTS }}
+              </button>
+            </div>
+          </div>
         </template>
       </AppHeader>
 
@@ -52,6 +87,49 @@
           @rename="handleRename"
           @delete="handleDelete"
         />
+      </div>
+
+      <!-- Sticky Bottom Bar -->
+      <div v-if="uiStore.selectionMode" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
+        <div class="max-w-2xl mx-auto space-y-3">
+          <!-- Action Buttons -->
+          <div v-if="uiStore.selectedIds.length > 0" class="flex gap-2">
+            <button
+              @click="handleBulkDelete"
+              class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {{ I18N.BULK_ACTIONS.DELETE_LISTS }}
+            </button>
+          </div>
+
+          <!-- Selection Controls -->
+          <div class="flex items-center justify-between gap-4">
+            <div class="text-white font-medium">
+              {{ I18N.COUNTERS.SELECTED(uiStore.selectedIds.length) }}
+            </div>
+            <div class="flex gap-2">
+              <button
+                @click="handleSelectAll"
+                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {{ I18N.BUTTONS.SELECT_ALL }}
+              </button>
+              <button
+                v-if="uiStore.selectedIds.length > 0"
+                @click="uiStore.deselectAll"
+                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {{ I18N.BUTTONS.DESELECT_ALL }}
+              </button>
+              <button
+                @click="uiStore.exitSelectionMode"
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {{ I18N.BUTTONS.DONE }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Create List Modal -->
@@ -177,6 +255,7 @@ const listsStore = useListsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
+const isPageMenuOpen = ref(false)
 const showCreateModal = ref(false)
 const newListName = ref('')
 const createError = ref('')
@@ -194,6 +273,44 @@ onMounted(async () => {
     await listsStore.fetchLists(personalProjectId)
   }
 })
+
+function handleCreateClick() {
+  isPageMenuOpen.value = false
+  showCreateModal.value = true
+}
+
+function handleEnterSelectionMode() {
+  isPageMenuOpen.value = false
+  uiStore.enterSelectionMode()
+}
+
+function handleSelectAll() {
+  const allListIds = listsStore.listsByName.map(list => list.id)
+  uiStore.selectAll(allListIds)
+}
+
+async function handleBulkDelete() {
+  const count = uiStore.selectedIds.length
+  const confirmed = await uiStore.showConfirm(
+    I18N.MODAL_CONTENT.BULK_DELETE_LISTS_TITLE(count),
+    I18N.MODAL_CONTENT.BULK_DELETE_LISTS_MESSAGE(count),
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL
+  )
+  
+  if (confirmed) {
+    const projectId = await authStore.getPersonalProjectId()
+    if (projectId) {
+      const result = await listsStore.bulkDeleteLists(uiStore.selectedIds, projectId)
+      if (result.success) {
+        uiStore.showToast(I18N.TOAST.BULK_DELETED_LISTS(count), 'success')
+        uiStore.exitSelectionMode()
+      } else {
+        uiStore.showToast(result.error || 'Failed to delete lists', 'error')
+      }
+    }
+  }
+}
 
 async function handleCreateSubmit() {
   const name = normalizeText(newListName.value)

@@ -67,7 +67,7 @@ import { ref } from 'vue'
 import { useTagsStore } from '@/stores/tags'
 import { I18N } from '@/constants/i18n'
 
-const props = defineProps<{
+defineProps<{
   isOpen: boolean
 }>()
 

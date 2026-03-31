@@ -186,6 +186,30 @@ export const useListsStore = defineStore('lists', () => {
     }
   }
 
+  async function bulkDeleteLists(listIds: string[], projectId: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const { error: deleteError } = await supabase
+        .from('lists')
+        .delete()
+        .in('id', listIds)
+      
+      if (deleteError) throw deleteError
+      
+      // Refresh lists
+      await fetchLists(projectId)
+      
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete lists'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function addSongToList(listId: string, songId: string) {
     isLoading.value = true
     error.value = null
@@ -311,6 +335,7 @@ export const useListsStore = defineStore('lists', () => {
     createList,
     updateList,
     deleteList,
+    bulkDeleteLists,
     addSongToList,
     removeSongFromList,
     reorderListItems,

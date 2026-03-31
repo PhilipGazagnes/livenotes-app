@@ -200,6 +200,8 @@ export const I18N = {
     RENAME: 'Rename',
     CREATE_NEW_SONG: 'Create New Song',
     SELECT_SONGS: 'Select Songs',
+    CREATE_NEW_LIST: 'Create New List',
+    SELECT_LISTS: 'Select Lists',
   },
 
   // ============================================================================
