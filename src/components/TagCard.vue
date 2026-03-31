@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import type { Tag } from '@/types/database'
 import { supabase } from '@/utils/supabase'
 import { I18N } from '@/constants/i18n'

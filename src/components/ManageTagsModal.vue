@@ -112,7 +112,6 @@ import { useUiStore } from '@/stores/ui'
 import { supabase } from '@/utils/supabase'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
-import type { Tag } from '@/types/database'
 
 const props = defineProps<{
   isOpen: boolean

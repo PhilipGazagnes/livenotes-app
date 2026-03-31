@@ -72,7 +72,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
-import { useRouter } from 'vue-router'
 import { useSongsStore } from '@/stores/songs'
 import { useAuthStore } from '@/stores/auth'
 import AppHeader from '@/components/AppHeader.vue'
@@ -82,7 +81,6 @@ import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 
-const router = useRouter()
 const songsStore = useSongsStore()
 const authStore = useAuthStore()
 

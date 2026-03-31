@@ -112,7 +112,6 @@ import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { normalizeText } from '@/utils/validation'
-import { supabase } from '@/utils/supabase'
 
 const props = defineProps<{
   isOpen: boolean

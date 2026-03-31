@@ -81,12 +81,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { ListItem } from '@/types/database'
+import type { ListItem, SongWithTags } from '@/types/database'
 import ListSongDropdownMenu from './ListSongDropdownMenu.vue'
 import { I18N } from '@/constants/i18n'
 
 const props = defineProps<{
-  item: ListItem
+  item: ListItem & { song: SongWithTags }
   canMoveUp: boolean
   canMoveDown: boolean
 }>()

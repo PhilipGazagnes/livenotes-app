@@ -73,7 +73,7 @@ export interface ListWithSongs extends List {
 }
 
 export interface ListWithItems extends List {
-  items: Array<ListItem & { song: Song }>
+  items: Array<ListItem & { song: SongWithTags }>
 }
 
 export interface TagWithCount extends Tag {

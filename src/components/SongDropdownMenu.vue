@@ -11,7 +11,7 @@
     <div
       v-if="isOpen && !showManageTagsModal && !showManageListsModal"
       class="fixed z-50 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
-      :style="menuPosition"
+      :style="{ ...menuPosition, transform: 'translate(-50%, -50%)' }"
     >
       <div class="py-1">
         <button
@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { SongWithTags } from '@/types/database'
 import { useSongsStore } from '@/stores/songs'
@@ -99,7 +99,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
-import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import ManageTagsModal from './ManageTagsModal.vue'
@@ -130,8 +129,7 @@ onMounted(() => {
   // For now, center it on screen
   menuPosition.value = {
     top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)'
+    left: '50%'
   }
 })
 
