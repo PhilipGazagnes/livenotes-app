@@ -27,6 +27,10 @@ export const I18N = {
     DISCARD: 'Discard',
     GO_BACK: 'Go Back',
     KEEP_EDITING: 'Keep Editing',
+    SELECT: 'Select',
+    SELECT_ALL: 'Select All',
+    DESELECT_ALL: 'Deselect All',
+    DONE: 'Done',
   },
 
   // Loading states for buttons
@@ -143,6 +147,7 @@ export const I18N = {
     },
     NO_TAGS_IN_MODAL: 'No tags yet. Create one above!',
     NO_LISTS_IN_MODAL: 'No lists yet. Create one above!',
+    NO_RESULTS: 'No songs match your search or filter criteria',
   },
 
   // ============================================================================
@@ -159,6 +164,7 @@ export const I18N = {
     MANAGE_LISTS: 'Manage Lists',
     DISCARD_CHANGES: 'Discard Changes?',
     DUPLICATE_SONG: 'Duplicate Song',
+    FILTER_BY_TAGS: 'Filter by Tags',
   },
 
   // ============================================================================
@@ -172,6 +178,13 @@ export const I18N = {
     MANAGE_TAGS_TITLE: (songTitle: string) => `Manage Tags - ${songTitle}`,
     MANAGE_LISTS_TITLE: (songTitle: string) => `Manage Lists - ${songTitle}`,
     DUPLICATE_SONG_CONFIRM: (songTitle: string) => `Create a copy of "${songTitle}"?`,
+    BULK_DELETE_SONGS_TITLE: (count: number) => `Delete ${count} ${count === 1 ? 'Song' : 'Songs'}?`,
+    BULK_DELETE_SONGS_MESSAGE: (count: number) => `This will permanently delete ${count} ${count === 1 ? 'song' : 'songs'}. This action cannot be undone.`,
+    BULK_DELETE_LISTS_TITLE: (count: number) => `Delete ${count} ${count === 1 ? 'List' : 'Lists'}?`,
+    BULK_DELETE_LISTS_MESSAGE: (count: number) => `This will permanently delete ${count} ${count === 1 ? 'list' : 'lists'}. Songs will remain in your library.`,
+    BULK_ASSIGN_TAGS_TITLE: 'Assign Tags to Songs',
+    BULK_REMOVE_TAGS_TITLE: 'Remove Tags from Songs',
+    BULK_ADD_TO_LISTS_TITLE: 'Add Songs to Lists',
   },
 
   // ============================================================================
@@ -185,6 +198,8 @@ export const I18N = {
     MANAGE_LISTS: 'Manage Lists',
     DELETE: 'Delete',
     RENAME: 'Rename',
+    CREATE_NEW_SONG: 'Create New Song',
+    SELECT_SONGS: 'Select Songs',
   },
 
   // ============================================================================
@@ -193,6 +208,7 @@ export const I18N = {
   COUNTERS: {
     CHARACTERS: (current: number, max: number) => `${current} / ${max} characters`,
     CHAR_COUNT: (current: number, max: number) => `${current}/${max}`,
+    SELECTED: (count: number) => `${count} selected`,
   },
 
   // ============================================================================
@@ -205,6 +221,18 @@ export const I18N = {
     SONG_COUNT: (count: number) => `${count} ${count === 1 ? 'song' : 'songs'}`,
     TAG_COUNT: (count: number) => `${count} ${count === 1 ? 'tag' : 'tags'}`,
     LIST_COUNT: (count: number) => `${count} ${count === 1 ? 'list' : 'lists'}`,
+  },
+
+  // ============================================================================
+  // BULK ACTIONS
+  // ============================================================================
+  BULK_ACTIONS: {
+    DELETE: 'Delete Songs',
+    ADD_TO_LISTS: 'Add to Lists',
+    ASSIGN_TAGS: 'Assign Tags',
+    REMOVE_TAGS: 'Remove Tags',
+    REMOVE_FROM_LIST: 'Remove from List',
+    DELETE_LISTS: 'Delete Lists',
   },
 
   // ============================================================================
@@ -241,6 +269,23 @@ export const I18N = {
   // ============================================================================
   TOAST: {
     REMOVED_FROM_LIST: (listName: string) => `Removed from ${listName}`,
+    BULK_DELETED_SONGS: (count: number) => `Deleted ${count} ${count === 1 ? 'song' : 'songs'}`,
+    BULK_ADDED_TO_LISTS: (count: number) => `Added ${count} ${count === 1 ? 'song' : 'songs'} to lists`,
+    BULK_TAGS_ASSIGNED: (count: number) => `Assigned tags to ${count} ${count === 1 ? 'song' : 'songs'}`,
+    BULK_TAGS_REMOVED: (count: number) => `Removed tags from ${count} ${count === 1 ? 'song' : 'songs'}`,
+    BULK_DELETED_LISTS: (count: number) => `Deleted ${count} ${count === 1 ? 'list' : 'lists'}`,
+    BULK_REMOVED_FROM_LIST: (count: number, listName: string) => `Removed ${count} ${count === 1 ? 'song' : 'songs'} from ${listName}`,
+  },
+
+  // ============================================================================
+  // FILTER
+  // ============================================================================
+  FILTER: {
+    SELECTED_TAGS: 'Selected tags',
+    AVAILABLE_TAGS: 'Available tags',
+    UNCHECK_ALL: 'Uncheck All',
+    APPLY: 'Apply',
+    FILTER_BY_TAGS: 'Filter by Tags',
   },
 } as const
 

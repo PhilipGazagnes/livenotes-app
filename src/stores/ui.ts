@@ -24,6 +24,10 @@ export const useUiStore = defineStore('ui', () => {
   const toasts = ref<Toast[]>([])
   const confirmDialog = ref<ConfirmDialog | null>(null)
   const isHamburgerMenuOpen = ref(false)
+  
+  // Bulk selection state
+  const selectionMode = ref(false)
+  const selectedIds = ref<string[]>([])
 
   // Actions
   function setLoading(loading: boolean) {
@@ -95,12 +99,46 @@ export const useUiStore = defineStore('ui', () => {
     isHamburgerMenuOpen.value = !isHamburgerMenuOpen.value
   }
 
+  // Bulk selection actions
+  function enterSelectionMode() {
+    selectionMode.value = true
+    selectedIds.value = []
+  }
+
+  function exitSelectionMode() {
+    selectionMode.value = false
+    selectedIds.value = []
+  }
+
+  function toggleSelection(id: string) {
+    const index = selectedIds.value.indexOf(id)
+    if (index > -1) {
+      selectedIds.value.splice(index, 1)
+    } else {
+      selectedIds.value.push(id)
+    }
+  }
+
+  function selectAll(ids: string[]) {
+    selectedIds.value = [...ids]
+  }
+
+  function deselectAll() {
+    selectedIds.value = []
+  }
+
+  function isSelected(id: string): boolean {
+    return selectedIds.value.includes(id)
+  }
+
   return {
     // State
     isLoading,
     toasts,
     confirmDialog,
     isHamburgerMenuOpen,
+    selectionMode,
+    selectedIds,
     // Actions
     setLoading,
     showToast,
@@ -110,5 +148,11 @@ export const useUiStore = defineStore('ui', () => {
     openHamburgerMenu,
     closeHamburgerMenu,
     toggleHamburgerMenu,
+    enterSelectionMode,
+    exitSelectionMode,
+    toggleSelection,
+    selectAll,
+    deselectAll,
+    isSelected,
   }
 })
