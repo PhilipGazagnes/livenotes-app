@@ -35,7 +35,7 @@
           @click="$emit('moveUp')"
           :disabled="!canMoveUp"
           class="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          aria-label="Move up"
+          :aria-label="I18N.ARIA.MOVE_UP"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
@@ -46,7 +46,7 @@
         <button
           @click.stop.prevent="toggleDropdown"
           class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-          aria-label="Song options"
+          :aria-label="I18N.ARIA.SONG_OPTIONS"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
@@ -58,7 +58,7 @@
           @click="$emit('moveDown')"
           :disabled="!canMoveDown"
           class="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          aria-label="Move down"
+          :aria-label="I18N.ARIA.MOVE_DOWN"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -83,6 +83,7 @@
 import { ref, computed } from 'vue'
 import type { ListItem } from '@/types/database'
 import ListSongDropdownMenu from './ListSongDropdownMenu.vue'
+import { I18N } from '@/constants/i18n'
 
 const props = defineProps<{
   item: ListItem

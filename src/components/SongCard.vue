@@ -46,7 +46,7 @@
       <button
         @click.stop.prevent="toggleDropdown"
         class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-        aria-label="Song options"
+        :aria-label="I18N.ARIA.SONG_OPTIONS"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
@@ -67,6 +67,7 @@
 import { ref } from 'vue'
 import type { SongWithTags } from '@/types/database'
 import SongDropdownMenu from './SongDropdownMenu.vue'
+import { I18N } from '@/constants/i18n'
 
 defineProps<{
   song: SongWithTags

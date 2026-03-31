@@ -16,7 +16,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 class="text-xl font-semibold text-white truncate pr-4">
-            Manage Tags - {{ songTitle }}
+            {{ I18N.MODAL_CONTENT.MANAGE_TAGS_TITLE(songTitle) }}
           </h2>
           <button
             @click="handleCancel"
@@ -31,7 +31,7 @@
         <!-- Create New Tag -->
         <div class="p-6 border-b border-gray-700">
           <label class="block text-sm font-medium text-gray-300 mb-2">
-            Create new tag:
+            {{ I18N.MODAL_CONTENT.CREATE_NEW_TAG }}
           </label>
           <div class="flex gap-2">
             <input
@@ -40,7 +40,7 @@
               maxlength="50"
               class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               :class="createError ? 'border-red-500' : 'border-gray-700'"
-              placeholder="Tag name..."
+              :placeholder="I18N.PLACEHOLDERS.TAG_NAME_SHORT"
               @keyup.enter="handleCreateTag"
             />
             <button
@@ -48,7 +48,7 @@
               :disabled="isCreatingTag"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Add
+              {{ I18N.BUTTONS.ADD }}
             </button>
           </div>
           <p v-if="createError" class="mt-1 text-sm text-red-400">
@@ -59,11 +59,11 @@
         <!-- Available Tags (scrollable) -->
         <div class="flex-1 overflow-y-auto p-6">
           <label class="block text-sm font-medium text-gray-300 mb-4">
-            Available tags:
+            {{ I18N.MODAL_CONTENT.AVAILABLE_TAGS }}
           </label>
           
           <div v-if="tagsStore.tags.length === 0" class="text-center py-8 text-gray-400">
-            No tags yet. Create one above!
+            {{ I18N.EMPTY_STATES.NO_TAGS_IN_MODAL }}
           </div>
           
           <div v-else class="space-y-3">
@@ -89,14 +89,14 @@
             @click="handleCancel"
             class="flex-1 px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
           >
-            Cancel
+            {{ I18N.BUTTONS.CANCEL }}
           </button>
           <button
             @click="handleSave"
             :disabled="isSaving"
             class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {{ isSaving ? 'Saving...' : 'Save' }}
+            {{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
           </button>
         </div>
       </div>
@@ -111,6 +111,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { supabase } from '@/utils/supabase'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 import type { Tag } from '@/types/database'
 
 const props = defineProps<{

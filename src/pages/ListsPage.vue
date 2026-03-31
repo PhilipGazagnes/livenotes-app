@@ -3,7 +3,7 @@
     <ion-content class="bg-gray-900">
       <!-- Header -->
       <AppHeader
-        title="Lists"
+        :title="I18N.PAGE_TITLES.LISTS"
         :show-back="true"
         :show-menu="true"
       >
@@ -39,7 +39,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
-          Create Your First List
+          {{ I18N.EMPTY_STATES.NO_LISTS.CTA }}
         </button>
       </div>
 
@@ -62,11 +62,11 @@
           @click.self="showCreateModal = false"
         >
           <div class="bg-gray-800 rounded-lg w-full max-w-md p-6">
-            <h2 class="text-xl font-semibold text-white mb-4">Create New List</h2>
+            <h2 class="text-xl font-semibold text-white mb-4">{{ I18N.MODALS.CREATE_LIST }}</h2>
             
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-300 mb-2">
-                List Name
+                {{ I18N.FORM.LIST_NAME }}
               </label>
               <input
                 v-model="newListName"
@@ -74,7 +74,7 @@
                 maxlength="50"
                 class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 :class="createError ? 'border-red-500' : 'border-gray-700'"
-                placeholder="Enter list name..."
+                :placeholder="I18N.PLACEHOLDERS.LIST_NAME"
                 @keyup.enter="handleCreateSubmit"
                 @input="createError = ''"
               />
@@ -82,7 +82,7 @@
                 {{ createError }}
               </p>
               <p class="mt-1 text-xs text-gray-500">
-                {{ newListName.length }} / 50 characters
+                {{ I18N.COUNTERS.CHAR_COUNT(newListName.length, 50) }}
               </p>
             </div>
             
@@ -91,14 +91,14 @@
                 @click="showCreateModal = false"
                 class="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
               >
-                Cancel
+                {{ I18N.BUTTONS.CANCEL }}
               </button>
               <button
                 @click="handleCreateSubmit"
                 :disabled="isCreating"
                 class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {{ isCreating ? 'Creating...' : 'Create' }}
+                {{ isCreating ? I18N.LOADING.CREATING : I18N.BUTTONS.CREATE }}
               </button>
             </div>
           </div>
@@ -113,11 +113,11 @@
           @click.self="showRenameModal = false"
         >
           <div class="bg-gray-800 rounded-lg w-full max-w-md p-6">
-            <h2 class="text-xl font-semibold text-white mb-4">Rename List</h2>
+            <h2 class="text-xl font-semibold text-white mb-4">{{ I18N.MODALS.RENAME_LIST }}</h2>
             
             <div class="mb-4">
               <label class="block text-sm font-medium text-gray-300 mb-2">
-                List Name
+                {{ I18N.FORM.LIST_NAME }}
               </label>
               <input
                 v-model="renameListName"
@@ -125,7 +125,7 @@
                 maxlength="50"
                 class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 :class="renameError ? 'border-red-500' : 'border-gray-700'"
-                placeholder="Enter list name..."
+                :placeholder="I18N.PLACEHOLDERS.LIST_NAME"
                 @keyup.enter="handleRenameSubmit"
                 @input="renameError = ''"
               />
@@ -133,7 +133,7 @@
                 {{ renameError }}
               </p>
               <p class="mt-1 text-xs text-gray-500">
-                {{ renameListName.length }} / 50 characters
+                {{ I18N.COUNTERS.CHAR_COUNT(renameListName.length, 50) }}
               </p>
             </div>
             
@@ -142,14 +142,14 @@
                 @click="showRenameModal = false"
                 class="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
               >
-                Cancel
+                {{ I18N.BUTTONS.CANCEL }}
               </button>
               <button
                 @click="handleRenameSubmit"
                 :disabled="isRenaming"
                 class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {{ isRenaming ? 'Saving...' : 'Save' }}
+                {{ isRenaming ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
               </button>
             </div>
           </div>
@@ -166,6 +166,7 @@ import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 import { normalizeText } from '@/utils/validation'
 import AppHeader from '@/components/AppHeader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -198,12 +199,12 @@ async function handleCreateSubmit() {
   const name = normalizeText(newListName.value)
   
   if (!name) {
-    createError.value = 'List name is required'
+    createError.value = I18N.VALIDATION.LIST_NAME_REQUIRED
     return
   }
   
   if (name.length > 50) {
-    createError.value = 'List name must be 50 characters or less'
+    createError.value = I18N.VALIDATION.LIST_NAME_TOO_LONG
     return
   }
   
@@ -212,7 +213,7 @@ async function handleCreateSubmit() {
     list => normalizeText(list.name) === name
   )
   if (duplicate) {
-    createError.value = 'A list with this name already exists'
+    createError.value = I18N.VALIDATION.LIST_ALREADY_EXISTS
     return
   }
   
@@ -220,7 +221,7 @@ async function handleCreateSubmit() {
   const personalProjectId = await authStore.getPersonalProjectId()
   
   if (!personalProjectId) {
-    createError.value = 'Project not found'
+    createError.value = I18N.VALIDATION.PROJECT_NOT_FOUND
     isCreating.value = false
     return
   }
@@ -251,12 +252,12 @@ async function handleRenameSubmit() {
   const name = normalizeText(renameListName.value)
   
   if (!name) {
-    renameError.value = 'List name is required'
+    renameError.value = I18N.VALIDATION.LIST_NAME_REQUIRED
     return
   }
   
   if (name.length > 50) {
-    renameError.value = 'List name must be 50 characters or less'
+    renameError.value = I18N.VALIDATION.LIST_NAME_TOO_LONG
     return
   }
   
@@ -265,7 +266,7 @@ async function handleRenameSubmit() {
     list => list.id !== listToRename.value?.id && normalizeText(list.name) === name
   )
   if (duplicate) {
-    renameError.value = 'A list with this name already exists'
+    renameError.value = I18N.VALIDATION.LIST_ALREADY_EXISTS
     return
   }
   
@@ -286,10 +287,10 @@ async function handleRenameSubmit() {
 
 async function handleDelete(list: List) {
   const confirmed = await uiStore.showConfirm(
-    'Delete List',
+    I18N.MODALS.DELETE_LIST,
     MESSAGES.CONFIRM_DELETE_LIST(list.name),
-    'Delete',
-    'Cancel'
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL
   )
   
   if (confirmed) {

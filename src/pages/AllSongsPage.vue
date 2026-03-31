@@ -2,7 +2,7 @@
   <ion-page>
     <ion-content class="bg-gray-900">
       <!-- Header -->
-      <AppHeader title="All Songs">
+      <AppHeader :title="I18N.PAGE_TITLES.ALL_SONGS">
         <template #action>
           <router-link :to="ROUTES.SONG_NEW" class="p-2 text-white hover:text-gray-300 transition-colors">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +32,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
-          Create Your First Song
+          {{ I18N.EMPTY_STATES.NO_SONGS.CTA }}
         </router-link>
       </div>
 
@@ -59,7 +59,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search songs..."
+              :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
               class="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -80,6 +80,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import SongCard from '@/components/SongCard.vue'
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 
 const router = useRouter()
 const songsStore = useSongsStore()

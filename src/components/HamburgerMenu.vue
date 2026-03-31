@@ -24,11 +24,11 @@
           >
             <!-- Header -->
             <div class="flex items-center justify-between px-4 py-4 border-b border-gray-800">
-              <h2 class="text-xl font-bold text-white">Livenotes</h2>
+              <h2 class="text-xl font-bold text-white">{{ I18N.APP.NAME }}</h2>
               <button
                 @click="closeMenu"
                 class="p-2 text-gray-400 hover:text-white transition-colors"
-                aria-label="Close menu"
+                :aria-label="I18N.ARIA.CLOSE_MENU"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -46,7 +46,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
                 </svg>
-                <span class="font-medium">All Songs</span>
+                <span class="font-medium">{{ I18N.NAVIGATION.ALL_SONGS }}</span>
               </router-link>
 
               <router-link
@@ -57,7 +57,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                 </svg>
-                <span class="font-medium">Tags</span>
+                <span class="font-medium">{{ I18N.NAVIGATION.TAGS }}</span>
               </router-link>
 
               <router-link
@@ -68,7 +68,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                 </svg>
-                <span class="font-medium">Lists</span>
+                <span class="font-medium">{{ I18N.NAVIGATION.LISTS }}</span>
               </router-link>
 
               <!-- Divider -->
@@ -82,7 +82,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                 </svg>
-                <span class="font-medium">Logout</span>
+                <span class="font-medium">{{ I18N.NAVIGATION.LOGOUT }}</span>
               </button>
             </nav>
           </div>
@@ -98,6 +98,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()

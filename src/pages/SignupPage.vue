@@ -5,8 +5,8 @@
         <div class="w-full max-w-md">
           <!-- Header -->
           <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2">Livenotes</h1>
-            <p class="text-gray-400">Create your account</p>
+            <h1 class="text-4xl font-bold text-white mb-2">{{ I18N.APP.NAME }}</h1>
+            <p class="text-gray-400">{{ I18N.PAGE_TITLES.SIGNUP }}</p>
           </div>
 
           <!-- Error message -->
@@ -144,6 +144,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -155,10 +156,10 @@ const confirmPassword = ref('')
 
 const validationError = computed(() => {
   if (password.value && confirmPassword.value && password.value !== confirmPassword.value) {
-    return 'Passwords do not match'
+    return I18N.AUTH.PASSWORD_MISMATCH
   }
   if (password.value && password.value.length < 6) {
-    return 'Password must be at least 6 characters'
+    return I18N.AUTH.PASSWORD_TOO_SHORT
   }
   return null
 })

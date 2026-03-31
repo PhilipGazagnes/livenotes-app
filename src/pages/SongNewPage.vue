@@ -3,7 +3,7 @@
     <ion-content class="bg-gray-900">
       <!-- Header -->
       <AppHeader
-        title="New Song"
+        :title="I18N.PAGE_TITLES.NEW_SONG"
         :show-back="true"
         :show-menu="true"
       />
@@ -13,7 +13,7 @@
         <!-- Title (required) -->
         <div>
         <label for="title" class="block text-sm font-medium text-gray-300 mb-2">
-          Title <span class="text-red-400">*</span>
+          {{ I18N.FORM.TITLE }} <span class="text-red-400">{{ I18N.FORM.REQUIRED }}</span>
         </label>
         <input
           id="title"
@@ -23,7 +23,7 @@
           @blur="validateField('title')"
           class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
           :class="errors.title ? 'border-red-500' : 'border-gray-700'"
-          placeholder="Song title"
+          :placeholder="I18N.PLACEHOLDERS.SONG_TITLE"
           autofocus
         />
         <p v-if="errors.title" class="mt-1 text-sm text-red-400">
@@ -103,14 +103,14 @@
           @click="handleCancel"
           class="flex-1 px-6 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
         >
-          Cancel
+          {{ I18N.BUTTONS.CANCEL }}
         </button>
         <button
           type="submit"
           :disabled="isSaving"
           class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {{ isSaving ? 'Creating...' : 'Create' }}
+          {{ isSaving ? I18N.LOADING.CREATING : I18N.BUTTONS.CREATE }}
         </button>
       </div>
     </form>
@@ -129,6 +129,7 @@ import { useUiStore } from '@/stores/ui'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
+import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongArtist, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
 
 const router = useRouter()
@@ -228,10 +229,10 @@ async function handleSave() {
 async function handleCancel() {
   if (hasChanges.value) {
     const confirmed = await uiStore.showConfirm(
-      'Discard Changes?',
+      I18N.MODALS.DISCARD_CHANGES,
       MESSAGES.CONFIRM_UNSAVED_CHANGES,
-      'Discard',
-      'Keep Editing'
+      I18N.BUTTONS.DISCARD,
+      I18N.BUTTONS.KEEP_EDITING
     )
     
     if (!confirmed) {

@@ -5,7 +5,7 @@
       <button
         @click="openMenu"
         class="p-2 -ml-2 text-gray-300 hover:text-white transition-colors"
-        aria-label="Menu"
+        :aria-label="I18N.ARIA.MENU"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -25,6 +25,7 @@
 
 <script setup lang="ts">
 import { useUiStore } from '@/stores/ui'
+import { I18N } from '@/constants/i18n'
 
 defineProps<{
   title: string

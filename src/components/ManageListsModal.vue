@@ -16,7 +16,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 class="text-xl font-semibold text-white truncate pr-4">
-            Manage Lists - {{ songTitle }}
+            {{ I18N.MODAL_CONTENT.MANAGE_LISTS_TITLE(songTitle) }}
           </h2>
           <button
             @click="handleCancel"
@@ -31,7 +31,7 @@
         <!-- Create New List -->
         <div class="p-6 border-b border-gray-700">
           <label class="block text-sm font-medium text-gray-300 mb-2">
-            Create new list:
+            {{ I18N.MODAL_CONTENT.CREATE_NEW_LIST }}
           </label>
           <div class="flex gap-2">
             <input
@@ -40,7 +40,7 @@
               maxlength="50"
               class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               :class="createError ? 'border-red-500' : 'border-gray-700'"
-              placeholder="List name..."
+              :placeholder="I18N.PLACEHOLDERS.LIST_NAME_SHORT"
               @keyup.enter="handleCreateList"
             />
             <button
@@ -48,7 +48,7 @@
               :disabled="isCreatingList"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Add
+              {{ I18N.BUTTONS.ADD }}
             </button>
           </div>
           <p v-if="createError" class="mt-1 text-sm text-red-400">
@@ -59,11 +59,11 @@
         <!-- Available Lists (scrollable) -->
         <div class="flex-1 overflow-y-auto p-6">
           <label class="block text-sm font-medium text-gray-300 mb-4">
-            Available lists:
+            {{ I18N.MODAL_CONTENT.AVAILABLE_LISTS }}
           </label>
           
           <div v-if="listsStore.lists.length === 0" class="text-center py-8 text-gray-400">
-            No lists yet. Create one above!
+            {{ I18N.EMPTY_STATES.NO_LISTS_IN_MODAL }}
           </div>
           
           <div v-else class="space-y-3">
@@ -89,14 +89,14 @@
             @click="handleCancel"
             class="flex-1 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
-            Cancel
+            {{ I18N.BUTTONS.CANCEL }}
           </button>
           <button
             @click="handleSave"
             :disabled="isSaving"
             class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {{ isSaving ? 'Saving...' : 'Save' }}
+            {{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
           </button>
         </div>
       </div>
@@ -110,6 +110,7 @@ import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 import { normalizeText } from '@/utils/validation'
 import { supabase } from '@/utils/supabase'
 
@@ -162,12 +163,12 @@ async function handleCreateList() {
   const name = normalizeText(newListName.value)
   
   if (!name) {
-    createError.value = 'List name is required'
+    createError.value = I18N.VALIDATION.LIST_NAME_REQUIRED
     return
   }
   
   if (name.length > 50) {
-    createError.value = 'List name must be 50 characters or less'
+    createError.value = I18N.VALIDATION.LIST_NAME_TOO_LONG
     return
   }
   
@@ -176,7 +177,7 @@ async function handleCreateList() {
     list => normalizeText(list.name) === name
   )
   if (duplicate) {
-    createError.value = 'A list with this name already exists'
+    createError.value = I18N.VALIDATION.LIST_ALREADY_EXISTS
     return
   }
   
@@ -184,7 +185,7 @@ async function handleCreateList() {
   const personalProjectId = await authStore.getPersonalProjectId()
   
   if (!personalProjectId) {
-    createError.value = 'Project not found'
+    createError.value = I18N.VALIDATION.PROJECT_NOT_FOUND
     isCreatingList.value = false
     return
   }

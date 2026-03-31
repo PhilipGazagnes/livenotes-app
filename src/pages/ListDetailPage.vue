@@ -3,7 +3,7 @@
     <ion-content class="bg-gray-900">
       <!-- Header -->
       <AppHeader
-        :title="currentList?.name || 'List'"
+        :title="currentList?.name || I18N.PAGE_TITLES.LIST_DETAIL"
         :show-back="true"
         :show-menu="true"
       />
@@ -18,8 +18,8 @@
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
-        <h2 class="text-xl font-semibold text-white mb-2">List not found</h2>
-        <p class="text-gray-400 mb-6">This list may have been deleted</p>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIST_NOT_FOUND.TITLE }}</h2>
+        <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIST_NOT_FOUND.SUBTITLE }}</p>
       </div>
 
       <!-- Songs List -->
@@ -57,6 +57,7 @@ import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
+import { I18N } from '@/constants/i18n'
 import AppHeader from '@/components/AppHeader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import ListSongCard from '@/components/ListSongCard.vue'
@@ -130,7 +131,7 @@ async function handleRemove(item: any) {
   const result = await listsStore.removeSongFromList(currentList.value.id, item.song_id)
   
   if (result.success) {
-    uiStore.showToast(`Removed from ${currentList.value.name}`, 'success')
+    uiStore.showToast(I18N.TOAST.REMOVED_FROM_LIST(currentList.value.name), 'success')
     // Refresh list to remove the item from UI
     await handleRefresh()
   } else {

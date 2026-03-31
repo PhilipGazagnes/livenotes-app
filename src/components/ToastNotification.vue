@@ -51,7 +51,7 @@
             @click="uiStore.removeToast(toast.id)"
             :class="toast.type === 'success' ? 'text-green-400 hover:text-green-300' : 'text-red-400 hover:text-red-300'"
             class="flex-shrink-0 p-1 transition-colors"
-            aria-label="Close"
+            :aria-label="I18N.ARIA.CLOSE"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -65,6 +65,7 @@
 
 <script setup lang="ts">
 import { useUiStore } from '@/stores/ui'
+import { I18N } from '@/constants/i18n'
 
 const uiStore = useUiStore()
 </script>

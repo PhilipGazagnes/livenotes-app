@@ -5,8 +5,8 @@
         <div class="w-full max-w-md">
           <!-- Header -->
           <div class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-white mb-2">Livenotes</h1>
-            <p class="text-gray-400">Sign in to your account</p>
+            <h1 class="text-4xl font-bold text-white mb-2">{{ I18N.APP.NAME }}</h1>
+            <p class="text-gray-400">{{ I18N.PAGE_TITLES.LOGIN }}</p>
           </div>
 
           <!-- Error message -->
@@ -19,7 +19,7 @@
             <!-- Email -->
             <div>
               <label for="email" class="block text-sm font-medium text-gray-300 mb-1">
-                Email
+                {{ I18N.FORM.EMAIL }}
               </label>
               <input
                 id="email"
@@ -28,14 +28,14 @@
                 required
                 autocomplete="email"
                 class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="your@email.com"
+                :placeholder="I18N.PLACEHOLDERS.EMAIL"
               />
             </div>
 
             <!-- Password -->
             <div>
               <label for="password" class="block text-sm font-medium text-gray-300 mb-1">
-                Password
+                {{ I18N.FORM.PASSWORD }}
               </label>
               <input
                 id="password"
@@ -44,7 +44,7 @@
                 required
                 autocomplete="current-password"
                 class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="••••••••"
+                :placeholder="I18N.PLACEHOLDERS.PASSWORD"
               />
             </div>
 
@@ -54,7 +54,7 @@
               :disabled="authStore.isLoading"
               class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
             >
-              {{ authStore.isLoading ? 'Signing in...' : 'Sign In' }}
+              {{ authStore.isLoading ? I18N.LOADING.SIGNING_IN : I18N.AUTH.SIGN_IN }}
             </button>
           </form>
 
@@ -64,7 +64,7 @@
               <div class="w-full border-t border-gray-700"></div>
             </div>
             <div class="relative flex justify-center text-sm">
-              <span class="px-2 bg-gray-900 text-gray-400">Or continue with</span>
+              <span class="px-2 bg-gray-900 text-gray-400">{{ I18N.AUTH.OR_CONTINUE_WITH }}</span>
             </div>
           </div>
 
@@ -101,9 +101,9 @@
           <!-- Signup Link -->
           <div class="mt-6 text-center">
             <p class="text-gray-400 text-sm">
-              Don't have an account?
+              {{ I18N.AUTH.NO_ACCOUNT }}
               <router-link to="/signup" class="text-blue-400 hover:text-blue-300 font-medium">
-                Sign up
+                {{ I18N.AUTH.SIGN_UP_LINK }}
               </router-link>
             </p>
           </div>
@@ -121,6 +121,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 
 const router = useRouter()
 const authStore = useAuthStore()

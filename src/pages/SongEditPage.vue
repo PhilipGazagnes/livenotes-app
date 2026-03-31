@@ -11,7 +11,7 @@
           @click="router.back()"
           class="mt-4 px-6 py-3 bg-gray-800 text-white rounded-lg"
         >
-          Go Back
+          {{ I18N.BUTTONS.GO_BACK }}
         </button>
       </div>
 
@@ -19,7 +19,7 @@
       <template v-else-if="song">
         <!-- Header -->
         <AppHeader
-          title="Edit Song"
+          :title="I18N.PAGE_TITLES.EDIT_SONG"
           :show-back="true"
           :show-menu="true"
         />
@@ -28,7 +28,7 @@
           <!-- Title (required) -->
           <div>
             <label for="title" class="block text-sm font-medium text-gray-300 mb-2">
-              Title <span class="text-red-400">*</span>
+              {{ I18N.FORM.TITLE }} <span class="text-red-400">{{ I18N.FORM.REQUIRED }}</span>
             </label>
             <input
               id="title"
@@ -38,7 +38,7 @@
               @blur="validateField('title')"
               class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
               :class="errors.title ? 'border-red-500' : 'border-gray-700'"
-              placeholder="Song title"
+              :placeholder="I18N.PLACEHOLDERS.SONG_TITLE"
             />
             <p v-if="errors.title" class="mt-1 text-sm text-red-400">
               {{ errors.title }}
@@ -48,7 +48,7 @@
           <!-- Artist -->
           <div>
             <label for="artist" class="block text-sm font-medium text-gray-300 mb-2">
-              Artist
+              {{ I18N.FORM.ARTIST }}
             </label>
             <input
               id="artist"
@@ -58,7 +58,7 @@
               @blur="validateField('artist')"
               class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
               :class="errors.artist ? 'border-red-500' : 'border-gray-700'"
-              placeholder="Artist name"
+              :placeholder="I18N.PLACEHOLDERS.ARTIST_NAME"
             />
             <p v-if="errors.artist" class="mt-1 text-sm text-red-400">
               {{ errors.artist }}
@@ -68,7 +68,7 @@
           <!-- Notes -->
           <div>
             <label for="notes" class="block text-sm font-medium text-gray-300 mb-2">
-              Notes
+              {{ I18N.FORM.NOTES }}
             </label>
             <textarea
               id="notes"
@@ -78,7 +78,7 @@
               rows="4"
               class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none transition"
               :class="errors.notes ? 'border-red-500' : 'border-gray-700'"
-              placeholder="Add notes about this song..."
+              :placeholder="I18N.PLACEHOLDERS.SONG_NOTES"
             ></textarea>
             <div class="mt-1 flex justify-between items-center">
               <p v-if="errors.notes" class="text-sm text-red-400">
@@ -93,7 +93,7 @@
           <!-- POC ID -->
           <div>
             <label for="pocId" class="block text-sm font-medium text-gray-300 mb-2">
-              POC ID
+              {{ I18N.FORM.POC_ID }}
             </label>
             <input
               id="pocId"
@@ -103,7 +103,7 @@
               @blur="validateField('pocId')"
               class="w-32 px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition uppercase"
               :class="errors.pocId ? 'border-red-500' : 'border-gray-700'"
-              placeholder="####"
+              :placeholder="I18N.PLACEHOLDERS.POC_ID"
             />
             <p v-if="errors.pocId" class="mt-1 text-sm text-red-400">
               {{ errors.pocId }}
@@ -117,14 +117,14 @@
               @click="handleCancel"
               class="flex-1 px-6 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
             >
-              Cancel
+              {{ I18N.BUTTONS.CANCEL }}
             </button>
             <button
               type="submit"
               :disabled="isSaving"
               class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {{ isSaving ? 'Saving...' : 'Save' }}
+              {{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
             </button>
           </div>
         </form>
@@ -145,6 +145,7 @@ import { useUiStore } from '@/stores/ui'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
+import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongArtist, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
 import type { Song } from '@/types/database'
 
@@ -198,14 +199,14 @@ onMounted(async () => {
   const songId = route.params.id as string
   
   if (!songId) {
-    loadError.value = 'Song ID is required'
+    loadError.value = I18N.VALIDATION.SONG_ID_REQUIRED
     isLoading.value = false
     return
   }
   
   const personalProjectId = await authStore.getPersonalProjectId()
   if (!personalProjectId) {
-    loadError.value = 'Project not found'
+    loadError.value = I18N.VALIDATION.PROJECT_NOT_FOUND
     isLoading.value = false
     return
   }
@@ -219,7 +220,7 @@ onMounted(async () => {
   const foundSong = songsStore.songs.find(s => s.id === songId)
   
   if (!foundSong) {
-    loadError.value = 'Song not found'
+    loadError.value = I18N.VALIDATION.SONG_NOT_FOUND
     isLoading.value = false
     return
   }
