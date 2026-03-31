@@ -1,6 +1,22 @@
 <template>
-  <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 transition-colors">
+  <div 
+    class="bg-gray-800 rounded-lg p-4 border transition-colors"
+    :class="{
+      'border-blue-500 bg-gray-700': uiStore.selectionMode && isSelected,
+      'border-gray-700 hover:border-gray-600': !uiStore.selectionMode || !isSelected,
+    }"
+    @click="handleCardClick"
+  >
     <div class="flex items-start gap-3">
+      <!-- Checkbox (Selection Mode) -->
+      <div v-if="uiStore.selectionMode" class="flex-shrink-0 pt-1">
+        <div class="w-5 h-5 rounded border-2 flex items-center justify-center"
+             :class="isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-400'">
+          <svg v-if="isSelected" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+      </div>
       <!-- Song Info -->
       <div class="flex-1 min-w-0">
         <!-- Title -->
@@ -29,7 +45,7 @@
       </div>
 
       <!-- Up/Down Arrows & Dropdown -->
-      <div class="flex flex-col items-center gap-2 flex-shrink-0">
+      <div v-if="!uiStore.selectionMode" class="flex flex-col items-center gap-2 flex-shrink-0">
         <!-- Up Arrow -->
         <button
           @click="$emit('moveUp')"
@@ -83,6 +99,7 @@
 import { ref, computed } from 'vue'
 import type { ListItem, SongWithTags } from '@/types/database'
 import ListSongDropdownMenu from './ListSongDropdownMenu.vue'
+import { useUiStore } from '@/stores/ui'
 import { I18N } from '@/constants/i18n'
 
 const props = defineProps<{
@@ -98,12 +115,20 @@ const emit = defineEmits<{
   refresh: []
 }>()
 
+const uiStore = useUiStore()
 const isDropdownOpen = ref(false)
 
 const song = computed(() => props.item.song)
+const isSelected = computed(() => uiStore.isSelected(props.item.song.id))
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value
+}
+
+function handleCardClick() {
+  if (uiStore.selectionMode) {
+    uiStore.toggleSelection(props.item.song.id)
+  }
 }
 
 function handleRemove() {
