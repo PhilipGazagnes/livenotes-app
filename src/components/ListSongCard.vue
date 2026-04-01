@@ -24,8 +24,19 @@
           {{ song.title }}
         </h3>
 
-        <!-- Artist -->
-        <p v-if="song.artist" class="text-gray-400 text-sm mb-2 truncate">
+        <!-- Artists (new many-to-many relationship) -->
+        <p v-if="song.artists && song.artists.length > 0" class="text-gray-400 text-sm mb-2 truncate">
+          <svg class="w-3 h-3 inline mr-1 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          {{ song.artists.map(a => a.name).join(', ') }}
+        </p>
+        
+        <!-- Legacy Artist (fallback for old data) -->
+        <p v-else-if="song.artist" class="text-gray-400 text-sm mb-2 truncate">
+          <svg class="w-3 h-3 inline mr-1 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
           {{ song.artist }}
         </p>
 

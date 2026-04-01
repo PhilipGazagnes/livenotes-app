@@ -61,10 +61,31 @@ export interface ListItem {
   added_at: string
 }
 
+export interface Artist {
+  id: string
+  project_id: string
+  name: string
+  created_at: string
+  updated_at: string
+}
+
+export interface SongArtist {
+  id: string
+  song_id: string
+  artist_id: string
+  position: number
+  created_at: string
+}
+
 // Extended types with relations
+export interface ArtistWithPosition extends Artist {
+  position: number
+}
+
 export interface SongWithTags extends Song {
   tags: Tag[]
   lists: List[]
+  artists: ArtistWithPosition[]
 }
 
 export interface ListWithSongs extends List {
@@ -77,5 +98,9 @@ export interface ListWithItems extends List {
 }
 
 export interface TagWithCount extends Tag {
+  song_count: number
+}
+
+export interface ArtistWithCount extends Artist {
   song_count: number
 }

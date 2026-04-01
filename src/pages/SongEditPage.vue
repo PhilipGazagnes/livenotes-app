@@ -45,24 +45,78 @@
             </p>
           </div>
 
-          <!-- Artist -->
+          <!-- Artists -->
           <div>
-            <label for="artist" class="block text-sm font-medium text-gray-300 mb-2">
-              {{ I18N.FORM.ARTIST }}
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              Artists
             </label>
-            <input
-              id="artist"
-              v-model="form.artist"
-              type="text"
-              :maxlength="VALIDATION.SONG_ARTIST_MAX_LENGTH"
-              @blur="validateField('artist')"
-              class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-              :class="errors.artist ? 'border-red-500' : 'border-gray-700'"
-              :placeholder="I18N.PLACEHOLDERS.ARTIST_NAME"
-            />
-            <p v-if="errors.artist" class="mt-1 text-sm text-red-400">
-              {{ errors.artist }}
-            </p>
+            
+            <!-- Artist Inputs -->
+            <div class="space-y-3">
+              <div
+                v-for="(artistId, index) in form.artistIds"
+                :key="index"
+                class="flex items-start gap-2"
+              >
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs text-gray-400">Artist {{ index + 1 }}</span>
+                    <!-- Move Up Button -->
+                    <button
+                      v-if="index > 0"
+                      type="button"
+                      @click="moveArtistUp(index)"
+                      class="p-1 text-gray-400 hover:text-white transition-colors"
+                      title="Move up"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                      </svg>
+                    </button>
+                    <!-- Move Down Button -->
+                    <button
+                      v-if="index < form.artistIds.length - 1"
+                      type="button"
+                      @click="moveArtistDown(index)"
+                      class="p-1 text-gray-400 hover:text-white transition-colors"
+                      title="Move down"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <ArtistInput
+                    v-model="form.artistIds[index]"
+                    :placeholder="'Enter artist name'"
+                  />
+                </div>
+                <!-- Remove Button -->
+                <button
+                  v-if="form.artistIds.length > 1"
+                  type="button"
+                  @click="removeArtist(index)"
+                  class="p-3 text-red-400 hover:text-red-300 hover:bg-gray-800 rounded-lg transition-colors mt-6"
+                  title="Remove artist"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Add Another Artist Button -->
+            <button
+              type="button"
+              @click="addArtist"
+              class="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Add Another Artist
+            </button>
           </div>
 
           <!-- Notes -->
@@ -139,31 +193,34 @@ import { useRouter, useRoute } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import ArtistInput from '@/components/ArtistInput.vue'
 import { useSongsStore } from '@/stores/songs'
+import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
-import { validateSongTitle, validateSongArtist, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
-import type { Song } from '@/types/database'
+import { validateSongTitle, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
+import type { Song, SongWithTags } from '@/types/database'
 
 const router = useRouter()
 const route = useRoute()
 const songsStore = useSongsStore()
+const artistsStore = useArtistsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 // Loading state
 const isLoading = ref(true)
 const loadError = ref('')
-const song = ref<Song | null>(null)
+const song = ref<SongWithTags | null>(null)
 
 // Form state
 const form = ref({
   title: '',
-  artist: '',
+  artistIds: [null] as (string | null)[],
   notes: '',
   pocId: '',
 })
@@ -171,7 +228,7 @@ const form = ref({
 // Original form values (for change detection)
 const originalForm = ref({
   title: '',
-  artist: '',
+  artistIds: [] as (string | null)[],
   notes: '',
   pocId: '',
 })
@@ -179,7 +236,6 @@ const originalForm = ref({
 // Validation errors
 const errors = ref({
   title: '',
-  artist: '',
   notes: '',
   pocId: '',
 })
@@ -189,10 +245,39 @@ const isSaving = ref(false)
 // Check if form has any changes
 const hasChanges = computed(() => {
   return form.value.title !== originalForm.value.title ||
-         form.value.artist !== originalForm.value.artist ||
+         JSON.stringify(form.value.artistIds) !== JSON.stringify(originalForm.value.artistIds) ||
          form.value.notes !== originalForm.value.notes ||
          form.value.pocId !== originalForm.value.pocId
 })
+
+// Artist management functions
+function addArtist() {
+  form.value.artistIds.push(null)
+}
+
+function removeArtist(index: number) {
+  form.value.artistIds.splice(index, 1)
+  // Ensure at least one artist input
+  if (form.value.artistIds.length === 0) {
+    form.value.artistIds.push(null)
+  }
+}
+
+function moveArtistUp(index: number) {
+  if (index > 0) {
+    const temp = form.value.artistIds[index]
+    form.value.artistIds[index] = form.value.artistIds[index - 1]
+    form.value.artistIds[index - 1] = temp
+  }
+}
+
+function moveArtistDown(index: number) {
+  if (index < form.value.artistIds.length - 1) {
+    const temp = form.value.artistIds[index]
+    form.value.artistIds[index] = form.value.artistIds[index + 1]
+    form.value.artistIds[index + 1] = temp
+  }
+}
 
 // Load song data
 onMounted(async () => {
@@ -210,6 +295,9 @@ onMounted(async () => {
     isLoading.value = false
     return
   }
+  
+  // Load artists
+  await artistsStore.fetchArtists(personalProjectId)
   
   // Fetch songs if not already loaded
   if (songsStore.songs.length === 0) {
@@ -229,24 +317,32 @@ onMounted(async () => {
   
   // Populate form
   form.value.title = foundSong.title
-  form.value.artist = foundSong.artist || ''
   form.value.notes = foundSong.notes || ''
   form.value.pocId = foundSong.livenotes_poc_id || ''
   
+  // Populate artists (sorted by position)
+  if (foundSong.artists && foundSong.artists.length > 0) {
+    form.value.artistIds = foundSong.artists.map(a => a.id)
+  } else {
+    form.value.artistIds = [null]
+  }
+  
   // Store original values
-  originalForm.value = { ...form.value }
+  originalForm.value = {
+    title: form.value.title,
+    artistIds: [...form.value.artistIds],
+    notes: form.value.notes,
+    pocId: form.value.pocId,
+  }
   
   isLoading.value = false
 })
 
 // Validate a single field
-function validateField(field: 'title' | 'artist' | 'notes' | 'pocId') {
+function validateField(field: 'title' | 'notes' | 'pocId') {
   switch (field) {
     case 'title':
       errors.value.title = validateSongTitle(form.value.title) || ''
-      break
-    case 'artist':
-      errors.value.artist = validateSongArtist(form.value.artist) || ''
       break
     case 'notes':
       errors.value.notes = validateSongNotes(form.value.notes) || ''
@@ -260,11 +356,10 @@ function validateField(field: 'title' | 'artist' | 'notes' | 'pocId') {
 // Validate all fields
 function validateForm(): boolean {
   validateField('title')
-  validateField('artist')
   validateField('notes')
   validateField('pocId')
   
-  return !errors.value.title && !errors.value.artist && !errors.value.notes && !errors.value.pocId
+  return !errors.value.title && !errors.value.notes && !errors.value.pocId
 }
 
 // Handle form submission
@@ -282,12 +377,14 @@ async function handleSave() {
       return
     }
     
+    // Filter out null artist IDs
+    const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
+    
     const result = await songsStore.updateSong(song.value.id, {
       title: normalizeText(form.value.title),
-      artist: form.value.artist ? normalizeText(form.value.artist) : null,
       notes: form.value.notes || null,
       livenotes_poc_id: form.value.pocId || null,
-    }, personalProjectId)
+    }, personalProjectId, undefined, artistIds)  // Pass undefined for tagIds, artistIds for artists
     
     if (result.success) {
       uiStore.showToast(MESSAGES.SUCCESS.SONG_UPDATED, 'success')

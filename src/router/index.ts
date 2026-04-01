@@ -46,6 +46,11 @@ const router = createRouter({
       name: 'Tags',
       component: () => import('@/pages/TagsPage.vue'),
     },
+    {
+      path: ROUTES.ARTISTS,
+      name: 'Artists',
+      component: () => import('@/pages/ArtistsPage.vue'),
+    },
   ],
 })
 
