@@ -418,7 +418,7 @@ export const useSongsStore = defineStore('songs', () => {
     }
   }
   
-  async function updateSongArtists(songId: string, artistIds: string[], projectId: string) {
+  async function updateSongArtists(songId: string, artistIds: string[]) {
     // Helper method to update just the artists for a song
     isLoading.value = true
     error.value = null

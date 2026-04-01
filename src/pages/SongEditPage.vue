@@ -54,7 +54,7 @@
             <!-- Artist Inputs -->
             <div class="space-y-3">
               <div
-                v-for="(artistId, index) in form.artistIds"
+                v-for="(_, index) in form.artistIds"
                 :key="index"
                 class="flex items-start gap-2"
               >
@@ -203,7 +203,7 @@ import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
-import type { Song, SongWithTags } from '@/types/database'
+import type { SongWithTags } from '@/types/database'
 
 const router = useRouter()
 const route = useRoute()
