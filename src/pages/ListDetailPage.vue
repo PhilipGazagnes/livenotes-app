@@ -78,33 +78,22 @@
 
       <!-- Items in List -->
       <div v-else class="p-4 pb-32 relative">
-        <template v-for="(item, index) in displayedItems" :key="item.id">
-          <div
-            :class="[
-              'mb-3 transition-all duration-200',
-              dragState.draggedIndex === index && 'opacity-30',
-              dragState.draggedIndex !== null && dragState.draggedIndex !== index && 'pointer-events-auto'
-            ]"
-            @dragover.prevent="handleDragOver($event, index)"
-            @drop="handleDrop($event, index)"
-          >
-            <!-- Drop Indicator (appears above item when dragging over) -->
-            <div
-              v-if="dragState.dropIndex === index && dragState.draggedIndex !== index"
-              class="h-1 mb-3 rounded-full"
-              style="background: linear-gradient(90deg, transparent, #3b82f6, transparent); box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);"
-            ></div>
-            
-            <!-- Draggable Item Wrapper -->
-            <div
-              draggable="true"
-              @dragstart="handleDragStart($event, index)"
-              @dragend="handleDragEnd"
-              :class="[
-                'cursor-move',
-                dragState.draggedIndex === index && 'is-dragging'
-              ]"
-            >
+        <VueDraggable
+          v-model="displayedItems"
+          :disabled="uiStore.selectionMode"
+          @end="handleDragEnd"
+          item-key="id"
+          :animation="200"
+          :delay="150"
+          :delay-on-touch-only="true"
+          :force-fallback="true"
+          ghost-class="drag-ghost"
+          chosen-class="drag-chosen"
+          drag-class="drag-active"
+          handle=".drag-handle"
+        >
+          <template #item="{ element: item }">
+            <div class="mb-3 drag-handle">
               <!-- Title Card -->
               <ListTitleCard
                 v-if="item.type === 'title'"
@@ -120,15 +109,8 @@
                 @remove="handleRemove(item)"
               />
             </div>
-          </div>
-        </template>
-        
-        <!-- Drop indicator at the end -->
-        <div
-          v-if="dragState.dropIndex === displayedItems.length && dragState.draggedIndex !== null"
-          class="h-1 rounded-full"
-          style="background: linear-gradient(90deg, transparent, #3b82f6, transparent); box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);"
-        ></div>
+          </template>
+        </VueDraggable>
         
         <!-- Empty state for filtered results -->
         <div v-if="displayedItems.length === 0" class="text-center py-12 px-4">
@@ -318,6 +300,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
+import VueDraggable from 'vuedraggable'
 import { useListsStore } from '@/stores/lists'
 import { useSongsStore } from '@/stores/songs'
 import { useTagsStore } from '@/stores/tags'
@@ -356,54 +339,59 @@ const editingTitle = ref<any>(null)
 const titleInput = ref('')
 const isSavingTitle = ref(false)
 
-// Drag and drop state
-const dragState = ref({
-  draggedIndex: null as number | null,
-  dropIndex: null as number | null,
-})
+// Draggable state - displayedItems is now directly manipulated by VueDraggable
+// No need for manual drag tracking
 
 const listId = computed(() => route.params.id as string)
 const currentList = computed(() => listsStore.currentList)
 const listItems = computed(() => currentList.value?.items || [])
 
-// Filtered and searched items
-const displayedItems = computed(() => {
-  let filtered = listItems.value
-  
-  // Separate songs to apply filters (titles always show)
-  let songs = filtered.filter(item => item.type === 'song')
-  
-  // Apply tag filter (AND logic - song must have ALL selected tags)
-  if (selectedTagIds.value.length > 0) {
-    songs = songs.filter(item => {
-      if (!item.song) return false
-      const songTagIds = item.song.tags?.map(t => t.id) || []
-      return selectedTagIds.value.every(tagId => songTagIds.includes(tagId))
-    })
-  }
-  
-  // Apply search query
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase()
-    songs = songs.filter(item => {
-      if (!item.song) return false
-      const song = item.song
-      return song.title.toLowerCase().includes(query) ||
-             song.artist?.toLowerCase().includes(query) ||
-             song.livenotes_poc_id?.toLowerCase().includes(query) ||
-             song.notes?.toLowerCase().includes(query)
-    })
-  }
-  
-  // Merge titles and filtered songs, maintaining original order
-  const result: typeof filtered = []
-  for (const item of filtered) {
-    if (item.type === 'title' || songs.includes(item)) {
-      result.push(item)
+// Filtered and searched items (writable for VueDraggable)
+const displayedItems = computed({
+  get() {
+    let filtered = listItems.value
+    
+    // Separate songs to apply filters (titles always show)
+    let songs = filtered.filter(item => item.type === 'song')
+    
+    // Apply tag filter (AND logic - song must have ALL selected tags)
+    if (selectedTagIds.value.length > 0) {
+      songs = songs.filter(item => {
+        if (!item.song) return false
+        const songTagIds = item.song.tags?.map(t => t.id) || []
+        return selectedTagIds.value.every(tagId => songTagIds.includes(tagId))
+      })
+    }
+    
+    // Apply search query
+    if (searchQuery.value.trim()) {
+      const query = searchQuery.value.toLowerCase()
+      songs = songs.filter(item => {
+        if (!item.song) return false
+        const song = item.song
+        return song.title.toLowerCase().includes(query) ||
+               song.artist?.toLowerCase().includes(query) ||
+               song.livenotes_poc_id?.toLowerCase().includes(query) ||
+               song.notes?.toLowerCase().includes(query)
+      })
+    }
+    
+    // Merge titles and filtered songs, maintaining original order
+    const result: typeof filtered = []
+    for (const item of filtered) {
+      if (item.type === 'title' || songs.includes(item)) {
+        result.push(item)
+      }
+    }
+    
+    return result
+  },
+  set(newValue) {
+    // When VueDraggable reorders items, update the underlying currentList
+    if (currentList.value) {
+      currentList.value.items = newValue
     }
   }
-  
-  return result
 })
 
 function openFilterModal() {
@@ -414,85 +402,30 @@ function handleApplyFilter(tagIds: string[]) {
   selectedTagIds.value = tagIds
 }
 
-// Drag and drop handlers
-function handleDragStart(event: DragEvent, index: number) {
-  if (uiStore.selectionMode) return
+// Drag and drop handler - called when drag ends
+async function handleDragEnd() {
+  if (!currentList.value) return
   
-  dragState.value.draggedIndex = index
-  if (event.dataTransfer) {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/html', '')
-  }
-}
-
-function handleDragOver(event: DragEvent, index: number) {
-  if (dragState.value.draggedIndex === null) return
-  event.preventDefault()
+  // displayedItems has already been reordered by VueDraggable (via v-model)
+  // We need to sync this to the database
+  const reorderedItems = displayedItems.value
   
-  // Determine drop position based on mouse Y position relative to element
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
-  const midpoint = rect.top + rect.height / 2
-  
-  // If dragging over the top half, insert before; bottom half, insert after
-  if (event.clientY < midpoint) {
-    dragState.value.dropIndex = index
-  } else {
-    dragState.value.dropIndex = index + 1
-  }
-}
-
-function handleDragEnd() {
-  dragState.value.draggedIndex = null
-  dragState.value.dropIndex = null
-}
-
-async function handleDrop(event: DragEvent, index: number) {
-  event.preventDefault()
-  
-  const draggedIdx = dragState.value.draggedIndex
-  if (draggedIdx === null || !currentList.value) return
-  
-  // Calculate actual drop index
-  const target = event.currentTarget as HTMLElement
-  const rect = target.getBoundingClientRect()
-  const midpoint = rect.top + rect.height / 2
-  let dropIdx = event.clientY < midpoint ? index : index + 1
-  
-  // Don't reorder if dropped in same position
-  if (draggedIdx === dropIdx || draggedIdx + 1 === dropIdx) {
-    handleDragEnd()
-    return
-  }
-  
-  // Adjust drop index if dragging downwards
-  if (draggedIdx < dropIdx) {
-    dropIdx--
-  }
-  
-  // OPTIMISTIC UPDATE: Reorder items in UI immediately
-  const items = [...listItems.value]
-  const [draggedItem] = items.splice(draggedIdx, 1)
-  items.splice(dropIdx, 0, draggedItem)
-  
-  // Update local state immediately for instant UI response
+  // Update the currentList.value.items to match the new order
   if (currentList.value) {
-    currentList.value.items = items
+    currentList.value.items = reorderedItems
   }
-  
-  handleDragEnd()
   
   // BACKGROUND SYNC: Update positions in database
-  const itemIds = items.map(item => item.id)
+  const itemIds = reorderedItems.map(item => item.id)
   const result = await listsStore.reorderListItems(currentList.value.id, itemIds)
   
-  if (result.success) {
-    // Silent success - no toast needed since UI already updated
-  } else {
+  if (!result.success) {
     // Rollback on error
-    uiStore.showToast(result.error || 'Failed to update order', 'error')
-    await handleRefresh()
+    console.error('Failed to reorder items:', result.error)
+    uiStore.showToast('Failed to reorder items', 'error')
+    await listsStore.fetchListById(currentList.value.id)
   }
+  // Silent success - no toast needed since UI already updated
 }
 
 onMounted(async () => {
@@ -761,18 +694,32 @@ async function handleBulkRemoveTagsApply(tagIds: string[]) {
 </script>
 
 <style scoped>
-.is-dragging {
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
-  opacity: 0.9;
-  z-index: 1000;
-  cursor: grabbing !important;
+/* VueDraggable classes */
+.drag-ghost {
+  opacity: 0.4;
+  background: rgba(59, 130, 246, 0.1);
 }
 
-.cursor-move {
+.drag-chosen {
+  opacity: 0.8;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+}
+
+.drag-active {
+  opacity: 1;
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.5);
+  cursor: grabbing !important;
+  transform: rotate(2deg);
+  z-index: 1000;
+}
+
+/* Make entire card draggable */
+.drag-handle {
   cursor: grab;
 }
 
-.cursor-move:active {
+.drag-handle:active {
   cursor: grabbing;
 }
 </style>
