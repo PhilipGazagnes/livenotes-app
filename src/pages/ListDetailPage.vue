@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content class="bg-gray-900">
+    <ion-content ref="ionContentRef" class="bg-gray-900">
       <!-- Header -->
       <AppHeader
         :title="currentList?.name || I18N.PAGE_TITLES.LIST_DETAIL"
@@ -87,7 +87,7 @@
           :delay="150"
           :delay-on-touch-only="true"
           :force-fallback="true"
-          :scroll="true"
+          :scroll="scrollElement || true"
           :scroll-sensitivity="200"
           :scroll-speed="20"
           :bubble-scroll="true"
@@ -344,6 +344,10 @@ const editingTitle = ref<any>(null)
 const titleInput = ref('')
 const isSavingTitle = ref(false)
 
+// Ref to ion-content for scroll handling
+const ionContentRef = ref<InstanceType<typeof IonContent> | null>(null)
+const scrollElement = ref<HTMLElement | null>(null)
+
 // Draggable state - displayedItems is now directly manipulated by VueDraggable
 // No need for manual drag tracking
 
@@ -434,6 +438,16 @@ async function handleDragEnd() {
 }
 
 onMounted(async () => {
+  // Get the scrollable element from ion-content for drag auto-scroll
+  if (ionContentRef.value) {
+    try {
+      const content = await ionContentRef.value.$el.getScrollElement()
+      scrollElement.value = content
+    } catch (err) {
+      console.warn('Could not get scroll element:', err)
+    }
+  }
+
   if (listId.value) {
     const result = await listsStore.fetchListById(listId.value)
     if (!result) {
