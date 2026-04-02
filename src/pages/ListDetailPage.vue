@@ -88,7 +88,7 @@
           :delay-on-touch-only="true"
           :force-fallback="true"
           :scroll="true"
-          :scroll-sensitivity="100"
+          :scroll-sensitivity="200"
           :scroll-speed="20"
           :bubble-scroll="true"
           :force-auto-scroll-fallback="true"
