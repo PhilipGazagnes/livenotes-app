@@ -24,12 +24,21 @@
             <div
               v-if="isPageMenuOpen"
               @click="isPageMenuOpen = false"
-              class="fixed inset-0 z-40"
+              class="fixed inset-0 z-40 bg-black bg-opacity-20"
             />
             <div
               v-if="isPageMenuOpen"
               class="absolute right-0 top-12 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden"
             >
+              <button
+                @click="handleAddTitleFromMenu"
+                class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                </svg>
+                <span>Add Title Section</span>
+              </button>
               <button
                 @click="handleEnterSelectionMode"
                 class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
@@ -67,14 +76,59 @@
         <p class="text-gray-400 mb-6">{{ MESSAGES.EMPTY_LIST_NO_SONGS_SUBTITLE }}</p>
       </div>
 
-      <!-- Songs in List -->
-      <div v-else class="p-4 space-y-3 pb-32">
-        <ListSongCard
-          v-for="item in displayedItems"
-          :key="item.id"
-          :item="item"
-          @remove="handleRemove(item)"
-        />
+      <!-- Items in List -->
+      <div v-else class="p-4 pb-32 relative">
+        <template v-for="(item, index) in displayedItems" :key="item.id">
+          <div
+            :class="[
+              'mb-3 transition-all duration-200',
+              dragState.draggedIndex === index && 'opacity-30',
+              dragState.draggedIndex !== null && dragState.draggedIndex !== index && 'pointer-events-auto'
+            ]"
+            @dragover.prevent="handleDragOver($event, index)"
+            @drop="handleDrop($event, index)"
+          >
+            <!-- Drop Indicator (appears above item when dragging over) -->
+            <div
+              v-if="dragState.dropIndex === index && dragState.draggedIndex !== index"
+              class="h-1 mb-3 rounded-full"
+              style="background: linear-gradient(90deg, transparent, #3b82f6, transparent); box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);"
+            ></div>
+            
+            <!-- Draggable Item Wrapper -->
+            <div
+              draggable="true"
+              @dragstart="handleDragStart($event, index)"
+              @dragend="handleDragEnd"
+              :class="[
+                'cursor-move',
+                dragState.draggedIndex === index && 'is-dragging'
+              ]"
+            >
+              <!-- Title Card -->
+              <ListTitleCard
+                v-if="item.type === 'title'"
+                :item="item"
+                @edit="handleEditTitle(item)"
+                @delete="handleDeleteTitle(item)"
+              />
+              
+              <!-- Song Card -->
+              <ListSongCard
+                v-else
+                :item="item"
+                @remove="handleRemove(item)"
+              />
+            </div>
+          </div>
+        </template>
+        
+        <!-- Drop indicator at the end -->
+        <div
+          v-if="dragState.dropIndex === displayedItems.length && dragState.draggedIndex !== null"
+          class="h-1 rounded-full"
+          style="background: linear-gradient(90deg, transparent, #3b82f6, transparent); box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);"
+        ></div>
         
         <!-- Empty state for filtered results -->
         <div v-if="displayedItems.length === 0" class="text-center py-12 px-4">
@@ -211,6 +265,51 @@
         @close="showBulkRemoveTagsModal = false"
         @apply="handleBulkRemoveTagsApply"
       />
+
+      <!-- Title Modal -->
+      <div
+        v-if="showTitleModal"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-20"
+        @click.self="showTitleModal = false"
+      >
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700">
+          <h3 class="text-xl font-semibold text-white mb-4">
+            {{ editingTitle ? 'Edit Title' : 'Add Title Section' }}
+          </h3>
+          
+          <div class="mb-4">
+            <label for="titleInput" class="block text-sm font-medium text-gray-300 mb-2">
+              Title Text <span class="text-red-400">*</span>
+            </label>
+            <input
+              id="titleInput"
+              v-model="titleInput"
+              type="text"
+              maxlength="200"
+              class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="Enter section title"
+              @keyup.enter="handleSaveTitle"
+              autofocus
+            />
+          </div>
+
+          <div class="flex gap-3">
+            <button
+              @click="showTitleModal = false"
+              class="flex-1 px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              @click="handleSaveTitle"
+              :disabled="!titleInput.trim() || isSavingTitle"
+              class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {{ isSavingTitle ? 'Saving...' : (editingTitle ? 'Update' : 'Add') }}
+            </button>
+          </div>
+        </div>
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -231,6 +330,7 @@ import { I18N } from '@/constants/i18n'
 import AppHeader from '@/components/AppHeader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import ListSongCard from '@/components/ListSongCard.vue'
+import ListTitleCard from '@/components/ListTitleCard.vue'
 import FilterByTagsModal from '@/components/FilterByTagsModal.vue'
 import BulkAddToListsModal from '@/components/BulkAddToListsModal.vue'
 import BulkAssignTagsModal from '@/components/BulkAssignTagsModal.vue'
@@ -251,6 +351,16 @@ const showFilterModal = ref(false)
 const showBulkAddToListsModal = ref(false)
 const showBulkAssignTagsModal = ref(false)
 const showBulkRemoveTagsModal = ref(false)
+const showTitleModal = ref(false)
+const editingTitle = ref<any>(null)
+const titleInput = ref('')
+const isSavingTitle = ref(false)
+
+// Drag and drop state
+const dragState = ref({
+  draggedIndex: null as number | null,
+  dropIndex: null as number | null,
+})
 
 const listId = computed(() => route.params.id as string)
 const currentList = computed(() => listsStore.currentList)
@@ -260,9 +370,13 @@ const listItems = computed(() => currentList.value?.items || [])
 const displayedItems = computed(() => {
   let filtered = listItems.value
   
+  // Separate songs to apply filters (titles always show)
+  let songs = filtered.filter(item => item.type === 'song')
+  
   // Apply tag filter (AND logic - song must have ALL selected tags)
   if (selectedTagIds.value.length > 0) {
-    filtered = filtered.filter(item => {
+    songs = songs.filter(item => {
+      if (!item.song) return false
       const songTagIds = item.song.tags?.map(t => t.id) || []
       return selectedTagIds.value.every(tagId => songTagIds.includes(tagId))
     })
@@ -271,7 +385,8 @@ const displayedItems = computed(() => {
   // Apply search query
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(item => {
+    songs = songs.filter(item => {
+      if (!item.song) return false
       const song = item.song
       return song.title.toLowerCase().includes(query) ||
              song.artist?.toLowerCase().includes(query) ||
@@ -280,7 +395,15 @@ const displayedItems = computed(() => {
     })
   }
   
-  return filtered
+  // Merge titles and filtered songs, maintaining original order
+  const result: typeof filtered = []
+  for (const item of filtered) {
+    if (item.type === 'title' || songs.includes(item)) {
+      result.push(item)
+    }
+  }
+  
+  return result
 })
 
 function openFilterModal() {
@@ -289,6 +412,81 @@ function openFilterModal() {
 
 function handleApplyFilter(tagIds: string[]) {
   selectedTagIds.value = tagIds
+}
+
+// Drag and drop handlers
+function handleDragStart(event: DragEvent, index: number) {
+  if (uiStore.selectionMode) return
+  
+  dragState.value.draggedIndex = index
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/html', '')
+  }
+}
+
+function handleDragOver(event: DragEvent, index: number) {
+  if (dragState.value.draggedIndex === null) return
+  event.preventDefault()
+  
+  // Determine drop position based on mouse Y position relative to element
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const midpoint = rect.top + rect.height / 2
+  
+  // If dragging over the top half, insert before; bottom half, insert after
+  if (event.clientY < midpoint) {
+    dragState.value.dropIndex = index
+  } else {
+    dragState.value.dropIndex = index + 1
+  }
+}
+
+function handleDragEnd() {
+  dragState.value.draggedIndex = null
+  dragState.value.dropIndex = null
+}
+
+async function handleDrop(event: DragEvent, index: number) {
+  event.preventDefault()
+  
+  const draggedIdx = dragState.value.draggedIndex
+  if (draggedIdx === null || !currentList.value) return
+  
+  // Calculate actual drop index
+  const target = event.currentTarget as HTMLElement
+  const rect = target.getBoundingClientRect()
+  const midpoint = rect.top + rect.height / 2
+  let dropIdx = event.clientY < midpoint ? index : index + 1
+  
+  // Don't reorder if dropped in same position
+  if (draggedIdx === dropIdx || draggedIdx + 1 === dropIdx) {
+    handleDragEnd()
+    return
+  }
+  
+  // Adjust drop index if dragging downwards
+  if (draggedIdx < dropIdx) {
+    dropIdx--
+  }
+  
+  // Reorder items in the array
+  const items = [...displayedItems.value]
+  const [draggedItem] = items.splice(draggedIdx, 1)
+  items.splice(dropIdx, 0, draggedItem)
+  
+  // Update positions in database
+  const itemIds = items.map(item => item.id)
+  const result = await listsStore.reorderListItems(currentList.value.id, itemIds)
+  
+  if (result.success) {
+    uiStore.showToast('Order updated', 'success')
+    await handleRefresh()
+  } else {
+    uiStore.showToast(result.error || 'Failed to update order', 'error')
+  }
+  
+  handleDragEnd()
 }
 
 onMounted(async () => {
@@ -321,6 +519,93 @@ async function handleRemove(item: any) {
   }
 }
 
+function handleAddTitle() {
+  editingTitle.value = null
+  titleInput.value = ''
+  showTitleModal.value = true
+}
+
+function handleAddTitleFromMenu() {
+  isPageMenuOpen.value = false
+  handleAddTitle()
+}
+
+function handleEditTitle(item: any) {
+  editingTitle.value = item
+  titleInput.value = item.title || ''
+  showTitleModal.value = true
+}
+
+async function handleSaveTitle() {
+  if (!currentList.value || !titleInput.value.trim()) return
+  
+  isSavingTitle.value = true
+  
+  try {
+    if (editingTitle.value) {
+      // Update existing title
+      const { error } = await supabase
+        .from('list_items')
+        .update({ title: titleInput.value.trim() })
+        .eq('id', editingTitle.value.id)
+      
+      if (error) throw error
+      uiStore.showToast('Title updated', 'success')
+    } else {
+      // Create new title at the end
+      const maxPosition = listItems.value.length > 0 
+        ? Math.max(...listItems.value.map(item => item.position))
+        : -1
+      
+      const { error } = await supabase
+        .from('list_items')
+        .insert({
+          list_id: currentList.value.id,
+          type: 'title',
+          title: titleInput.value.trim(),
+          position: maxPosition + 1,
+        })
+      
+      if (error) throw error
+      uiStore.showToast('Title added', 'success')
+    }
+    
+    showTitleModal.value = false
+    await handleRefresh()
+  } catch (err) {
+    console.error('Failed to save title:', err)
+    uiStore.showToast('Failed to save title', 'error')
+  } finally {
+    isSavingTitle.value = false
+  }
+}
+
+async function handleDeleteTitle(item: any) {
+  const confirmed = await uiStore.showConfirm(
+    'Delete Title',
+    'Are you sure you want to delete this title section?',
+    'Delete',
+    'Cancel'
+  )
+  
+  if (!confirmed) return
+  
+  try {
+    const { error } = await supabase
+      .from('list_items')
+      .delete()
+      .eq('id', item.id)
+    
+    if (error) throw error
+    
+    uiStore.showToast('Title deleted', 'success')
+    await handleRefresh()
+  } catch (err) {
+    console.error('Failed to delete title:', err)
+    uiStore.showToast('Failed to delete title', 'error')
+  }
+}
+
 async function handleRefresh() {
   // Refresh list to show updated tags/lists
   if (listId.value) {
@@ -334,7 +619,9 @@ function handleEnterSelectionMode() {
 }
 
 function handleSelectAll() {
-  const allSongIds = displayedItems.value.map(item => item.song.id)
+  const allSongIds = displayedItems.value
+    .filter(item => item.type === 'song' && item.song)
+    .map(item => item.song!.id)
   uiStore.selectAll(allSongIds)
 }
 
@@ -466,3 +753,20 @@ async function handleBulkRemoveTagsApply(tagIds: string[]) {
   }
 }
 </script>
+
+<style scoped>
+.is-dragging {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  opacity: 0.9;
+  z-index: 1000;
+  cursor: grabbing !important;
+}
+
+.cursor-move {
+  cursor: grab;
+}
+
+.cursor-move:active {
+  cursor: grabbing;
+}
+</style>

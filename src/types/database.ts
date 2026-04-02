@@ -56,8 +56,10 @@ export interface List {
 export interface ListItem {
   id: string
   list_id: string
-  song_id: string
+  song_id: string | null
   position: number
+  type: 'song' | 'title'
+  title: string | null
   added_at: string
 }
 
