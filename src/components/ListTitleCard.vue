@@ -75,7 +75,7 @@ import { ref } from 'vue'
 import type { ListItem } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
 
-const props = defineProps<{
+defineProps<{
   item: ListItem
 }>()
 
