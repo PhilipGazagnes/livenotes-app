@@ -60,6 +60,29 @@
                 </button>
               </div>
             </div>
+
+            <!-- Show Artists Toggle -->
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h3 class="text-white font-medium mb-1">Show Artists</h3>
+                  <p class="text-sm text-gray-400">Display artist names in list detail view</p>
+                </div>
+                <button
+                  @click="settingsStore.toggleShowArtistsInLists()"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                  :class="settingsStore.showArtistsInLists ? 'bg-blue-600' : 'bg-gray-600'"
+                  role="switch"
+                  :aria-checked="settingsStore.showArtistsInLists"
+                  aria-label="Toggle show artists in lists"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="settingsStore.showArtistsInLists ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 

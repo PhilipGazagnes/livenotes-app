@@ -278,45 +278,31 @@ export const useListsStore = defineStore('lists', () => {
     }
   }
 
-  async function reorderListItems(listId: string, itemIds: string[]) {
-    isLoading.value = true
+  async function reorderListItems(_listId: string, itemIds: string[]) {
+    // No loading state - this is a background operation with optimistic UI
     error.value = null
     
     try {
-      // Strategy: First move all items to temporary negative positions to avoid conflicts
-      // Then move them to their final positions
+      // Build batch update with new positions
+      const itemPositions = itemIds.map((id, index) => ({
+        id,
+        position: index
+      }))
       
-      // Step 1: Move all to negative positions (temporary)
-      for (let i = 0; i < itemIds.length; i++) {
-        const { error: tempError } = await supabase
-          .from('list_items')
-          .update({ position: -(i + 1) })
-          .eq('id', itemIds[i])
-        
-        if (tempError) throw tempError
-      }
+      // Call PostgreSQL function to batch update positions (bypasses RLS)
+      const { error: rpcError } = await supabase.rpc('update_list_item_positions', {
+        item_positions: itemPositions
+      })
       
-      // Step 2: Move to final positions
-      for (let i = 0; i < itemIds.length; i++) {
-        const { error: finalError } = await supabase
-          .from('list_items')
-          .update({ position: i })
-          .eq('id', itemIds[i])
-        
-        if (finalError) throw finalError
-      }
+      if (rpcError) throw rpcError
       
-      // Refresh current list
-      if (currentList.value?.id === listId) {
-        await fetchListById(listId)
-      }
+      // Don't refresh - UI already updated optimistically
+      // Only refresh on error (handled in component)
       
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to reorder list items'
       return { success: false, error: error.value }
-    } finally {
-      isLoading.value = false
     }
   }
 

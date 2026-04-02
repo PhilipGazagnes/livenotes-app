@@ -470,23 +470,29 @@ async function handleDrop(event: DragEvent, index: number) {
     dropIdx--
   }
   
-  // Reorder items in the array
-  const items = [...displayedItems.value]
+  // OPTIMISTIC UPDATE: Reorder items in UI immediately
+  const items = [...listItems.value]
   const [draggedItem] = items.splice(draggedIdx, 1)
   items.splice(dropIdx, 0, draggedItem)
   
-  // Update positions in database
+  // Update local state immediately for instant UI response
+  if (currentList.value) {
+    currentList.value.items = items
+  }
+  
+  handleDragEnd()
+  
+  // BACKGROUND SYNC: Update positions in database
   const itemIds = items.map(item => item.id)
   const result = await listsStore.reorderListItems(currentList.value.id, itemIds)
   
   if (result.success) {
-    uiStore.showToast('Order updated', 'success')
-    await handleRefresh()
+    // Silent success - no toast needed since UI already updated
   } else {
+    // Rollback on error
     uiStore.showToast(result.error || 'Failed to update order', 'error')
+    await handleRefresh()
   }
-  
-  handleDragEnd()
 }
 
 onMounted(async () => {
