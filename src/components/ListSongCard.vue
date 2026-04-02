@@ -41,7 +41,7 @@
         </p>
 
         <!-- Tags -->
-        <div v-if="song.tags && song.tags.length > 0" class="flex flex-wrap gap-2">
+        <div v-if="settingsStore.showTagsInLists && song.tags && song.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
           <span
             v-for="tag in song.tags"
             :key="tag.id"
@@ -53,23 +53,24 @@
             {{ tag.name }}
           </span>
         </div>
+
+        <!-- Lists -->
+        <div v-if="settingsStore.showListsInLists && song.lists && song.lists.length > 0" class="flex flex-wrap gap-2">
+          <span
+            v-for="list in song.lists"
+            :key="list.id"
+            class="inline-flex items-center px-2 py-1 bg-green-900/30 border border-green-700 rounded text-green-400 text-xs"
+          >
+            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+            </svg>
+            {{ list.name }}
+          </span>
+        </div>
       </div>
 
-      <!-- Up/Down Arrows & Dropdown -->
-      <div v-if="!uiStore.selectionMode" class="flex flex-col items-center gap-2 flex-shrink-0">
-        <!-- Up Arrow -->
-        <button
-          @click="$emit('moveUp')"
-          :disabled="!canMoveUp"
-          class="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          :aria-label="I18N.ARIA.MOVE_UP"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
-          </svg>
-        </button>
-
-        <!-- Dropdown Menu Button -->
+      <!-- Dropdown Menu Button -->
+      <div v-if="!uiStore.selectionMode" class="flex-shrink-0">
         <button
           @click.stop.prevent="toggleDropdown"
           class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
@@ -77,18 +78,6 @@
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-          </svg>
-        </button>
-
-        <!-- Down Arrow -->
-        <button
-          @click="$emit('moveDown')"
-          :disabled="!canMoveDown"
-          class="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          :aria-label="I18N.ARIA.MOVE_DOWN"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
           </svg>
         </button>
       </div>
@@ -109,21 +98,19 @@ import { ref, computed } from 'vue'
 import type { ListItem, SongWithTags } from '@/types/database'
 import ListSongDropdownMenu from './ListSongDropdownMenu.vue'
 import { useUiStore } from '@/stores/ui'
+import { useSettingsStore } from '@/stores/settings'
 import { I18N } from '@/constants/i18n'
 
 const props = defineProps<{
   item: ListItem & { song: SongWithTags }
-  canMoveUp: boolean
-  canMoveDown: boolean
 }>()
 
 const emit = defineEmits<{
-  moveUp: []
-  moveDown: []
   remove: []
 }>()
 
 const uiStore = useUiStore()
+const settingsStore = useSettingsStore()
 const isDropdownOpen = ref(false)
 
 const song = computed(() => props.item.song)

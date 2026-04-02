@@ -3,7 +3,7 @@
     <!-- Backdrop -->
     <div
       v-if="isOpen && !showManageTagsModal && !showManageListsModal"
-      class="fixed inset-0 z-40"
+      class="fixed inset-0 z-40 bg-black bg-opacity-20"
       @click="handleClose"
     ></div>
 

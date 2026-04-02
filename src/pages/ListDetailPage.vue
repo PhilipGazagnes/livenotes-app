@@ -70,13 +70,9 @@
       <!-- Songs in List -->
       <div v-else class="p-4 space-y-3 pb-32">
         <ListSongCard
-          v-for="(item, index) in displayedItems"
+          v-for="item in displayedItems"
           :key="item.id"
           :item="item"
-          :canMoveUp="index > 0"
-          :canMoveDown="index < displayedItems.length - 1"
-          @moveUp="handleMoveUp(index)"
-          @moveDown="handleMoveDown(index)"
           @remove="handleRemove(item)"
         />
         
@@ -310,50 +306,6 @@ onMounted(async () => {
     await tagsStore.fetchTags(personalProjectId)
   }
 })
-
-async function handleMoveUp(index: number) {
-  if (index === 0 || !currentList.value) return
-  
-  const items = [...listItems.value]
-  const item = items[index]
-  const prevItem = items[index - 1]
-  
-  // Swap positions
-  items[index] = prevItem
-  items[index - 1] = item
-  
-  // Update positions in database
-  const itemIds = items.map(i => i.id)
-  const result = await listsStore.reorderListItems(currentList.value.id, itemIds)
-  
-  if (result.success) {
-    uiStore.showToast(MESSAGES.SUCCESS.ORDER_UPDATED, 'success')
-  } else {
-    uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-  }
-}
-
-async function handleMoveDown(index: number) {
-  if (index >= listItems.value.length - 1 || !currentList.value) return
-  
-  const items = [...listItems.value]
-  const item = items[index]
-  const nextItem = items[index + 1]
-  
-  // Swap positions
-  items[index] = nextItem
-  items[index + 1] = item
-  
-  // Update positions in database
-  const itemIds = items.map(i => i.id)
-  const result = await listsStore.reorderListItems(currentList.value.id, itemIds)
-  
-  if (result.success) {
-    uiStore.showToast(MESSAGES.SUCCESS.ORDER_UPDATED, 'success')
-  } else {
-    uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-  }
-}
 
 async function handleRemove(item: any) {
   if (!currentList.value) return

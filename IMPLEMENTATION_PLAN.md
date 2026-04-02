@@ -1,1186 +1,371 @@
-# Livenotes V1 - Implementation Plan
+# Livenotes V1 - Polish & Enhancements Plan
 
-**Status**: ~95% Complete - Artists Implementation Remaining  
-**Last Updated**: March 31, 2026
+**Status**: Phase 1 - UX Polish & New Features  
+**Created**: April 2, 2026
 
-This document provides a step-by-step implementation plan for Livenotes V1.
-
-## ✅ Completed Phases
-
-- **Phase 0**: Project Setup ✓
-- **Phase 1**: Authentication & Core Infrastructure ✓
-- **Phase 2**: Song Management (CRUD) ✓
-- **Phase 3**: Tags System ✓
-- **Phase 4**: Lists System ✓
-- **Phase 5**: Search & Filtering ✓
-- **Phase 6**: Bulk Actions ✓
-- **Phase 7**: Polish & UX ✓
-
-## 🚧 Current Work
-
-- **Phase 8**: Artists Implementation (NEW - in progress)
-
-## 📚 Reference Documentation
-
-All specifications are in `../livenotes-documentation/app/`:
-- [Roadmap](../livenotes-documentation/app/roadmap.md) - Product vision and version strategy
-- [V1 MVP Spec](../livenotes-documentation/app/v1-mvp-spec.md) - Overview and scope
-- [V1 UI/UX Spec](../livenotes-documentation/app/v1-ui-spec.md) - Complete UI specifications
-- [V1 Technical Spec](../livenotes-documentation/app/v1-technical-spec.md) - Complete technical specifications
-- [Data Model](../livenotes-documentation/app/data-model.md) - Database schema
-- [Features](../livenotes-documentation/app/features.md) - Feature specifications
+This plan focuses on improving the app based on real usage feedback.
 
 ---
 
-## Phase 0: Project Setup
+## Phase 1: Lists Enhancements
 
-### 0.1 Initialize Frontend Project
+### 1.1 Database Migration - List Titles
 
-- [ ] Create Vite + Vue 3 + TypeScript project
-  ```bash
-  npm create vite@latest . -- --template vue-ts
+**Goal:** Support both song items and title separators in lists.
+
+- [ ] Create database migration
+  ```sql
+  -- Add type column to list_items
+  ALTER TABLE list_items 
+  ADD COLUMN type TEXT NOT NULL DEFAULT 'song' 
+  CHECK (type IN ('song', 'title'));
+  
+  -- Add title column (nullable for song items)
+  ALTER TABLE list_items 
+  ADD COLUMN title TEXT;
+  
+  -- Make song_id nullable (titles don't have a song)
+  ALTER TABLE list_items 
+  ALTER COLUMN song_id DROP NOT NULL;
+  
+  -- Add constraint: if type='song' then song_id required, if type='title' then title required
+  ALTER TABLE list_items 
+  ADD CONSTRAINT list_item_type_check 
+  CHECK (
+    (type = 'song' AND song_id IS NOT NULL AND title IS NULL) OR
+    (type = 'title' AND song_id IS NULL AND title IS NOT NULL)
+  );
   ```
 
-- [ ] Install dependencies
-  ```bash
-  npm install
-  npm install @ionic/vue @ionic/vue-router
-  npm install vue-router@4 pinia
-  npm install @supabase/supabase-js
-  npm install @vueuse/core
+- [ ] Update TypeScript types in `src/types/database.ts`
+  ```typescript
+  interface ListItem {
+    id: string
+    list_id: string
+    song_id: string | null
+    position: number
+    type: 'song' | 'title'
+    title: string | null
+    created_at: string
+  }
+  
+  interface ListItemWithSong extends ListItem {
+    song?: SongWithArtistsAndTags
+  }
   ```
 
-- [ ] Install dev dependencies
-  ```bash
-  npm install -D @types/node
-  npm install -D tailwindcss postcss autoprefixer
-  npx tailwindcss init -p
+**Reference:** Keep it simple - titles are just visual separators, no hierarchy.
+
+---
+
+### 1.2 Enhanced Drag & Drop UX
+
+**Goal:** Better visual feedback during drag operations (both mobile and desktop).
+
+- [ ] Install drag & drop library (if not already using one)
+  - Consider `@vueuse/gesture` or native HTML5 drag & drop
+  - Support both touch (long-press) and mouse
+
+- [ ] Update `ListDetailPage.vue` drag styles:
+  - **Dragging item:** Add outer glow + slight tilt (5-10deg rotation)
+  - **Original position:** Keep space with gray background placeholder
+  - **Insertion indicator:** Glowing horizontal line (absolute position, green/blue accent)
+  - **On drop:** Animate items to new positions (simple 200ms transition)
+
+- [ ] CSS classes to create:
+  ```css
+  .is-dragging {
+    /* Outer glow + tilt */
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    transform: rotate(3deg) scale(1.05);
+    opacity: 0.9;
+    z-index: 1000;
+  }
+  
+  .drag-placeholder {
+    /* Gray background for original space */
+    background: rgba(107, 114, 128, 0.2);
+    border: 2px dashed rgba(107, 114, 128, 0.4);
+  }
+  
+  .drop-indicator {
+    /* Glowing insertion line */
+    position: absolute;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
   ```
 
-- [ ] Configure Tailwind CSS for dark mode only
-  - Update `tailwind.config.js`
-  - Import Tailwind in main CSS
-  - Configure Ionic with Tailwind
-
-- [ ] Set up project structure
-  ```
-  src/
-    assets/
-    components/
-    composables/
-    constants/
-      validation.ts
-      messages.ts
-      routes.ts
-    pages/
-    router/
-    stores/
-    types/
-    utils/
-    App.vue
-    main.ts
-  ```
-
-- [ ] Configure TypeScript paths in `tsconfig.json`
-
-- [ ] Set up environment variables structure
-  - Copy `.env.example` to `.env.local`
-  - Add to `.gitignore`
-
-**Reference:** [V1 Technical Spec - Tech Stack](../livenotes-documentation/app/v1-technical-spec.md#technology-stack)
-
----
-
-### 0.2 Set Up Supabase Backend
-
-- [ ] Create Supabase project at https://supabase.com
-  - Choose region closest to users
-  - Note project URL and anon key
-
-- [ ] Initialize Supabase CLI locally
-  ```bash
-  npm install -D supabase
-  npx supabase init
-  ```
-
-- [ ] Create migration files
-  ```bash
-  npx supabase migration new initial_schema
-  npx supabase migration new add_indexes
-  npx supabase migration new add_rls_policies
-  ```
-
-- [ ] Copy SQL from technical spec to migration files:
-  - `supabase/migrations/XXXXXX_initial_schema.sql`
-    - Tables: projects, songs, tags, song_tags, lists, list_items
-  - `supabase/migrations/XXXXXX_add_indexes.sql`
-    - All performance indexes
-  - `supabase/migrations/XXXXXX_add_rls_policies.sql`
-    - Row Level Security policies
-    - Triggers for updated_at
-
-- [ ] Test migrations locally
-  ```bash
-  npx supabase start
-  npx supabase db reset
-  ```
-
-- [ ] Push to Supabase cloud
-  ```bash
-  npx supabase db push
-  ```
-
-- [ ] Configure Supabase Auth
-  - Enable email provider with email confirmation
-  - Configure OAuth providers (Google, Facebook)
-  - Set email templates
-  - Configure redirect URLs
-
-- [ ] Create Edge Function or Database Webhook for auto-creating personal project on signup
-  - Trigger on `auth.users` insert
-  - Create personal project for new user
-
-**Reference:** 
-- [V1 Technical Spec - Database Schema](../livenotes-documentation/app/v1-technical-spec.md#complete-schema-v1)
-- [V1 Technical Spec - Authentication](../livenotes-documentation/app/v1-technical-spec.md#authentication)
-
----
-
-### 0.3 Configure Environment
-
-- [ ] Add Supabase credentials to `.env.local`
-  ```
-  VITE_SUPABASE_URL=https://xxxxx.supabase.co
-  VITE_SUPABASE_ANON_KEY=eyJhbG...
-  ```
-
-- [ ] Create Supabase client singleton
-  - `src/utils/supabase.ts`
-  - Export initialized client
-
-- [ ] Test connection
-  - Create simple test page
-  - Verify auth and data access
-
-**Reference:** [V1 Technical Spec - Environment Variables](../livenotes-documentation/app/v1-technical-spec.md#environment-variables)
-
----
-
-## Phase 1: Authentication & Core Infrastructure
-
-**Goal:** Users can sign up, log in, and have a personal project created.
-
-### 1.1 Create Constants Files
-
-- [ ] `src/constants/validation.ts`
-  - Copy validation constants from technical spec
-  - Export VALIDATION object
-
-- [ ] `src/constants/messages.ts`
-  - Copy all messages from technical spec
-  - Export MESSAGES object
-
-- [ ] `src/constants/routes.ts`
-  - Define all route paths
-  - Export ROUTES object
-
-**Reference:** [V1 Technical Spec - Constants & Messages](../livenotes-documentation/app/v1-technical-spec.md#constants--messages)
-
----
-
-### 1.2 Set Up Router
-
-- [ ] Create `src/router/index.ts`
-  - Define all routes from ROUTES constants
-  - Add auth guards (redirect to login if not authenticated)
-  - Add meta for public routes (login, signup)
-
-- [ ] Create route components (empty for now):
-  - LoginPage.vue
-  - SignupPage.vue
-  - AllSongsPage.vue
-  - SongNewPage.vue
-  - SongEditPage.vue
-  - ListsPage.vue
-  - ListDetailPage.vue
-  - TagsPage.vue
-
-**Reference:** [V1 UI Spec - Navigation Structure](../livenotes-documentation/app/v1-ui-spec.md#routes)
-
----
-
-### 1.3 Create Pinia Stores
-
-- [ ] `src/stores/auth.ts`
-  - Current user state
-  - Login/logout/signup actions
-  - Session management
-
-- [ ] `src/stores/songs.ts`
-  - Songs array
-  - CRUD operations
-  - Search/filter logic
-
-- [ ] `src/stores/tags.ts`
-  - Tags array
-  - CRUD operations
-
-- [ ] `src/stores/lists.ts`
-  - Lists array
-  - List items with positions
-  - CRUD operations
-  - Reordering logic
-
-- [ ] `src/stores/ui.ts`
-  - Loading states
-  - Toast notifications
-  - Modal states
-
-**Reference:** [V1 Technical Spec - Data Operations](../livenotes-documentation/app/v1-technical-spec.md#data-operations)
-
----
-
-### 1.4 Build Authentication Pages
-
-- [ ] Create LoginPage.vue
-  - Email/password form
-  - OAuth buttons (Google, Facebook)
-  - Link to signup
-  - Form validation
-  - Error handling
-
-- [ ] Create SignupPage.vue
-  - Email/password form
-  - OAuth buttons
-  - Link to login
-  - Form validation
-  - Password requirements
-  - Email verification notice
-
-- [ ] Test authentication flow
-  - Sign up creates user
-  - Personal project auto-created (verify database)
-  - Email verification works
-  - Login redirects to AllSongsPage
-  - Logout works
-
-**Reference:** [V1 Technical Spec - Authentication](../livenotes-documentation/app/v1-technical-spec.md#authentication)
-
----
-
-### 1.5 Create Base Components
-
-- [ ] `AppHeader.vue`
-  - Sticky header with title
-  - Hamburger menu button
-  - Responsive
-
-- [ ] `HamburgerMenu.vue`
-  - Modal menu
-  - Links: Logout, Tags, Lists
-  - Close button
-
-- [ ] `ToastNotification.vue`
-  - Success/error/info styles
-  - Auto-dismiss (3s)
-  - Queue multiple toasts
-
-- [ ] `ConfirmDialog.vue`
-  - Reusable confirmation modal
-  - Customizable message and buttons
-  - Promise-based API
-
-- [ ] `LoadingSpinner.vue`
-  - Centered spinner
-  - Full-screen overlay option
-
-**Reference:** [V1 UI Spec - Toast Notifications](../livenotes-documentation/app/v1-ui-spec.md#toast-notifications)
-
----
-
-## Phase 2: Song Management (CRUD)
-
-**Goal:** Users can create, read, update, and delete songs with metadata.
-
-### 2.1 Create Song List Page
-
-- [ ] Build AllSongsPage.vue
-  - Sticky header
-  - Sticky search bar at bottom
-  - Song card list
-  - Loading state
-  - Empty state
-
-- [ ] Create SongCard.vue component
-  - Display: title, artist, tags, lists
-  - Dropdown menu button
-  - No click action (reserved for V2)
-  - Responsive styling
-
-- [ ] Create SongDropdownMenu.vue
-  - Options: Edit, Duplicate, Manage Tags, Manage Lists, Delete
-  - Position correctly relative to trigger
-  - Close on outside click
-
-- [ ] Implement song fetching
-  - Load all songs on page mount
-  - Store in Pinia
-  - Display in list
-  - Alphabetical sort by title
-
-**Reference:** [V1 UI Spec - All Songs Page](../livenotes-documentation/app/v1-ui-spec.md#1-all-songs-page-main-)
-
----
-
-### 2.2 Create Song Form
-
-- [ ] Build SongNewPage.vue
-  - Form fields: Title*, Artist, Notes, POC ID
-  - Required field indicators
-  - Character count for notes
-  - Validation on blur and submit
-  - Cancel button with unsaved changes warning
-  - Create button
-
-- [ ] Build SongEditPage.vue
-  - Same as new, but pre-populated
-  - Load song data by ID
-  - Update instead of create
-  - Save button
-
-- [ ] Create validation utilities
-  - `src/utils/validation.ts`
-  - validateSongTitle()
-  - validatePocId()
-  - normalizeText()
-
-- [ ] Test CRUD operations
-  - Create song → appears in list
-  - Edit song → changes reflected
-  - Delete song → confirmation → removed from list
-  - Form validation errors display correctly
-
-**Reference:** 
-- [V1 UI Spec - Create/Edit Song](../livenotes-documentation/app/v1-ui-spec.md#2-create-song-page-songnew)
-- [V1 Technical Spec - Validation](../livenotes-documentation/app/v1-technical-spec.md#validation-rules)
-
----
-
-### 2.3 Implement Duplicate Song
-
-- [ ] Add duplicate action to dropdown menu
-- [ ] Create duplicateSong() in store
-  - Copy metadata only (not tags/lists)
-  - Append " (copy)" to title
-  - Create new song
-  - Show success toast
-  - Refresh list
-
-**Reference:** [V1 Technical Spec - Duplicate Song](../livenotes-documentation/app/v1-technical-spec.md#duplicate-song-behavior)
-
----
-
-## Phase 3: Tags System
-
-**Goal:** Users can create tags and assign them to songs.
-
-### 3.1 Build Tags Management Page
-
-- [ ] Create TagsPage.vue
-  - List of all tags
-  - Tag cards with name and song count
-  - Dropdown menu per tag
-  - "+ New Tag" button
-  - Alphabetical sort
-  - Empty state
-
-- [ ] Create TagCard.vue
-  - Display tag name and count
-  - Dropdown menu
-
-- [ ] Implement tag CRUD
-  - Create tag
-  - Rename tag (inline edit or modal)
-  - Delete tag (with confirmation)
-  - Update song counts reactively
-
-**Reference:** [V1 UI Spec - Tags Page](../livenotes-documentation/app/v1-ui-spec.md#8-tags-page-tags)
-
----
-
-### 3.2 Build Manage Tags Modal
-
-- [ ] Create ManageTagsModal.vue
-  - Shows all tags with checkboxes
-  - Checked = song has tag
-  - "Create new tag" input at top
-  - Add new tag inline
-  - Save and Cancel buttons
-  - Duplicate detection
-
-- [ ] Integrate modal in SongDropdownMenu
-  - Open on "Manage Tags" click
-  - Pass song ID
-  - Update song tags on save
-  - Show success toast
-
-**Reference:** [V1 UI Spec - Manage Tags Modal](../livenotes-documentation/app/v1-ui-spec.md#4-manage-tags-modal-per-song)
-
----
-
-### 3.3 Display Tags on Song Cards
-
-- [ ] Update SongCard.vue
-  - Show tags as chips/badges
-  - Icon: 🏷️
-  - Comma-separated list
-  - Hide row if no tags
-
-- [ ] Test tag workflow
-  - Create tag from Tags page
-  - Assign tag to song via modal
-  - Tag appears on song card
-  - Rename tag → all songs reflect change
-  - Delete tag → removed from all songs
-
-**Reference:** [V1 UI Spec - Song Card Design](../livenotes-documentation/app/v1-ui-spec.md#song-card-design)
-
----
-
-## Phase 4: Lists System
-
-**Goal:** Users can create lists, add songs, and reorder.
-
-### 4.1 Build Lists Management Page
-
-- [ ] Create ListsPage.vue
-  - List of all lists
-  - List cards with name and song count
-  - Click card → navigate to detail
-  - Dropdown menu per list
-  - "+ New List" button
-  - Alphabetical sort
-  - Empty state
-
-- [ ] Create ListCard.vue
-  - Display list name and count
-  - Dropdown menu
-  - Click handler for navigation
-
-- [ ] Implement list CRUD
-  - Create list
-  - Rename list
-  - Delete list (with confirmation, songs remain)
-
-**Reference:** [V1 UI Spec - Lists Page](../livenotes-documentation/app/v1-ui-spec.md#6-lists-page-lists)
-
----
-
-### 4.2 Build Manage Lists Modal
-
-- [ ] Create ManageListsModal.vue
-  - Shows all lists with checkboxes
-  - Checked = song is in list
-  - "Create new list" input at top
-  - Add new list inline
-  - Save and Cancel buttons
-  - Duplicate detection
-
-- [ ] Integrate modal in SongDropdownMenu
-  - Open on "Manage Lists" click
-  - Pass song ID
-  - Update list memberships on save
-  - New songs added at bottom of lists
-  - Show success toast
-
-**Reference:** [V1 UI Spec - Manage Lists Modal](../livenotes-documentation/app/v1-ui-spec.md#5-manage-lists-modal-per-song)
-
----
-
-### 4.3 Display Lists on Song Cards
-
-- [ ] Update SongCard.vue
-  - Show lists as chips/badges
-  - Icon: 📋
-  - Comma-separated list
-  - Hide row if no lists
-
-**Reference:** [V1 UI Spec - Song Card Design](../livenotes-documentation/app/v1-ui-spec.md#song-card-design)
-
----
-
-### 4.4 Build List Detail Page
-
-- [ ] Create ListDetailPage.vue
-  - Back button to Lists page
-  - Header with list name
-  - Song cards with drag handles and arrows
-  - Search/filter bar (same as All Songs)
-  - Dropdown menu per song (with "Remove from List")
-  - Empty state
-
-- [ ] Create reorderable song card variant
-  - Drag handle (☰) on left
-  - Up/down arrows (↑↓) on right
-  - No lists indicator (redundant)
-  - Tags still shown
-
-- [ ] Implement drag-and-drop
-  - Use @vueuse/core or similar
+- [ ] Update drag logic:
+  - Calculate insertion position based on mouse/touch Y coordinate
+  - Show indicator line between target items
   - Update positions on drop
   - Save to database
-  - Show "Order updated" toast
 
-- [ ] Implement arrow reordering
-  - Move up/down one position
-  - Swap positions in database
-  - Disable at top/bottom
-  - Show toast on update
-
-- [ ] Add "Remove from List" action
-  - In dropdown menu
-  - Remove song from this list only
-  - No confirmation needed
-  - Show toast
-
-**Reference:** 
-- [V1 UI Spec - List Detail Page](../livenotes-documentation/app/v1-ui-spec.md#7-list-detail-page-listsid)
-- [V1 Technical Spec - List Position Management](../livenotes-documentation/app/v1-technical-spec.md#list-position-management)
+**Reference:** Keep animations simple, focus on clarity over fanciness.
 
 ---
 
-## Phase 5: Search & Filtering
+### 1.3 Remove Up/Down Arrows
 
-**Goal:** Users can search songs by title and filter by tags.
+**Goal:** Simplify UI now that drag & drop is enhanced.
 
-### 5.1 Implement Search
+- [ ] Remove arrow buttons from `ListSongCard.vue`
+- [ ] Remove arrow event handlers from `ListDetailPage.vue`
+- [ ] Remove moveUp/moveDown functions from lists store
+- [ ] Update UI to show only drag handle (☰)
 
-- [ ] Create SearchBar.vue component
-  - Input with search icon
-  - Clear button (X)
+**Reference:** Drag & drop is now the primary reordering method.
+
+---
+
+### 1.4 Title Cards Implementation
+
+**Goal:** Allow users to add section titles within lists.
+
+- [ ] Create `ListTitleCard.vue` component
+  - Display: Large/bold title text (visually stronger than song cards)
+  - Drag handle (☰) on left
+  - Dropdown menu (⋮) on right
+  - Actions: Rename, Delete
+  - Style: Different background, larger text, no song metadata
+
+- [ ] Add "Add Title" button to `ListDetailPage.vue`
+  - Position: Near top, alongside other controls
+  - Opens inline input or simple modal
+  - Creates title item in list
+
+- [ ] Update `ListDetailPage.vue` rendering
+  - Loop through list items
+  - Render `ListTitleCard` for type='title'
+  - Render `ListSongCard` for type='song'
+  - Both share same drag & drop logic
+
+- [ ] Implement title CRUD in lists store
+  - `addTitleToList(listId, titleText)` - adds at bottom or specified position
+  - `updateListItemTitle(itemId, newTitle)` - rename
+  - `removeItemFromList(itemId)` - works for both songs and titles
+
+- [ ] Title card dropdown menu
+  - Rename: Inline edit or modal input
+  - Delete: Remove from list (no confirmation needed, just visual separator)
+
+**Reference:** Titles are purely visual separators, no hierarchical behavior.
+
+---
+
+### 1.5 Settings Page & Show/Hide Tags/Lists Toggle
+
+**Goal:** Global setting to show/hide tags and lists on song cards in list pages.
+
+#### A. Create Settings Page
+
+- [ ] Create `src/pages/SettingsPage.vue`
+  - Header: "Settings"
+  - Sections structure (for future settings)
+  - First section: "List Pages"
+
+- [ ] Add route: `/settings` → SettingsPage
+
+- [ ] Add "Settings" link to `HamburgerMenu.vue`
+
+#### B. Create User Settings Store
+
+- [ ] Create `src/stores/settings.ts`
+  - State:
+    ```typescript
+    {
+      showTagsAndListsInListPages: boolean // default: true
+    }
+    ```
+  - Actions:
+    - `fetchSettings()` - load from localStorage or user profile
+    - `updateSetting(key, value)` - save to localStorage
+    - (Future: sync to Supabase user metadata if needed)
+
+- [ ] Use localStorage for now (per-user, per-device)
+  - Key: `livenotes_settings_${userId}`
+  - JSON stringified object
+
+#### C. Build Settings UI
+
+- [ ] In SettingsPage.vue, create "List Pages" section
+  - Slider-style checkbox (toggle switch)
+  - Label: "Show tags and lists on song cards"
+  - Bound to settings store
+  - Updates immediately on change
+
+- [ ] Install or create toggle switch component
+  - Use existing Ionic component or create custom with Tailwind
+  - Active color: accent blue/green
+  - Smooth animation
+
+#### D. Apply Setting to ListSongCard
+
+- [ ] Update `ListSongCard.vue`
+  - Import settings store
+  - Conditionally render tags/lists rows based on `showTagsAndListsInListPages`
+  - Always show on AllSongsPage (setting only affects list pages)
+
+**Reference:** Setting is global for all list pages, stored per user in localStorage.
+
+---
+
+## Phase 2: Artists Page Enhancement
+
+### 2.1 Add Search Bar to Artists Page
+
+**Goal:** Filter artists by name (same UX as songs search).
+
+- [ ] Add SearchBar component to `ArtistsPage.vue`
+  - Position: Sticky at bottom (consistent with AllSongsPage)
+  - No filter button (artists have no tags)
   - Debounced input (200ms)
-  - Placeholder text
+  - Clear button
 
-- [ ] Add search to AllSongsPage
-  - Sticky at bottom
-  - Filter button on right
+- [ ] Add search logic to artists store
+  - Add `searchQuery` state ref
+  - Add `filteredArtists` computed
+    - Filter by name (case-insensitive, partial match)
+    - Alphabetically sorted
 
-- [ ] Implement search logic in songs store
-  - Case-insensitive
-  - Partial match
-  - Title only
-  - Client-side filtering
+- [ ] Update ArtistsPage to render `filteredArtists` instead of all artists
 
 - [ ] Test search
-  - Type "day" → matches "Yesterday" and "Day One"
+  - Type "beat" → matches "The Beatles", "Beats International"
   - Clear button works
-  - Real-time updates (debounced)
+  - Empty state if no matches
 
-**Reference:** 
-- [V1 UI Spec - Search & Filter Bar](../livenotes-documentation/app/v1-ui-spec.md#search--filter-bar-sticky-bottom)
-- [V1 Technical Spec - Search Implementation](../livenotes-documentation/app/v1-technical-spec.md#search)
+**Reference:** Same search UX as songs, but no tag filtering.
 
 ---
 
-### 5.2 Implement Tag Filtering
+## Phase 3: General UI Improvements
 
-- [ ] Create FilterByTagsModal.vue
-  - All tags with checkboxes
-  - Selected tags shown at top as removable chips
-  - "Uncheck All" button
-  - Apply and Cancel buttons
+### 3.1 Dropdown Menu Overlay
 
-- [ ] Add filter button to AllSongsPage
-  - Bottom right of search bar
-  - Opens filter modal
+**Goal:** Add visual separation when dropdown menus are open.
 
-- [ ] Implement tag filter logic
-  - AND logic (must have ALL selected tags)
-  - Client-side filtering
-  - Combine with search filter
+- [ ] Create global overlay component or utility
+  - Semi-transparent backdrop (20% black: `rgba(0, 0, 0, 0.2)`)
+  - Positioned behind dropdown menu
+  - Click to close menu
+  - Smooth fade in/out (150ms transition)
 
-- [ ] Update empty states
-  - Different messages for no search results vs no filter results
+- [ ] Update all dropdown menu components:
+  - `SongDropdownMenu.vue`
+  - `ListDropdownMenu.vue`
+  - `ArtistDropdownMenu.vue`
+  - `TagDropdownMenu.vue`
+  - `ListSongDropdownMenu.vue`
+  - `ListTitleDropdownMenu.vue` (new)
 
-**Reference:** 
-- [V1 UI Spec - Filter by Tags Modal](../livenotes-documentation/app/v1-ui-spec.md#filter-by-tags-modal)
-- [V1 Technical Spec - Tag Filtering](../livenotes-documentation/app/v1-technical-spec.md#tag-filtering-and-logic)
+- [ ] Implementation approach:
+  - Option 1: Backdrop element rendered by each dropdown
+  - Option 2: Global overlay managed by UI store
+  - Recommend: Each dropdown renders its own overlay (simpler, no global state)
 
----
+- [ ] Overlay behavior:
+  - Appears when menu opens
+  - Click overlay → close menu
+  - Z-index: Menu at 50, overlay at 40
+  - Covers entire viewport
 
-### 5.3 Add Search/Filter to List Detail Page
-
-- [ ] Add SearchBar and FilterButton to ListDetailPage
-- [ ] Filter only songs in current list
-- [ ] Combine search + tag filter
-- [ ] Update empty states for filtered lists
-
-**Reference:** [V1 UI Spec - List Detail Search & Filter](../livenotes-documentation/app/v1-ui-spec.md#search--filter)
+**Reference:** Click overlay closes menu, 20% opacity.
 
 ---
 
-## Phase 6: Bulk Actions
+## Testing Checklist
 
-**Goal:** Users can select multiple items and perform bulk operations.
+### Lists Enhancements
+- [ ] Drag & drop works on mobile (long-press)
+- [ ] Drag & drop works on desktop (mouse)
+- [ ] Dragging item shows glow and tilt
+- [ ] Original position shows gray placeholder
+- [ ] Insertion line appears between items
+- [ ] Drop reorders items correctly
+- [ ] Positions saved to database
+- [ ] Up/down arrows removed
+- [ ] Create title card
+- [ ] Rename title card
+- [ ] Delete title card
+- [ ] Drag title cards
+- [ ] Drag songs above/below titles
+- [ ] Title cards visually distinct from songs
 
-### 6.1 Implement Bulk Selection Mode
+### Settings
+- [ ] Settings page accessible from menu
+- [ ] Toggle switch works
+- [ ] Setting persists on page reload
+- [ ] Tags/lists hidden in list pages when toggle off
+- [ ] Tags/lists still shown in All Songs page
+- [ ] Setting stored per user
 
-- [ ] Add bulk selection state to UI store
-  - selectionMode: boolean
-  - selectedIds: string[]
-  - Actions to enter/exit mode, select/deselect all
+### Artists Search
+- [ ] Search bar appears on Artists page
+- [ ] Search filters artists by name
+- [ ] Partial match works
+- [ ] Case-insensitive
+- [ ] Clear button works
+- [ ] Empty state for no results
 
-- [ ] Update SongCard.vue
-  - Show checkbox when in selection mode
-  - Toggle selection on click
-  - Visual indication of selected state
-
-- [ ] Add selection controls
-  - "Select" button to enter mode
-  - "Select All" / "Deselect All" buttons
-  - "Cancel" to exit mode
-  - Selected count display
-
-**Reference:** [V1 UI Spec - Bulk Selection Mode](../livenotes-documentation/app/v1-ui-spec.md#bulk-selection-mode)
-
----
-
-### 6.2 Implement Bulk Actions for Songs
-
-- [ ] Bulk Delete
-  - Confirmation with count
-  - Delete all selected
-  - Show success toast with count
-  - Exit selection mode
-
-- [ ] Bulk Add to List(s)
-  - Modal to select target list(s)
-  - Add all selected songs
-  - Show success toast
-  - Exit selection mode
-
-- [ ] Bulk Assign Tags
-  - Modal to select tags
-  - Assign to all selected songs
-  - Show success toast
-  - Exit selection mode
-
-- [ ] Bulk Remove Tags
-  - Modal to select tags to remove
-  - Remove from all selected songs
-  - Show success toast
-  - Exit selection mode
-
-**Reference:** [V1 UI Spec - All Songs Bulk Actions](../livenotes-documentation/app/v1-ui-spec.md#bulk-actions-available)
+### Dropdown Overlays
+- [ ] Overlay appears when dropdown opens
+- [ ] Overlay is 20% opacity
+- [ ] Click overlay closes menu
+- [ ] Works on all card types (song, list, artist, tag, title)
+- [ ] Smooth fade in/out animation
 
 ---
 
-### 6.3 Implement Bulk Actions for Lists
-
-- [ ] Add selection mode to ListsPage
-- [ ] Bulk Delete Lists
-  - Confirmation
-  - Delete selected lists
-  - Songs remain in database
-  - Show success toast
-
-**Reference:** [V1 UI Spec - Lists Bulk Actions](../livenotes-documentation/app/v1-ui-spec.md#bulk-selection-mode-1)
-
----
-
-### 6.4 Implement Bulk Actions in List Detail
-
-- [ ] Add "Remove from List" bulk action
-  - Remove selected songs from current list only
-  - No confirmation needed
-  - Show toast
-
-- [ ] Other bulk actions same as All Songs
-  - Delete, Add to Lists, Assign/Remove Tags
-
-**Reference:** [V1 UI Spec - List Detail Bulk Actions](../livenotes-documentation/app/v1-ui-spec.md#bulk-selection-mode-2)
-
----
-
-## Phase 7: Polish & UX
-
-**Goal:** Refined UI, smooth interactions, proper error handling.
-
-### 7.1 Responsive Design
-
-- [ ] Test on mobile screen sizes (< 640px)
-- [ ] Test on tablet (640px - 1024px)
-- [ ] Test on desktop (> 1024px)
-- [ ] Adjust layouts using Tailwind breakpoints
-- [ ] Ensure touch targets are 44x44px minimum
-- [ ] Test hamburger menu on all sizes
-
-**Reference:** [V1 UI Spec - Responsive Behavior](../livenotes-documentation/app/v1-ui-spec.md#responsive-behavior)
-
----
-
-### 7.2 Loading States
-
-- [ ] Add loading spinner to app shell
-- [ ] Show spinner during data fetching
-- [ ] Inline spinners for save operations
-- [ ] Skeleton loaders for lists (optional, nice-to-have)
-- [ ] Minimum 500ms delay before showing spinner (avoid flashing)
-
-**Reference:** [V1 UI Spec - Loading States](../livenotes-documentation/app/v1-ui-spec.md#loading-states)
-
----
-
-### 7.3 Error Handling
-
-- [ ] Implement global error handler
-- [ ] Network error detection
-- [ ] Validation error display (inline)
-- [ ] Toast notifications for server errors
-- [ ] Graceful degradation when API fails
-- [ ] Retry logic for failed requests (optional)
-
-**Reference:** [V1 Technical Spec - Error Handling](../livenotes-documentation/app/v1-technical-spec.md#error-handling)
-
----
-
-### 7.4 Accessibility
-
-- [ ] Keyboard navigation works everywhere
-- [ ] Focus management in modals
-- [ ] ARIA labels on icon buttons
-- [ ] Test with screen reader
-- [ ] Check color contrast (WCAG AA)
-
-**Reference:** [V1 UI Spec - Accessibility](../livenotes-documentation/app/v1-ui-spec.md#accessibility-notes)
-
----
-
-### 7.5 Performance Optimization
-
-- [ ] Verify database indexes are applied
-- [ ] Check for N+1 queries (use Supabase select syntax properly)
-- [ ] Optimize re-renders (Vue computed, watchers)
-- [ ] Lazy load routes
-- [ ] Code splitting for large components
-
-**Reference:** [V1 Technical Spec - Performance](../livenotes-documentation/app/v1-technical-spec.md#performance-considerations)
-
----
-
-## Phase 8: Testing
-
-**Goal:** Ensure everything works correctly before deployment.
-
-### 8.1 Unit Tests
-
-- [ ] Test validation functions
-  - validateSongTitle
-  - validatePocId
-  - normalizeText
-  - validateTagName
-
-- [ ] Test filtering logic
-  - searchSongs
-  - filterSongsByTags
-  - combined filtering
-
-- [ ] Test reordering logic
-  - List position management
-
-**Reference:** [V1 Technical Spec - Testing Strategy](../livenotes-documentation/app/v1-technical-spec.md#testing-strategy)
-
----
-
-### 8.2 Manual Testing
-
-Use the checklist from technical spec:
-
-- [ ] Sign up flow
-- [ ] Sign in flow
-- [ ] Create song with all fields
-- [ ] Create song with required fields only
-- [ ] Edit song
-- [ ] Delete song (with confirmation)
-- [ ] Duplicate song (verify "(copy)" appended)
-- [ ] Create tag
-- [ ] Assign tag to song
-- [ ] Remove tag from song
-- [ ] Rename tag (verify all songs still have it)
-- [ ] Delete tag (with confirmation, verify removed from all songs)
-- [ ] Create list
-- [ ] Add song to list
-- [ ] Remove song from list
-- [ ] Reorder songs with drag-drop
-- [ ] Reorder songs with arrows
-- [ ] Delete list (verify songs remain)
-- [ ] Search songs (partial match, case-insensitive)
-- [ ] Filter songs by tags (AND logic)
-- [ ] Combined search + filter
-- [ ] Uncheck all tags button
-- [ ] Bulk delete songs
-- [ ] Bulk add to list
-- [ ] Bulk assign tags
-- [ ] Bulk remove tags
-- [ ] Form validation errors
-- [ ] Unsaved changes warning
-- [ ] Mobile responsiveness
-- [ ] Toast notifications
-- [ ] Empty states
-- [ ] Loading states
-
-**Reference:** [V1 Technical Spec - Manual Testing Checklist](../livenotes-documentation/app/v1-technical-spec.md#manual-testing-checklist)
-
----
-
-## Phase 8: Artists Implementation
-
-**Goal:** Replace single artist field with many-to-many artist relationship system.
-
-### 8.1 Database Migration
-
-- [ ] Create database migration for artists tables
-  ```sql
-  -- Artists table
-  CREATE TABLE artists (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT unique_artist_per_project UNIQUE (project_id, name)
-  );
-
-  -- SongArtist junction table with ordering
-  CREATE TABLE song_artists (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    song_id UUID NOT NULL REFERENCES songs(id) ON DELETE CASCADE,
-    artist_id UUID NOT NULL REFERENCES artists(id) ON DELETE CASCADE,
-    position INTEGER NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT unique_song_artist UNIQUE (song_id, artist_id),
-    CONSTRAINT unique_song_artist_position UNIQUE (song_id, position)
-  );
-  ```
-
-- [ ] Add indexes
-  ```sql
-  CREATE INDEX idx_artists_project_id ON artists(project_id);
-  CREATE INDEX idx_artists_name ON artists(name);
-  CREATE INDEX idx_song_artists_song_id ON song_artists(song_id);
-  CREATE INDEX idx_song_artists_artist_id ON song_artists(artist_id);
-  CREATE INDEX idx_song_artists_song_position ON song_artists(song_id, position);
-  ```
-
-- [ ] Add RLS policies for artists and song_artists tables
-- [ ] Add updated_at trigger for artists table
-- [ ] Migrate existing song.artist data to new structure
-  - For each song with artist value, create artist record (or reuse existing)
-  - Create song_artists entry with position = 1
-- [ ] Remove artist column from songs table (after migration complete)
-
-**Reference:** [Data Model - Artists & SongArtist](../livenotes-documentation/app/data-model.md#artists)
-
----
-
-### 8.2 TypeScript Types
-
-- [ ] Update `src/types/database.ts`
-  ```typescript
-  interface Artist {
-    id: string
-    project_id: string
-    name: string
-    created_at: string
-    updated_at: string
-  }
-
-  interface SongArtist {
-    id: string
-    song_id: string
-    artist_id: string
-    position: number
-    created_at: string
-  }
-
-  interface SongWithArtists extends Song {
-    artists: Array<Artist & { position: number }>
-    // Keep existing: tags, lists
-  }
-  ```
-
-**Reference:** [V1 Technical Spec - TypeScript Interfaces](../livenotes-documentation/app/v1-technical-spec.md#typescript-interfaces)
-
----
-
-### 8.3 Artists Store
-
-- [ ] Create `src/stores/artists.ts`
-  - State: artists array, isLoading, error
-  - Actions:
-    - fetchArtists(projectId)
-    - createArtist(projectId, name)
-    - updateArtist(artistId, name)
-    - deleteArtist(artistId) - only if not used by songs
-    - searchArtists(query) - for autocomplete
-  - Getters:
-    - sortedArtists (alphabetically)
-    - artistCount
-    - getArtistById(id)
-
-**Reference:** [V1 Technical Spec - Store Architecture](../livenotes-documentation/app/v1-technical-spec.md#pinia-stores)
-
----
-
-### 8.4 Update Songs Store
-
-- [ ] Modify fetchSongs query to include artists via song_artists
-  ```typescript
-  .select(`
-    *,
-    tags:song_tags(tag:tags(*)),
-    lists:list_items(list:lists(*)),
-    artists:song_artists(
-      position,
-      artist:artists(*)
-    )
-  `)
-  ```
-
-- [ ] Transform artists data to sorted array by position
-- [ ] Update createSong to accept artistIds array
-- [ ] Update updateSong to manage song_artists relationships
-- [ ] Add helper method: updateSongArtists(songId, artistIds[])
-  - Clear existing song_artists for song
-  - Insert new entries with positions 1, 2, 3...
-
-**Reference:** [V1 Technical Spec - Data Operations](../livenotes-documentation/app/v1-technical-spec.md#song-crud-operations)
-
----
-
-### 8.5 Artists Management Page
-
-- [ ] Create ArtistsPage.vue
-  - Similar to TagsPage structure
-  - List all artists with song count
-  - "+ New Artist" button
-  - Dropdown menu per artist (Edit, Delete)
-  - Alphabetical sort
-  - Empty state
-
-- [ ] Create ArtistCard.vue
-  - Display artist name and song count
-  - Dropdown menu button
-  - Edit/Delete actions
-
-- [ ] Add route: `/artists` → ArtistsPage
-
-- [ ] Add "Artists" link to HamburgerMenu
-
-**Reference:** [V1 MVP Spec - Artists Management](../livenotes-documentation/app/v1-mvp-spec.md#artists)
-
----
-
-### 8.6 Artist Input Component (Autocomplete)
-
-- [ ] Create ArtistInput.vue component
-  - Text input with dropdown suggestions
-  - Filters artists as user types (case-insensitive)
-  - Click suggestion to select
-  - Show "Create new: [name]" option if no exact match
-  - Support for multiple artists (repeatable component)
-  - Shows position number (Artist 1, Artist 2, etc.)
-  - Reorder controls (up/down arrows or drag)
-  - Remove button per artist
-
-- [ ] Implement autocomplete logic
-  - Debounced search (200ms)
-  - Show top 5 matches
-  - Highlight partial matches
-  - Similar name detection (optional: "Did you mean...?")
-
-**Reference:** [V1 MVP Spec - Autocomplete Behavior](../livenotes-documentation/app/v1-mvp-spec.md#autocomplete-behavior)
-
----
-
-### 8.7 Update Song Forms
-
-- [ ] Update SongNewPage.vue
-  - Replace single artist text input with ArtistInput component(s)
-  - "Add Another Artist" button
-  - Pass artist IDs to createSong
-
-- [ ] Update SongEditPage.vue
-  - Load existing artists for song (sorted by position)
-  - Display as multiple ArtistInput components
-  - Allow reordering (position changes)
-  - Allow adding/removing artists
-  - Save artist associations on submit
-
-**Reference:** [V1 UI Spec - Song Form](../livenotes-documentation/app/v1-ui-spec.md#create-edit-song-form)
-
----
-
-### 8.8 Update Song Card Display
-
-- [ ] Update SongCard.vue
-  - Display artists as comma-separated list (sorted by position)
-  - Format: "Artist 1, Artist 2, Artist 3"
-  - Hide row if no artists
-  - Style consistently with tags/lists
-
-- [ ] Update ListSongCard.vue similarly
-
-**Reference:** [V1 UI Spec - Song Card](../livenotes-documentation/app/v1-ui-spec.md#song-card-design)
-
----
-
-### 8.9 Search & Filter Updates
-
-- [ ] Update search to include artist names
-  - Search songs by: title OR artist name(s) OR notes OR POC ID
-  - Case-insensitive, partial match
-
-- [ ] Test combined search with multiple artists
-  - Song with "The Beatles, Paul McCartney" matches "paul"
-
-**Reference:** [V1 Technical Spec - Search](../livenotes-documentation/app/v1-technical-spec.md#search-implementation)
-
----
-
-### 8.10 Testing
-
-- [ ] Test artist CRUD operations
-  - Create artist from Artists page
-  - Edit artist name → updates all songs
-  - Delete artist → only works if no songs use it
-  - Delete protection shows error toast
-
-- [ ] Test song-artist associations
-  - Create song with one artist
-  - Create song with multiple artists (ordered)
-  - Edit song to add/remove artists
-  - Reorder artists on song
-  - Verify position is maintained
-
-- [ ] Test autocomplete
-  - Type partial name → suggestions appear
-  - Select suggestion → populates field
-  - Create new artist inline
-  - Similar name detection works
-
-- [ ] Test search with artists
-  - Search by artist name finds songs
-  - Partial match works
-  - Multiple artists on song (any match returns song)
-
-- [ ] Test edge cases
-  - Song with no artists (allowed)
-  - Multiple songs sharing same artist
-  - Special characters in artist names
-  - Very long artist names (truncation)
-  - Duplicate artist prevention
-
-**Reference:** [V1 Technical Spec - Testing](../livenotes-documentation/app/v1-technical-spec.md#testing-checklist)
-
----
-
-## Phase 9: Deployment
-
-**Goal:** Deploy V1 to production.
-
-### 9.1 Prepare for Deployment
-
-- [ ] Set up production Supabase project (if using separate from dev)
-- [ ] Run migrations on production database
-- [ ] Configure production environment variables
-- [ ] Set up domain (if custom)
-- [ ] Configure CORS in Supabase for production domain
-- [ ] Test OAuth redirects for production URLs
-
-**Reference:** [V1 Technical Spec - Deployment Checklist](../livenotes-documentation/app/v1-technical-spec.md#deployment-checklist)
-
----
-
-### 9.2 Deploy to Netlify/Vercel
-
-- [ ] Connect GitHub repository
-- [ ] Configure build settings:
-  - Build command: `npm run build`
-  - Publish directory: `dist`
-  - Node version: 18 or 20
-
-- [ ] Add environment variables in hosting dashboard
-  - VITE_SUPABASE_URL
-  - VITE_SUPABASE_ANON_KEY
-
-- [ ] Deploy to production
-- [ ] Test deployed app thoroughly
-- [ ] Monitor for errors (check browser console, network tab)
-
-**Reference:** [V1 Technical Spec - Deployment](../livenotes-documentation/app/v1-technical-spec.md#deployment-checklist)
-
----
-
-### 9.3 Post-Deployment
-
-- [ ] Run through manual testing checklist on production
-- [ ] Test on real mobile devices
-- [ ] Share with initial users for feedback
-- [ ] Monitor Supabase usage and errors
-- [ ] Set up basic monitoring (Sentry, etc.) - optional for V1
+## Implementation Order (Recommended)
+
+1. **Quick Wins First:**
+   - Dropdown overlays (3.1) - simple, big visual impact
+   - Remove up/down arrows (1.3) - cleanup
+   - Artists search (2.1) - reuse existing pattern
+
+2. **Settings Foundation:**
+   - Settings store (1.5.B)
+   - Settings page (1.5.A, C)
+   - Apply to ListSongCard (1.5.D)
+
+3. **List Titles:**
+   - Database migration (1.1)
+   - ListTitleCard component (1.4)
+   - Integration in ListDetailPage (1.4)
+
+4. **Enhanced Drag & Drop:**
+   - Implement new drag UX (1.2)
+   - Test thoroughly on mobile and desktop
 
 ---
 
 ## Success Criteria
 
-V1 is complete when all these are true:
+Phase 1 is complete when:
 
-- ✅ I can sign up and log in (email + Google/Facebook)
-- ✅ I can create songs with metadata (title, notes, POC ID)
-- ⏳ I can assign multiple artists to songs (with autocomplete and ordering)
-- ⏳ I can manage artists (create, edit, delete with protection)
-- ✅ I can see a list of all my songs
-- ✅ I can edit song metadata
-- ✅ I can delete songs (with confirmation)
-- ✅ I can duplicate songs (appends "(copy)" to title)
-- ✅ I can create and manage tags (create, rename, delete)
-- ✅ I can assign multiple tags to songs
-- ✅ I can create and manage lists/setlists
-- ✅ I can add songs to lists with custom ordering (drag-drop + arrows)
-- ✅ I can search songs by title and artist names (real-time, debounced)
-- ✅ I can filter songs by tags (AND logic, multi-select)
-- ✅ Search and tag filtering work together
-- ✅ I can bulk delete songs, bulk add to lists, bulk assign/remove tags
-- ✅ My data is persisted and accessible from any device
-- ✅ The app works in a web browser (mobile-first, responsive)
-- ✅ Dark mode UI with Tailwind CSS
-- ✅ All confirmations, toasts, and empty states work correctly
-
-**Legend**: ✅ Complete | ⏳ In Progress
-
-**Reference:** [V1 MVP Spec - Success Criteria](../livenotes-documentation/app/v1-mvp-spec.md#success-criteria)
+- ✅ Dropdown menus have 20% overlay backdrop, click to close
+- ✅ Artists page has search bar (no filter), works like songs search
+- ✅ Settings page exists with "List Pages" section
+- ✅ Global toggle to show/hide tags/lists on list page song cards
+- ✅ Setting persists per user (localStorage)
+- ✅ Up/down arrows removed from list detail page
+- ✅ Title cards can be added to lists
+- ✅ Title cards can be renamed and deleted
+- ✅ Title cards are visually distinct (larger, bolder)
+- ✅ Title cards are draggable (same as songs)
+- ✅ Enhanced drag & drop UX:
+  - ✅ Dragging item has glow + tilt
+  - ✅ Original space shows gray placeholder
+  - ✅ Insertion line shows drop target
+  - ✅ Works on mobile (touch/long-press) and desktop (mouse)
+  - ✅ Smooth animations (200ms)
 
 ---
 
-## Next Steps After V1
-
-Once V1 is deployed and being used:
-
-1. **Gather feedback** - Use the app daily, note friction points
-2. **Plan V2** - SongCode editor and chord chart viewer
-3. **Refine documentation** - Update based on implementation learnings
-
----
-
-## Development Tips
-
-- **Start simple** - Get basic functionality working before polish
-- **Test early and often** - Don't wait until the end to test
-- **Use the specs** - Reference documentation constantly
-- **Commit frequently** - Small, focused commits
-- **Deploy early** - Get to production as soon as core features work
-
----
-
-**Last Updated**: March 31, 2026
+**Last Updated**: April 2, 2026

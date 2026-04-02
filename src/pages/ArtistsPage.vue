@@ -44,14 +44,44 @@
       </div>
 
       <!-- Artists List -->
-      <div v-else class="p-4 space-y-3 pb-24">
+      <div v-else-if="filteredArtists.length > 0" class="pb-24">
+        <div class="p-4 space-y-3">
         <ArtistCard
-          v-for="artist in artistsWithCount"
+          v-for="artist in filteredArtists"
           :key="artist.id"
           :artist="artist"
           @rename="handleRename"
           @delete="handleDelete"
         />
+        </div>
+      </div>
+
+      <!-- Empty Search Results State -->
+      <div v-else-if="artistsWithCount.length > 0 && filteredArtists.length === 0" class="text-center py-12 px-4 pb-24">
+        <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <h2 class="text-xl font-semibold text-white mb-2">No artists found</h2>
+        <p class="text-gray-400">Try a different search term</p>
+      </div>
+
+      <!-- Sticky Bottom Bar -->
+      <div v-if="!artistsStore.isLoading && artistsWithCount.length > 0" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
+        <div class="max-w-2xl mx-auto">
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search artists..."
+              class="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- Create Artist Modal -->
@@ -152,7 +182,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -167,6 +197,7 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 const artistsWithCount = ref<ArtistWithCount[]>([])
+const searchQuery = ref('')
 
 const showCreateModal = ref(false)
 const newArtistName = ref('')
@@ -178,6 +209,18 @@ const editingArtist = ref<ArtistWithCount | null>(null)
 const editArtistName = ref('')
 const renameError = ref('')
 const isRenaming = ref(false)
+
+// Filtered artists based on search query
+const filteredArtists = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return artistsWithCount.value
+  }
+  
+  const query = searchQuery.value.toLowerCase()
+  return artistsWithCount.value.filter(artist =>
+    artist.name.toLowerCase().includes(query)
+  )
+})
 
 onMounted(async () => {
   if (!authStore.isInitialized) {

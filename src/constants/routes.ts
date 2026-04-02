@@ -9,5 +9,6 @@ export const ROUTES = {
   LISTS: '/lists',
   LIST_DETAIL: (id: string) => `/lists/${id}`,
   TAGS: '/tags',
-  ARTISTS: '/artists', // TODO: Phase 8 - Artists page
+  ARTISTS: '/artists',
+  SETTINGS: '/settings',
 } as const
