@@ -164,6 +164,21 @@
             </p>
           </div>
 
+          <!-- SongCode Editor -->
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">
+              SongCode
+            </label>
+            <button
+              type="button"
+              @click="openSongcodeDrawer"
+              class="w-full px-4 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <ion-icon :icon="codeSlash" />
+              <span>Edit SongCode</span>
+            </button>
+          </div>
+
           <!-- Action Buttons -->
           <div class="flex gap-3 pt-4">
             <button
@@ -182,6 +197,14 @@
             </button>
           </div>
         </form>
+
+        <!-- SongCode Drawer -->
+        <SongCodeDrawer
+          v-if="song"
+          :is-open="showSongcodeDrawer"
+          :song-id="song.id"
+          @close="showSongcodeDrawer = false"
+        />
       </template>
     </ion-content>
   </ion-page>
@@ -190,10 +213,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { IonPage, IonContent } from '@ionic/vue'
+import { IonPage, IonContent, IonIcon } from '@ionic/vue'
+import { codeSlash } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import ArtistInput from '@/components/ArtistInput.vue'
+import SongCodeDrawer from '@/components/SongCodeDrawer.vue'
 import { useSongsStore } from '@/stores/songs'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
@@ -241,6 +266,13 @@ const errors = ref({
 })
 
 const isSaving = ref(false)
+
+// SongCode drawer state
+const showSongcodeDrawer = ref(false)
+
+function openSongcodeDrawer() {
+  showSongcodeDrawer.value = true
+}
 
 // Check if form has any changes
 const hasChanges = computed(() => {

@@ -11,6 +11,7 @@
   "dependencies": {
     "@ionic/vue": "^8.8.2",
     "@ionic/vue-router": "^8.8.2",
+    "@livenotes/songcode-converter": "^1.0.0",
     "@supabase/supabase-js": "^2.100.1",
     "@vueuse/core": "^14.2.1",
     "pinia": "^3.0.4",

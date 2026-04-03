@@ -79,6 +79,17 @@ export interface SongArtist {
   created_at: string
 }
 
+export interface SongCode {
+  song_id: string
+  songcode: string | null
+  songcode_updated_at: string | null
+  songcode_updated_by: string | null
+  livenotes_json: any | null
+  livenotes_json_updated_at: string | null
+  livenotes_json_updated_by: string | null
+  created_at: string
+}
+
 // Extended types with relations
 export interface ArtistWithPosition extends Artist {
   position: number
