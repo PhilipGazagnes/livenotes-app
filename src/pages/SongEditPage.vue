@@ -119,51 +119,6 @@
             </button>
           </div>
 
-          <!-- Notes -->
-          <div>
-            <label for="notes" class="block text-sm font-medium text-gray-300 mb-2">
-              {{ I18N.FORM.NOTES }}
-            </label>
-            <textarea
-              id="notes"
-              v-model="form.notes"
-              :maxlength="VALIDATION.SONG_NOTES_MAX_LENGTH"
-              @blur="validateField('notes')"
-              rows="4"
-              class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none transition"
-              :class="errors.notes ? 'border-red-500' : 'border-gray-700'"
-              :placeholder="I18N.PLACEHOLDERS.SONG_NOTES"
-            ></textarea>
-            <div class="mt-1 flex justify-between items-center">
-              <p v-if="errors.notes" class="text-sm text-red-400">
-                {{ errors.notes }}
-              </p>
-              <p class="text-sm text-gray-500 ml-auto">
-                {{ form.notes.length }}/{{ VALIDATION.SONG_NOTES_MAX_LENGTH }}
-              </p>
-            </div>
-          </div>
-
-          <!-- POC ID -->
-          <div>
-            <label for="pocId" class="block text-sm font-medium text-gray-300 mb-2">
-              {{ I18N.FORM.POC_ID }}
-            </label>
-            <input
-              id="pocId"
-              v-model="form.pocId"
-              type="text"
-              :maxlength="VALIDATION.SONG_POC_ID_LENGTH"
-              @blur="validateField('pocId')"
-              class="w-32 px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition uppercase"
-              :class="errors.pocId ? 'border-red-500' : 'border-gray-700'"
-              :placeholder="I18N.PLACEHOLDERS.POC_ID"
-            />
-            <p v-if="errors.pocId" class="mt-1 text-sm text-red-400">
-              {{ errors.pocId }}
-            </p>
-          </div>
-
           <!-- SongCode Editor -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -178,25 +133,26 @@
               <span>Edit SongCode</span>
             </button>
           </div>
-
-          <!-- Action Buttons -->
-          <div class="flex gap-3 pt-4">
-            <button
-              type="button"
-              @click="handleCancel"
-              class="flex-1 px-6 py-3 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              {{ I18N.BUTTONS.CANCEL }}
-            </button>
-            <button
-              type="submit"
-              :disabled="isSaving"
-              class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
-            </button>
-          </div>
         </form>
+
+        <!-- Sticky Footer -->
+        <div class="fixed bottom-0 left-0 right-0 p-4 bg-gray-800 border-t border-gray-700 flex gap-3">
+          <button
+            type="button"
+            @click="handleCancel"
+            class="flex-1 px-6 py-3 bg-gray-700 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            {{ I18N.BUTTONS.CANCEL }}
+          </button>
+          <button
+            type="button"
+            @click="handleSave"
+            :disabled="isSaving"
+            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
+          </button>
+        </div>
 
         <!-- SongCode Drawer -->
         <SongCodeDrawer
@@ -228,7 +184,7 @@ import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
-import { validateSongTitle, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
+import { validateSongTitle, normalizeText } from '@/utils/validation'
 import type { SongWithTags } from '@/types/database'
 
 const router = useRouter()
@@ -247,23 +203,17 @@ const song = ref<SongWithTags | null>(null)
 const form = ref({
   title: '',
   artistIds: [null] as (string | null)[],
-  notes: '',
-  pocId: '',
 })
 
 // Original form values (for change detection)
 const originalForm = ref({
   title: '',
   artistIds: [] as (string | null)[],
-  notes: '',
-  pocId: '',
 })
 
 // Validation errors
 const errors = ref({
   title: '',
-  notes: '',
-  pocId: '',
 })
 
 const isSaving = ref(false)
@@ -278,9 +228,7 @@ function openSongcodeDrawer() {
 // Check if form has any changes
 const hasChanges = computed(() => {
   return form.value.title !== originalForm.value.title ||
-         JSON.stringify(form.value.artistIds) !== JSON.stringify(originalForm.value.artistIds) ||
-         form.value.notes !== originalForm.value.notes ||
-         form.value.pocId !== originalForm.value.pocId
+         JSON.stringify(form.value.artistIds) !== JSON.stringify(originalForm.value.artistIds)
 })
 
 // Artist management functions
@@ -350,8 +298,6 @@ onMounted(async () => {
   
   // Populate form
   form.value.title = foundSong.title
-  form.value.notes = foundSong.notes || ''
-  form.value.pocId = foundSong.livenotes_poc_id || ''
   
   // Populate artists (sorted by position)
   if (foundSong.artists && foundSong.artists.length > 0) {
@@ -364,24 +310,16 @@ onMounted(async () => {
   originalForm.value = {
     title: form.value.title,
     artistIds: [...form.value.artistIds],
-    notes: form.value.notes,
-    pocId: form.value.pocId,
   }
   
   isLoading.value = false
 })
 
 // Validate a single field
-function validateField(field: 'title' | 'notes' | 'pocId') {
+function validateField(field: 'title') {
   switch (field) {
     case 'title':
       errors.value.title = validateSongTitle(form.value.title) || ''
-      break
-    case 'notes':
-      errors.value.notes = validateSongNotes(form.value.notes) || ''
-      break
-    case 'pocId':
-      errors.value.pocId = validatePocId(form.value.pocId) || ''
       break
   }
 }
@@ -389,10 +327,8 @@ function validateField(field: 'title' | 'notes' | 'pocId') {
 // Validate all fields
 function validateForm(): boolean {
   validateField('title')
-  validateField('notes')
-  validateField('pocId')
   
-  return !errors.value.title && !errors.value.notes && !errors.value.pocId
+  return !errors.value.title
 }
 
 // Handle form submission
@@ -415,8 +351,6 @@ async function handleSave() {
     
     const result = await songsStore.updateSong(song.value.id, {
       title: normalizeText(form.value.title),
-      notes: form.value.notes || null,
-      livenotes_poc_id: form.value.pocId || null,
     }, personalProjectId, undefined, artistIds)  // Pass undefined for tagIds, artistIds for artists
     
     if (result.success) {
