@@ -203,6 +203,7 @@
           v-if="song"
           :is-open="showSongcodeDrawer"
           :song-id="song.id"
+          :song-title="song.title"
           @close="showSongcodeDrawer = false"
         />
       </template>

@@ -5,8 +5,8 @@
   >
     <ion-page class="bg-gray-900">
       <ion-header class="bg-gray-800">
-        <ion-toolbar class="bg-gray-800">
-          <ion-title class="text-white">SongCode Editor</ion-title>
+        <ion-toolbar class="bg-gray-800" style="--padding-top: 0.5rem; --padding-bottom: 0.5rem; --padding-start: 1rem;">
+          <ion-title class="text-white text-base">{{ songTitle }}</ion-title>
           <ion-buttons slot="end">
             <ion-button @click="handleCancel" class="text-gray-300">
               <ion-icon :icon="closeOutline" slot="icon-only" />
@@ -40,7 +40,7 @@
 
 
           <!-- Livenotes JSON Preview -->
-          <div v-if="songcodeStore.currentSongcode?.livenotes_json" class="flex flex-col mt-4">
+          <div class="flex flex-col mt-4">
             <div class="flex justify-between items-center mb-2">
               <div class="flex items-center gap-2">
                 <label class="text-sm font-medium text-gray-300">Livenotes JSON</label>
@@ -49,10 +49,11 @@
                 </span>
               </div>
               <div class="flex gap-2 items-center">
-                <span class="text-xs text-gray-500">
+                <span v-if="songcodeStore.currentSongcode?.livenotes_json_updated_at" class="text-xs text-gray-500">
                   Generated {{ formatDate(songcodeStore.currentSongcode.livenotes_json_updated_at) }}
                 </span>
                 <button
+                  v-if="songcodeStore.currentSongcode?.livenotes_json"
                   @click="handleCopyJson"
                   class="px-3 py-1.5 text-xs bg-gray-700 border border-gray-600 text-gray-300 rounded hover:bg-gray-600 transition-colors flex items-center gap-1"
                 >
@@ -61,9 +62,12 @@
                 </button>
               </div>
             </div>
-            <pre class="p-3 bg-gray-800 border border-gray-700 rounded text-xs overflow-auto max-h-64 text-gray-300">{{
+            <pre v-if="songcodeStore.currentSongcode?.livenotes_json" class="p-3 bg-gray-800 border border-gray-700 rounded text-xs overflow-auto h-52 text-gray-300">{{
               JSON.stringify(songcodeStore.currentSongcode.livenotes_json, null, 2)
             }}</pre>
+            <div v-else class="p-3 bg-gray-800 border border-gray-700 rounded text-xs h-52 flex items-center justify-center text-gray-500">
+              No JSON generated yet
+            </div>
           </div>
 
           <!-- Error Display -->
@@ -74,13 +78,6 @@
 
         <!-- Sticky Footer -->
         <div class="fixed bottom-0 left-0 right-0 p-4 bg-gray-800 border-t border-gray-700 flex gap-3">
-          <button
-            type="button"
-            @click="handleCancel"
-            class="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-          >
-            Cancel
-          </button>
           <button
             type="button"
             @click="handleGenerate"
@@ -124,6 +121,7 @@ import { useUiStore } from '@/stores/ui'
 interface Props {
   isOpen: boolean
   songId: string
+  songTitle: string
 }
 
 const props = defineProps<Props>()
