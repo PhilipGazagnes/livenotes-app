@@ -1,0 +1,12 @@
+[build]
+  # Build command
+  command = "npm run build"
+  
+  # Directory that contains the deploy-ready HTML files and assets
+  publish = "dist"
+
+# SPA redirect rule (also handled by public/_redirects, but good to have here too)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
