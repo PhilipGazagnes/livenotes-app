@@ -14,6 +14,8 @@ export interface Project {
   owner_id: string
   created_at: string
   updated_at: string
+  notes_field_label: string
+  notes_field_enabled: boolean
 }
 
 export interface Song {

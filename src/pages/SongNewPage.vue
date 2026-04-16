@@ -106,9 +106,9 @@
       </div>
 
       <!-- Notes -->
-      <div>
+      <div v-if="settingsStore.notesFieldEnabled">
         <label for="notes" class="block text-sm font-medium text-gray-300 mb-2">
-          Notes
+          {{ settingsStore.notesFieldLabel }}
         </label>
         <textarea
           id="notes"
@@ -118,7 +118,7 @@
           rows="4"
           class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none transition"
           :class="errors.notes ? 'border-red-500' : 'border-gray-700'"
-          placeholder="Add notes about this song..."
+          :placeholder="`Add ${settingsStore.notesFieldLabel.toLowerCase()} about this song...`"
         ></textarea>
         <div class="mt-1 flex justify-between items-center">
           <p v-if="errors.notes" class="text-sm text-red-400">
@@ -182,6 +182,7 @@ import { useSongsStore } from '@/stores/songs'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useSettingsStore } from '@/stores/settings'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
@@ -193,12 +194,14 @@ const songsStore = useSongsStore()
 const artistsStore = useArtistsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const settingsStore = useSettingsStore()
 
-// Load artists on mount
+// Load artists and settings on mount
 onMounted(async () => {
   const personalProjectId = await authStore.getPersonalProjectId()
   if (personalProjectId) {
     await artistsStore.fetchArtists(personalProjectId)
+    await settingsStore.loadProjectSettings(personalProjectId)
   }
 })
 

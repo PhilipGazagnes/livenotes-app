@@ -86,6 +86,70 @@
           </div>
         </section>
 
+        <!-- Notes Field Section -->
+        <section>
+          <h2 class="text-lg font-semibold text-white mb-4">Notes Field</h2>
+          
+          <div class="space-y-4">
+            <!-- Enable/Disable Notes Field -->
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h3 class="text-white font-medium mb-1">Show Notes Field</h3>
+                  <p class="text-sm text-gray-400">Display notes field when creating or editing songs</p>
+                </div>
+                <button
+                  @click="toggleNotesFieldEnabled"
+                  :disabled="isUpdatingSettings"
+                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
+                  :class="settingsStore.notesFieldEnabled ? 'bg-blue-600' : 'bg-gray-600'"
+                  role="switch"
+                  :aria-checked="settingsStore.notesFieldEnabled"
+                  aria-label="Toggle show notes field"
+                >
+                  <span
+                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                    :class="settingsStore.notesFieldEnabled ? 'translate-x-6' : 'translate-x-1'"
+                  />
+                </button>
+              </div>
+            </div>
+
+            <!-- Custom Label Input -->
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div>
+                <label for="notesFieldLabel" class="block text-white font-medium mb-2">
+                  Field Label
+                </label>
+                <p class="text-sm text-gray-400 mb-3">
+                  Customize the label for the notes field (e.g., "Looper", "Notes", "About")
+                </p>
+                <div class="flex gap-2">
+                  <input
+                    id="notesFieldLabel"
+                    v-model="notesFieldLabelInput"
+                    type="text"
+                    maxlength="30"
+                    class="flex-1 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                    placeholder="Enter label..."
+                    @keyup.enter="saveNotesFieldLabel"
+                  />
+                  <button
+                    @click="saveNotesFieldLabel"
+                    :disabled="isUpdatingSettings || !notesFieldLabelInput.trim()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                  {{ notesFieldLabelInput.length }}/30 characters
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- Reset Section -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">Reset</h2>
@@ -118,13 +182,82 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 
 const settingsStore = useSettingsStore()
+const authStore = useAuthStore()
 const uiStore = useUiStore()
+
+const notesFieldLabelInput = ref('')
+const isUpdatingSettings = ref(false)
+
+onMounted(async () => {
+  // Load project settings
+  const projectId = await authStore.getPersonalProjectId()
+  if (projectId) {
+    await settingsStore.loadProjectSettings(projectId)
+    notesFieldLabelInput.value = settingsStore.notesFieldLabel
+  }
+})
+
+async function toggleNotesFieldEnabled() {
+  const projectId = await authStore.getPersonalProjectId()
+  if (!projectId) {
+    uiStore.showToast('Project not found', 'error')
+    return
+  }
+
+  isUpdatingSettings.value = true
+  try {
+    const result = await settingsStore.updateNotesFieldEnabled(
+      projectId,
+      !settingsStore.notesFieldEnabled
+    )
+    
+    if (result.success) {
+      uiStore.showToast(
+        settingsStore.notesFieldEnabled ? 'Notes field enabled' : 'Notes field disabled',
+        'success'
+      )
+    } else {
+      uiStore.showToast(result.error || 'Failed to update setting', 'error')
+    }
+  } finally {
+    isUpdatingSettings.value = false
+  }
+}
+
+async function saveNotesFieldLabel() {
+  const projectId = await authStore.getPersonalProjectId()
+  if (!projectId) {
+    uiStore.showToast('Project not found', 'error')
+    return
+  }
+
+  const label = notesFieldLabelInput.value.trim()
+  if (!label || label.length > 30) {
+    uiStore.showToast('Label must be between 1 and 30 characters', 'error')
+    return
+  }
+
+  isUpdatingSettings.value = true
+  try {
+    const result = await settingsStore.updateNotesFieldLabel(projectId, label)
+    
+    if (result.success) {
+      uiStore.showToast('Label updated successfully', 'success')
+    } else {
+      uiStore.showToast(result.error || 'Failed to update label', 'error')
+    }
+  } finally {
+    isUpdatingSettings.value = false
+  }
+}
 
 async function handleReset() {
   const confirmed = await uiStore.showConfirm(

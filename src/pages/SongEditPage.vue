@@ -119,6 +119,31 @@
             </button>
           </div>
 
+          <!-- Notes (conditional based on settings) -->
+          <div v-if="settingsStore.notesFieldEnabled">
+            <label for="notes" class="block text-sm font-medium text-gray-300 mb-2">
+              {{ settingsStore.notesFieldLabel }}
+            </label>
+            <textarea
+              id="notes"
+              v-model="form.notes"
+              :maxlength="VALIDATION.SONG_NOTES_MAX_LENGTH"
+              @blur="validateField('notes')"
+              rows="4"
+              class="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none transition"
+              :class="errors.notes ? 'border-red-500' : 'border-gray-700'"
+              :placeholder="`Add ${settingsStore.notesFieldLabel.toLowerCase()} about this song...`"
+            ></textarea>
+            <div class="mt-1 flex justify-between items-center">
+              <p v-if="errors.notes" class="text-sm text-red-400">
+                {{ errors.notes }}
+              </p>
+              <p class="text-sm text-gray-500 ml-auto">
+                {{ form.notes.length }}/{{ VALIDATION.SONG_NOTES_MAX_LENGTH }}
+              </p>
+            </div>
+          </div>
+
           <!-- SongCode Editor -->
           <div>
             <label class="block text-sm font-medium text-gray-300 mb-2">
@@ -180,11 +205,12 @@ import { useSongsStore } from '@/stores/songs'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useSettingsStore } from '@/stores/settings'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
-import { validateSongTitle, normalizeText } from '@/utils/validation'
+import { validateSongTitle, validateSongNotes, normalizeText } from '@/utils/validation'
 import type { SongWithTags } from '@/types/database'
 
 const router = useRouter()
@@ -192,6 +218,7 @@ const route = useRoute()
 const songsStore = useSongsStore()
 const artistsStore = useArtistsStore()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 const uiStore = useUiStore()
 
 // Loading state
@@ -203,17 +230,20 @@ const song = ref<SongWithTags | null>(null)
 const form = ref({
   title: '',
   artistIds: [null] as (string | null)[],
+  notes: '',
 })
 
 // Original form values (for change detection)
 const originalForm = ref({
   title: '',
   artistIds: [] as (string | null)[],
+  notes: '',
 })
 
 // Validation errors
 const errors = ref({
   title: '',
+  notes: '',
 })
 
 const isSaving = ref(false)
@@ -228,6 +258,7 @@ function openSongcodeDrawer() {
 // Check if form has any changes
 const hasChanges = computed(() => {
   return form.value.title !== originalForm.value.title ||
+         form.value.notes !== originalForm.value.notes ||
          JSON.stringify(form.value.artistIds) !== JSON.stringify(originalForm.value.artistIds)
 })
 
@@ -280,6 +311,9 @@ onMounted(async () => {
   // Load artists
   await artistsStore.fetchArtists(personalProjectId)
   
+  // Load project settings
+  await settingsStore.loadProjectSettings(personalProjectId)
+  
   // Fetch songs if not already loaded
   if (songsStore.songs.length === 0) {
     await songsStore.fetchSongs(personalProjectId)
@@ -298,6 +332,7 @@ onMounted(async () => {
   
   // Populate form
   form.value.title = foundSong.title
+  form.value.notes = foundSong.notes || ''
   
   // Populate artists (sorted by position)
   if (foundSong.artists && foundSong.artists.length > 0) {
@@ -310,16 +345,20 @@ onMounted(async () => {
   originalForm.value = {
     title: form.value.title,
     artistIds: [...form.value.artistIds],
+    notes: form.value.notes,
   }
   
   isLoading.value = false
 })
 
 // Validate a single field
-function validateField(field: 'title') {
+function validateField(field: 'title' | 'notes') {
   switch (field) {
     case 'title':
       errors.value.title = validateSongTitle(form.value.title) || ''
+      break
+    case 'notes':
+      errors.value.notes = validateSongNotes(form.value.notes) || ''
       break
   }
 }
@@ -327,8 +366,9 @@ function validateField(field: 'title') {
 // Validate all fields
 function validateForm(): boolean {
   validateField('title')
+  validateField('notes')
   
-  return !errors.value.title
+  return !errors.value.title && !errors.value.notes
 }
 
 // Handle form submission
@@ -351,6 +391,7 @@ async function handleSave() {
     
     const result = await songsStore.updateSong(song.value.id, {
       title: normalizeText(form.value.title),
+      notes: form.value.notes || null,
     }, personalProjectId, undefined, artistIds)  // Pass undefined for tagIds, artistIds for artists
     
     if (result.success) {
