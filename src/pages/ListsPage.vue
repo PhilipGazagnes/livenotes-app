@@ -303,15 +303,17 @@ async function handleBulkDelete() {
   if (confirmed) {
     const projectId = await authStore.getPersonalProjectId()
     if (projectId) {
-      uiStore.showOperationOverlay('Deleting lists...')
-      const result = await listsStore.bulkDeleteLists(uiStore.selectedIds, projectId)
-      uiStore.hideOperationOverlay()
-      if (result.success) {
-        uiStore.showToast(I18N.TOAST.BULK_DELETED_LISTS(count), 'success')
-        uiStore.exitSelectionMode()
-      } else {
-        uiStore.showToast(result.error || 'Failed to delete lists', 'error')
-      }
+      await executeOperation(
+        () => listsStore.bulkDeleteLists(uiStore.selectedIds, projectId),
+        {
+          loadingMessage: 'Deleting lists...',
+          successMessage: I18N.TOAST.BULK_DELETED_LISTS(count),
+          errorContext: 'delete lists',
+          onSuccess: () => {
+            uiStore.exitSelectionMode()
+          },
+        }
+      )
     }
   }
 }
@@ -339,28 +341,33 @@ async function handleCreateSubmit() {
   }
   
   isCreating.value = true
-  uiStore.showOperationOverlay('Creating list...')
+  
   const personalProjectId = await authStore.getPersonalProjectId()
   
   if (!personalProjectId) {
     createError.value = I18N.VALIDATION.PROJECT_NOT_FOUND
-    uiStore.hideOperationOverlay()
     isCreating.value = false
     return
   }
   
-  const result = await listsStore.createList(personalProjectId, newListName.value)
-  uiStore.hideOperationOverlay()
-  isCreating.value = false
+  await executeOperation(
+    () => listsStore.createList(personalProjectId, newListName.value),
+    {
+      loadingMessage: 'Creating list...',
+      successMessage: MESSAGES.SUCCESS.LIST_CREATED,
+      errorContext: 'create list',
+      onSuccess: () => {
+        showCreateModal.value = false
+        newListName.value = ''
+        createError.value = ''
+      },
+      onError: (error) => {
+        createError.value = error || 'Failed to create list'
+      },
+    }
+  )
   
-  if (result.success) {
-    uiStore.showToast(MESSAGES.SUCCESS.LIST_CREATED, 'success')
-    showCreateModal.value = false
-    newListName.value = ''
-    createError.value = ''
-  } else {
-    createError.value = result.error || 'Failed to create list'
-  }
+  isCreating.value = false
 }
 
 function handleRename(list: List) {
@@ -418,15 +425,14 @@ async function handleDelete(list: List) {
   )
   
   if (confirmed) {
-    uiStore.showOperationOverlay('Deleting list...')
-    const result = await listsStore.deleteList(list.id)
-    uiStore.hideOperationOverlay()
-    
-    if (result.success) {
-      uiStore.showToast(MESSAGES.SUCCESS.LIST_DELETED, 'success')
-    } else {
-      uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-    }
+    await executeOperation(
+      () => listsStore.deleteList(list.id),
+      {
+        loadingMessage: 'Deleting list...',
+        successMessage: MESSAGES.SUCCESS.LIST_DELETED,
+        errorContext: 'delete list',
+      }
+    )
   }
 }
 </script>

@@ -104,6 +104,7 @@ import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { executeConfirmedOperation, executeOperation } from '@/utils/operations'
+import { logger } from '@/utils/logger'
 import ManageTagsModal from './ManageTagsModal.vue'
 import ManageListsModal from './ManageListsModal.vue'
 
@@ -211,19 +212,13 @@ function handleModalClose() {
 }
 
 async function handleTagsSaved() {
-  console.log('[ListSongDropdownMenu] handleTagsSaved called for song:', props.song.id)
-  
-  // Refresh only this song's tags locally to avoid scroll reset
-  await songsStore.refreshSongTags(props.song.id)
+  logger.debug('ListSongDropdownMenu: handleTagsSaved called for song:', props.song.id)
   
   // Close the modal
   showManageTagsModal.value = false
   
-  console.log('[ListSongDropdownMenu] Emitting tagsUpdated for song:', props.song.id)
-  // Emit tagsUpdated with songId
+  // Emit event to trigger list refresh (like bulk actions do)
   emit('tagsUpdated', props.song.id)
-  
-  console.log('[ListSongDropdownMenu] Tags saved completed')
 }
 
 async function handleManageLists() {

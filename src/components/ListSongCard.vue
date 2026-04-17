@@ -87,9 +87,11 @@
     </div>
 
     <!-- Dropdown Menu -->
-    <ListSongDropdownMenu
+    <SongDropdownMenu
       v-if="isDropdownOpen"
       :song="song"
+      :showRemoveFromList="true"
+      :showDuplicate="false"
       @close="isDropdownOpen = false"
       @remove="handleRemove"
       @songDeleted="(songId) => emit('songDeleted', songId)"
@@ -101,7 +103,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { ListItem, SongWithTags } from '@/types/database'
-import ListSongDropdownMenu from './ListSongDropdownMenu.vue'
+import SongDropdownMenu from './SongDropdownMenu.vue'
 import { useUiStore } from '@/stores/ui'
 import { useSettingsStore } from '@/stores/settings'
 import { I18N } from '@/constants/i18n'
@@ -139,10 +141,7 @@ function handleRemove() {
 }
 
 function handleTagsUpdated(songId: string) {
-  console.log('[ListSongCard] tagsUpdated received for song:', songId)
-  // Close the dropdown first
-  isDropdownOpen.value = false
-  // Then emit to parent
+  // Propagate event to parent page which will refresh the list
   emit('tagsUpdated', songId)
 }
 </script>

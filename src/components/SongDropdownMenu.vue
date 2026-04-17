@@ -14,6 +14,20 @@
       :style="{ ...menuPosition, transform: 'translate(-50%, -50%)' }"
     >
       <div class="py-1">
+        <!-- Remove from List (only shows if prop is true) -->
+        <button
+          v-if="showRemoveFromList"
+          @click="handleRemoveFromList"
+          class="w-full flex items-center gap-3 px-4 py-3 text-left text-yellow-400 hover:text-yellow-300 hover:bg-gray-700 transition-colors"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>{{ I18N.DROPDOWN.REMOVE_FROM_LIST }}</span>
+        </button>
+
+        <div v-if="showRemoveFromList" class="border-t border-gray-700 my-1"></div>
+
         <button
           @click="handleEdit"
           class="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
@@ -24,7 +38,9 @@
           <span>{{ I18N.DROPDOWN.EDIT }}</span>
         </button>
 
+        <!-- Duplicate (only shows if prop is true) -->
         <button
+          v-if="showDuplicate"
           @click="handleDuplicate"
           class="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
         >
@@ -102,15 +118,24 @@ import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { executeConfirmedOperation, executeOperation } from '@/utils/operations'
+import { logger } from '@/utils/logger'
 import ManageTagsModal from './ManageTagsModal.vue'
 import ManageListsModal from './ManageListsModal.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   song: SongWithTags
-}>()
+  showRemoveFromList?: boolean
+  showDuplicate?: boolean
+}>(), {
+  showRemoveFromList: false,
+  showDuplicate: true,
+})
 
 const emit = defineEmits<{
   close: []
+  remove: []
+  tagsUpdated: [songId: string]
+  songDeleted: [songId: string]
 }>()
 
 const router = useRouter()
@@ -139,6 +164,12 @@ function handleClose() {
   emit('close')
 }
 
+function handleRemoveFromList() {
+  if (!props.showRemoveFromList) return
+  emit('remove')
+  handleClose()
+}
+
 function handleEdit() {
   // Check if offline
   if (!navigator.onLine) {
@@ -154,6 +185,8 @@ function handleEdit() {
 }
 
 async function handleDuplicate() {
+  if (!props.showDuplicate) return
+  
   const confirmed = await uiStore.showConfirm(
     I18N.MODALS.DUPLICATE_SONG,
     I18N.MODAL_CONTENT.DUPLICATE_SONG_CONFIRM(props.song.title),
@@ -191,8 +224,6 @@ async function handleManageTags() {
     await tagsStore.fetchTags(personalProjectId)
   }
   showManageTagsModal.value = true
-  // Don't close the dropdown immediately - let the modal appear first
-  // The dropdown will close when user interacts with backdrop or modal
 }
 
 function handleModalClose() {
@@ -201,10 +232,19 @@ function handleModalClose() {
 }
 
 async function handleTagsSaved() {
-  // Refresh only this song's tags to avoid scroll reset
-  await songsStore.refreshSongTags(props.song.id)
-  // Close dropdown after saving
-  handleClose()
+  logger.debug('SongDropdownMenu: handleTagsSaved called for song:', props.song.id)
+  
+  // Close the modal
+  showManageTagsModal.value = false
+  
+  if (props.showRemoveFromList) {
+    // In list context: emit event to trigger list refresh
+    emit('tagsUpdated', props.song.id)
+  } else {
+    // In regular context: refresh song tags and close dropdown
+    await songsStore.refreshSongTags(props.song.id)
+    handleClose()
+  }
 }
 
 async function handleManageLists() {
@@ -214,13 +254,12 @@ async function handleManageLists() {
     await listsStore.fetchLists(personalProjectId)
   }
   showManageListsModal.value = true
-  // Don't close the dropdown immediately - let the modal appear first
 }
 
 async function handleListsSaved() {
   // Refresh only this song's lists to avoid scroll reset
   await songsStore.refreshSongLists(props.song.id)
-  // Close dropdown after saving
+  showManageListsModal.value = false
   handleClose()
 }
 
@@ -233,6 +272,7 @@ async function handleDelete() {
   )
 
   if (confirmed) {
+    const songId = props.song.id
     await executeConfirmedOperation(
       () => songsStore.deleteSong(props.song.id, props.song.project_id),
       {
@@ -240,6 +280,10 @@ async function handleDelete() {
         successMessage: MESSAGES.SUCCESS.SONG_DELETED,
         errorContext: 'delete song',
         onSuccess: () => {
+          if (props.showRemoveFromList) {
+            // In list context: emit event so parent can update its local state
+            emit('songDeleted', songId)
+          }
           handleClose()
         },
       }

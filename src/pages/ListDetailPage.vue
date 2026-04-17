@@ -127,101 +127,50 @@
       <div v-if="listItems.length > 0" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
         <div class="max-w-2xl mx-auto">
           <!-- Selection Mode Controls -->
-          <div v-if="uiStore.selectionMode" class="space-y-3">
-            <!-- Action Buttons -->
-            <div v-if="uiStore.selectedIds.length > 0" class="flex flex-wrap gap-2">
-              <button
-                @click="handleBulkRemoveFromList"
-                class="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BULK_ACTIONS.REMOVE_FROM_LIST }}
-              </button>
-              <button
-                @click="handleBulkDelete"
-                class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BULK_ACTIONS.DELETE }}
-              </button>
-              <button
-                @click="handleBulkAddToLists"
-                class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BULK_ACTIONS.ADD_TO_LISTS }}
-              </button>
-              <button
-                @click="handleBulkAssignTags"
-                class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BULK_ACTIONS.ASSIGN_TAGS }}
-              </button>
-              <button
-                @click="handleBulkRemoveTags"
-                class="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BULK_ACTIONS.REMOVE_TAGS }}
-              </button>
-            </div>
-
-            <!-- Selection Controls -->
-            <div class="flex items-center justify-between gap-4">
-              <div class="text-white font-medium">
-                {{ I18N.COUNTERS.SELECTED(uiStore.selectedIds.length) }}
-              </div>
-              <div class="flex gap-2">
-                <button
-                  @click="handleSelectAll"
-                  class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  {{ I18N.BUTTONS.SELECT_ALL }}
-                </button>
-                <button
-                  v-if="uiStore.selectedIds.length > 0"
-                  @click="uiStore.deselectAll"
-                  class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  {{ I18N.BUTTONS.DESELECT_ALL }}
-                </button>
-                <button
-                  @click="uiStore.exitSelectionMode"
-                  class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-                >
-                  {{ I18N.BUTTONS.DONE }}
-                </button>
-              </div>
-            </div>
-          </div>
+          <ListBulkActions
+            v-if="uiStore.selectionMode"
+            :listId="listId"
+            :listName="currentList?.name || ''"
+            @selectAll="handleSelectAll"
+            @refresh="handleRefresh"
+            @songsDeleted="handleSongsDeleted"
+          />
 
           <!-- Search & Filter Controls -->
-          <div v-else class="flex gap-2">
-            <div class="relative flex-1">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-              </div>
-              <input
-                v-model="searchQuery"
-                type="text"
-                :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
-                class="w-full pl-10 pr-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <button
-              @click="openFilterModal"
-              class="px-4 py-3 bg-gray-900 border rounded-lg transition-colors"
-              :class="selectedTagIds.length > 0 ? 'border-blue-500 text-blue-400' : 'border-gray-700 text-gray-400 hover:text-white'"
-              :aria-label="I18N.FILTER.FILTER_BY_TAGS"
-            >
-              <div class="flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                </svg>
-                <span v-if="selectedTagIds.length > 0" class="text-sm font-medium">{{ selectedTagIds.length }}</span>
-              </div>
-            </button>
-          </div>
+          <ListFilterBar
+            v-else
+            v-model:searchQuery="searchQuery"
+            v-model:selectedTagIds="selectedTagIds"
+          />
         </div>
       </div>
+
+      <!-- Filter Modal -->
+      <FilterByTagsModal
+        :isOpen="showFilterModal"
+        :initialTagIds="selectedTagIds"
+        @close="showFilterModal = false"
+        @apply="handleApplyFilter"
+      />
+
+      <!-- Bulk Action Modals -->
+      <BulkAddToListsModal
+        :isOpen="showBulkAddToListsModal"
+        @close="showBulkAddToListsModal = false"
+        @apply="handleBulkAddToListsApply"
+      />
+
+      <BulkAssignTagsModal
+        :isOpen="showBulkAssignTagsModal"
+        @close="showBulkAssignTagsModal = false"
+        @apply="handleBulkAssignTagsApply"
+      />
+
+      <BulkRemoveTagsModal
+        :isOpen="showBulkRemoveTagsModal"
+        @close="showBulkRemoveTagsModal = false"
+        @apply="handleBulkRemoveTagsApply"
+      />
 
       <!-- Filter Modal -->
       <FilterByTagsModal
@@ -312,15 +261,12 @@ import { supabase } from '@/utils/supabase'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
-import { executeOperation, executeConfirmedOperation } from '@/utils/operations'
-import { TIMEOUTS } from '@/utils/timeout'
+import { executeOperation } from '@/utils/operations'
 import AppHeader from '@/components/AppHeader.vue'
 import ListSongCard from '@/components/ListSongCard.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
-import FilterByTagsModal from '@/components/FilterByTagsModal.vue'
-import BulkAddToListsModal from '@/components/BulkAddToListsModal.vue'
-import BulkAssignTagsModal from '@/components/BulkAssignTagsModal.vue'
-import BulkRemoveTagsModal from '@/components/BulkRemoveTagsModal.vue'
+import ListBulkActions from '@/components/ListBulkActions.vue'
+import ListFilterBar from '@/components/ListFilterBar.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -333,10 +279,6 @@ const uiStore = useUiStore()
 const isPageMenuOpen = ref(false)
 const searchQuery = ref('')
 const selectedTagIds = ref<string[]>([])
-const showFilterModal = ref(false)
-const showBulkAddToListsModal = ref(false)
-const showBulkAssignTagsModal = ref(false)
-const showBulkRemoveTagsModal = ref(false)
 const showTitleModal = ref(false)
 const editingTitle = ref<any>(null)
 const titleInput = ref('')
@@ -473,16 +415,15 @@ onMounted(async () => {
 async function handleRemove(item: any) {
   if (!currentList.value) return
   
-  uiStore.showOperationOverlay('Removing song from list...')
-  const result = await listsStore.removeSongFromList(currentList.value.id, item.song_id)
-  uiStore.hideOperationOverlay()
-  
-  if (result.success) {
-    uiStore.showToast(I18N.TOAST.REMOVED_FROM_LIST(currentList.value.name), 'success')
-    // No need to refresh - removeSongFromList already updates local state
-  } else {
-    uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-  }
+  await executeOperation(
+    () => listsStore.removeSongFromList(currentList.value!.id, item.song_id),
+    {
+      loadingMessage: 'Removing song from list...',
+      successMessage: I18N.TOAST.REMOVED_FROM_LIST(currentList.value!.name),
+      errorContext: 'remove song from list',
+    }
+  )
+  // No need to refresh - removeSongFromList already updates local state
 }
 
 function handleSongDeleted(songId: string) {
@@ -495,10 +436,8 @@ function handleSongDeleted(songId: string) {
 }
 
 async function handleTagsUpdated(songId: string) {
-  console.log('[ListDetailPage] handleTagsUpdated called for song:', songId)
-  // Simply refresh the list like bulk actions do
+  // Refresh list to show updated tags (like bulk actions do)
   await handleRefresh()
-  console.log('[ListDetailPage] handleTagsUpdated completed')
 }
 
 function handleAddTitle() {
@@ -607,171 +546,13 @@ function handleSelectAll() {
   uiStore.selectAll(allSongIds)
 }
 
-async function handleBulkRemoveFromList() {
-  const count = uiStore.selectedIds.length
-  
-  if (!currentList.value) return
-  
-  const listName = currentList.value.name
-  
-  await executeOperation(
-    async () => {
-      // Remove all selected songs from the current list
-      for (const songId of uiStore.selectedIds) {
-        await listsStore.removeSongFromList(currentList.value!.id, songId)
-      }
-      
-      return { success: true }
-    },
-    {
-      timeout: TIMEOUTS.BULK,
-      loadingMessage: `Removing ${count} song${count > 1 ? 's' : ''} from list...`,
-      successMessage: I18N.TOAST.BULK_REMOVED_FROM_LIST(count, listName),
-      errorContext: 'remove songs from list',
-      onSuccess: () => {
-        uiStore.exitSelectionMode()
-      },
-    }
-  )
-}
-
-async function handleBulkDelete() {
-  const count = uiStore.selectedIds.length
-  const confirmed = await uiStore.showConfirm(
-    I18N.MODAL_CONTENT.BULK_DELETE_SONGS_TITLE(count),
-    I18N.MODAL_CONTENT.BULK_DELETE_SONGS_MESSAGE(count),
-    I18N.BUTTONS.DELETE,
-    I18N.BUTTONS.CANCEL
-  )
-  
-  if (confirmed) {
-    const projectId = await authStore.getPersonalProjectId()
-    if (projectId) {
-      const deletedIds = [...uiStore.selectedIds]
-      const result = await executeConfirmedOperation(
-        () => songsStore.bulkDelete(uiStore.selectedIds, projectId),
-        {
-          loadingMessage: `Deleting ${count} song${count > 1 ? 's' : ''}...`,
-          successMessage: I18N.TOAST.BULK_DELETED_SONGS(count),
-          errorContext: 'delete songs',
-          onSuccess: () => {
-            uiStore.exitSelectionMode()
-          },
-        }
-      )
-      
-      // Remove deleted songs from list's local state instead of re-fetching
-      if (result.success && currentList.value) {
-        currentList.value.items = currentList.value.items.filter(
-          item => !deletedIds.includes(item.song_id)
-        )
-      }
-    }
+function handleSongsDeleted(deletedIds: string[]) {
+  // Remove deleted songs from list's local state
+  if (currentList.value) {
+    currentList.value.items = currentList.value.items.filter(
+      item => !deletedIds.includes(item.song_id)
+    )
   }
-}
-
-async function handleBulkAddToLists() {
-  showBulkAddToListsModal.value = true
-}
-
-async function handleBulkAddToListsApply(listIds: string[]) {
-  const songCount = uiStore.selectedIds.length
-  
-  await executeOperation(
-    async () => {
-      // Add each selected song to each selected list
-      for (const listId of listIds) {
-        for (const songId of uiStore.selectedIds) {
-          await listsStore.addSongToList(listId, songId)
-        }
-      }
-      return { success: true }
-    },
-    {
-      timeout: TIMEOUTS.BULK,
-      loadingMessage: `Adding ${songCount} song${songCount > 1 ? 's' : ''} to lists...`,
-      successMessage: I18N.TOAST.BULK_ADDED_TO_LISTS(songCount),
-      errorContext: 'add songs to lists',
-      onSuccess: () => {
-        uiStore.exitSelectionMode()
-      },
-    }
-  )
-}
-
-async function handleBulkAssignTags() {
-  showBulkAssignTagsModal.value = true
-}
-
-async function handleBulkAssignTagsApply(tagIds: string[]) {
-  const songCount = uiStore.selectedIds.length
-  
-  await executeOperation(
-    async () => {
-      // Create song_tag entries for each song-tag combination
-      const inserts = []
-      for (const songId of uiStore.selectedIds) {
-        for (const tagId of tagIds) {
-          inserts.push({ song_id: songId, tag_id: tagId })
-        }
-      }
-      
-      const { error } = await supabase
-        .from('song_tags')
-        .upsert(inserts, { onConflict: 'song_id,tag_id', ignoreDuplicates: true })
-      
-      if (error) throw error
-      
-      // Refresh list to show updated tags
-      await handleRefresh()
-      
-      return { success: true }
-    },
-    {
-      timeout: TIMEOUTS.BULK,
-      loadingMessage: `Assigning tags to ${songCount} song${songCount > 1 ? 's' : ''}...`,
-      successMessage: I18N.TOAST.BULK_TAGS_ASSIGNED(songCount),
-      errorContext: 'assign tags',
-      onSuccess: () => {
-        uiStore.exitSelectionMode()
-      },
-    }
-  )
-}
-
-async function handleBulkRemoveTags() {
-  showBulkRemoveTagsModal.value = true
-}
-
-async function handleBulkRemoveTagsApply(tagIds: string[]) {
-  const songCount = uiStore.selectedIds.length
-  
-  await executeOperation(
-    async () => {
-      // Remove tag associations for selected songs and tags
-      const { error } = await supabase
-        .from('song_tags')
-        .delete()
-        .in('song_id', uiStore.selectedIds)
-        .in('tag_id', tagIds)
-      
-      if (error) throw error
-      
-      // Refresh list to show updated tags
-      await handleRefresh()
-      
-      return { success: true }
-    },
-    {
-      timeout: TIMEOUTS.BULK,
-      loadingMessage: `Removing tags from ${songCount} song${songCount > 1 ? 's' : ''}...`,
-      successMessage: I18N.TOAST.BULK_TAGS_REMOVED(songCount),
-      errorContext: 'remove tags',
-      onSuccess: () => {
-        uiStore.exitSelectionMode()
-      },
-    }
-  )
 }
 </script>
 

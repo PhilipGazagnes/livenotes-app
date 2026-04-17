@@ -4,6 +4,8 @@
  * Helper functions for tracking and optimizing application performance
  */
 
+import { logger } from './logger'
+
 /**
  * Debounce function to limit how often a function can be called
  * Useful for search inputs, scroll handlers, etc.
@@ -73,11 +75,11 @@ export async function measurePerformance<T>(
     try {
       const result = await fn()
       const end = performance.now()
-      console.log(`[Performance] ${label}: ${(end - start).toFixed(2)}ms`)
+      logger.performance(label, end - start)
       return result
     } catch (error) {
       const end = performance.now()
-      console.log(`[Performance] ${label} (failed): ${(end - start).toFixed(2)}ms`)
+      logger.performance(`${label} (failed)`, end - start)
       throw error
     }
   } else {
@@ -141,14 +143,14 @@ export function logWebVitals() {
   new PerformanceObserver((list) => {
     const entries = list.getEntries()
     const lastEntry = entries[entries.length - 1] as any
-    console.log('[Web Vitals] LCP:', lastEntry.renderTime || lastEntry.loadTime)
+    logger.debug('Web Vitals LCP:', lastEntry.renderTime || lastEntry.loadTime)
   }).observe({ entryTypes: ['largest-contentful-paint'] })
 
   // First Input Delay (FID)
   new PerformanceObserver((list) => {
     const entries = list.getEntries() as any[]
     entries.forEach((entry) => {
-      console.log('[Web Vitals] FID:', entry.processingStart - entry.startTime)
+      logger.debug('Web Vitals FID:', entry.processingStart - entry.startTime)
     })
   }).observe({ entryTypes: ['first-input'] })
 
@@ -161,6 +163,6 @@ export function logWebVitals() {
         clsScore += entry.value
       }
     })
-    console.log('[Web Vitals] CLS:', clsScore)
+    logger.debug('Web Vitals CLS:', clsScore)
   }).observe({ entryTypes: ['layout-shift'] })
 }

@@ -112,6 +112,7 @@ import { supabase } from '@/utils/supabase'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { executeOperation } from '@/utils/operations'
+import { logger } from '@/utils/logger'
 
 const props = defineProps<{
   isOpen: boolean
@@ -234,7 +235,7 @@ async function handleSave() {
       successMessage: MESSAGES.SUCCESS.TAGS_UPDATED,
       errorContext: 'assign tags',
       onSuccess: () => {
-        console.log('[ManageTagsModal] Tags saved successfully, emitting saved event')
+        logger.debug('ManageTagsModal: Tags saved successfully, emitting saved event')
         emit('saved')
         emit('close')
       },
