@@ -1,3 +1,23 @@
+<!--
+  ListFilterBar.vue
+  
+  Search and filter bar for list songs
+  
+  Provides:
+  - Text search input
+  - Tag filter button with badge showing active filter count
+  
+  Props:
+    - searchQuery: Current search text (v-model)
+    - selectedTagIds: Array of selected tag IDs for filtering (v-model)
+  
+  Emits:
+    - update:searchQuery: When search text changes
+    - update:selectedTagIds: When tag filters change
+  
+  Note: Integrates FilterByTagsModal for tag selection
+-->
+
 <template>
   <div class="flex gap-2">
     <div class="relative flex-1">

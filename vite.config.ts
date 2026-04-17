@@ -10,6 +10,21 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/main.ts',
+        'src/**/*.d.ts',
+        'src/vite-env.d.ts',
+        '**/*.config.*',
+      ],
+    },
+  },
   build: {
     // Enable code splitting for better caching
     rollupOptions: {

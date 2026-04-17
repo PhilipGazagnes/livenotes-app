@@ -1,3 +1,27 @@
+<!--
+  ListBulkActions.vue
+  
+  Bulk operations component for list songs
+  
+  Extracted from ListDetailPage to handle all multi-selection operations:
+  - Remove from list
+  - Delete permanently
+  - Add to other lists
+  - Assign/remove tags
+  
+  Props:
+    - listId: ID of the current list
+    - selectedSongs: Array of selected song IDs
+    - selectedCount: Computed count for display
+  
+  Emits:
+    - selectAll: Toggle all songs selection
+    - refresh: Refresh the song list after changes
+    - songsDeleted: Notify parent when songs are permanently deleted
+  
+  Note: All operations use executeOperation pattern for consistent UX
+-->
+
 <template>
   <div class="space-y-3">
     <!-- Action Buttons -->

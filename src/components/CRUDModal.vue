@@ -1,3 +1,37 @@
+<!--
+  CRUDModal.vue
+  
+  Generic modal for create/rename operations
+  
+  Reusable modal component that handles:
+  - Text input with validation
+  - Character count display
+  - Error messages
+  - Loading states
+  - Submit on Enter key
+  
+  Props:
+    - isOpen: Controls modal visibility
+    - title: Modal title text
+    - label: Input field label
+    - placeholder: Input placeholder text
+    - modelValue: Input value (v-model)
+    - error: Validation error message
+    - maxLength: Maximum input length
+    - isLoading: Shows loading spinner on buttons
+    - confirmText: Text for confirm button (default: "Confirm")
+    - inputId: HTML id for input (default: "crud-input")
+    - autofocus: Auto-focus input on open (default: true)
+  
+  Emits:
+    - close: Close modal
+    - submit: Submit form
+    - update:modelValue: Input value change
+  
+  Usage:
+    Used by useCRUD composable for TagsPage, ArtistsPage, and similar CRUD pages
+-->
+
 <template>
   <div
     v-if="isOpen"

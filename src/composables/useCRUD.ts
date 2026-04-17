@@ -1,18 +1,33 @@
 import { ref } from 'vue'
 import { executeOperation } from '@/utils/operations'
 
+/**
+ * Base interface for CRUD items
+ * All items must have an id and name property
+ */
 export interface CRUDItem {
   id: string
   name: string
 }
 
+/**
+ * Configuration options for the CRUD composable
+ * @template T - Type of the CRUD item extending CRUDItem
+ */
 export interface CRUDOptions<T extends CRUDItem> {
+  /** Array of items to manage */
   items: T[]
+  /** Maximum length for the name field */
   maxLength?: number
+  /** Custom validation function to check for duplicates */
   validateDuplicate?: (name: string, excludeId?: string) => boolean
+  /** Async function to create a new item */
   onCreate: (name: string) => Promise<{ success: boolean; error?: string; data?: T }>
+  /** Async function to update an existing item */
   onUpdate: (id: string, name: string) => Promise<{ success: boolean; error?: string }>
+  /** Async function to delete an item */
   onDelete: (id: string) => Promise<{ success: boolean; error?: string }>
+  /** Customizable success/error messages */
   messages: {
     created: string
     updated: string
@@ -21,8 +36,33 @@ export interface CRUDOptions<T extends CRUDItem> {
     nameTooLong: string
     alreadyExists: string
   }
+  /** Function to confirm deletion (shows confirmation dialog) */
   confirmDelete: (item: T) => Promise<boolean>
 }
+
+/**
+ * Reusable composable for CRUD operations
+ * 
+ * Provides standardized state management and handlers for Create, Read, Update, Delete operations.
+ * Includes validation, error handling, and integration with executeOperation pattern.
+ * 
+ * @template T - Type of the CRUD item extending CRUDItem
+ * @param options - Configuration options for CRUD behavior
+ * @returns Object containing reactive state and handler functions
+ * 
+ * @example
+ * ```typescript
+ * const { showCreateModal, handleCreate, handleDelete } = useCRUD<Tag>({
+ *   items: tagsStore.tags,
+ *   maxLength: 50,
+ *   onCreate: async (name) => await tagsStore.createTag(projectId, name),
+ *   onUpdate: async (id, name) => await tagsStore.updateTag(id, name),
+ *   onDelete: async (id) => await tagsStore.deleteTag(id),
+ *   messages: { created: 'Tag created', ... },
+ *   confirmDelete: async (tag) => await uiStore.showConfirm(...)
+ * })
+ * ```
+ */
 
 export function useCRUD<T extends CRUDItem>(options: CRUDOptions<T>) {
   const showCreateModal = ref(false)

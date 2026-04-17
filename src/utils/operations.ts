@@ -1,10 +1,18 @@
 /**
  * Universal operation handler for consistent error handling and user feedback
+ * 
+ * This module provides standardized wrappers for async operations throughout the app,
+ * ensuring consistent UX with loading overlays, success toasts, and error handling.
+ * 
+ * @module operations
  */
 
 import { useUiStore } from '@/stores/ui'
 import { withTimeout, TimeoutError, TIMEOUTS } from './timeout'
 
+/**
+ * Configuration options for executeOperation
+ */
 export interface OperationOptions {
   /** Timeout in milliseconds (default: 15000) */
   timeout?: number
@@ -22,24 +30,47 @@ export interface OperationOptions {
   useOverlay?: boolean
 }
 
+/**
+ * Result object returned by executeOperation
+ * @template T - Type of the data returned on success
+ */
 export interface OperationResult<T = void> {
+  /** Whether the operation succeeded */
   success: boolean
+  /** Data returned by the operation (if successful) */
   data?: T
+  /** Error message (if failed) */
   error?: string
 }
 
 /**
  * Executes an async operation with timeout, loading state, and error handling
  * 
+ * This is the standard pattern for all async operations in the app.
+ * It handles:
+ * - Loading overlay display
+ * - Timeout management
+ * - Success/error toast notifications
+ * - Consistent error messaging
+ * 
+ * @template T - Type of data returned by the operation
+ * @param operation - Async function to execute
+ * @param options - Configuration options
+ * @returns Promise resolving to OperationResult
+ * 
  * @example
- * const result = await executeOperation(
+ * ```typescript
+ * await executeOperation(
  *   () => songsStore.updateSong(id, data),
  *   {
  *     loadingMessage: 'Saving song...',
  *     successMessage: 'Song saved successfully',
  *     errorContext: 'save song',
+ *     timeout: 10000,
+ *     onSuccess: () => router.push('/songs')
  *   }
  * )
+ * ```
  */
 export async function executeOperation<T = void>(
   operation: () => Promise<any>,

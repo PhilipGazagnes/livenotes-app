@@ -1,3 +1,27 @@
+<!--
+  CRUDEmptyState.vue
+  
+  Generic empty state component for CRUD pages
+  
+  Displays when no items exist, with:
+  - Customizable icon
+  - Title and subtitle text
+  - Call-to-action button
+  
+  Props:
+    - title: Main heading text
+    - subtitle: Description text
+    - ctaText: Button text (e.g., "Create first tag")
+    - iconPath: SVG path data for icon
+  
+  Emits:
+    - create: User clicked the create button
+  
+  Usage:
+    Used by TagsPage, ArtistsPage, and similar CRUD pages
+    when the list is empty
+-->
+
 <template>
   <div class="text-center py-12 px-4">
     <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
