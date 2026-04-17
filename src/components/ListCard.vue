@@ -136,6 +136,8 @@ function handleClick() {
   if (uiStore.selectionMode) {
     uiStore.toggleSelection(props.list.id)
   } else {
+    // Show overlay for loading state during navigation
+    uiStore.showOperationOverlay('Loading list...')
     // Navigate to list detail page
     router.push(`${ROUTES.LISTS}/${props.list.id}`)
   }

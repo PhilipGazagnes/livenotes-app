@@ -6,6 +6,7 @@ export interface Toast {
   message: string
   type: 'success' | 'error'
   duration: number
+  context?: string // Additional context about the error/success
 }
 
 export interface ConfirmDialog {
@@ -16,6 +17,12 @@ export interface ConfirmDialog {
   cancelText: string
   onConfirm: () => void
   onCancel?: () => void
+  isLoading?: boolean // Show spinner while operation is in progress
+}
+
+export interface OperationOverlay {
+  isVisible: boolean
+  message: string
 }
 
 export const useUiStore = defineStore('ui', () => {
@@ -24,6 +31,12 @@ export const useUiStore = defineStore('ui', () => {
   const toasts = ref<Toast[]>([])
   const confirmDialog = ref<ConfirmDialog | null>(null)
   const isHamburgerMenuOpen = ref(false)
+  
+  // Operation overlay state
+  const operationOverlay = ref<OperationOverlay>({
+    isVisible: false,
+    message: '',
+  })
   
   // Bulk selection state
   const selectionMode = ref(false)
@@ -34,9 +47,14 @@ export const useUiStore = defineStore('ui', () => {
     isLoading.value = loading
   }
 
-  function showToast(message: string, type: 'success' | 'error' = 'success', duration = 3000) {
+  function showToast(
+    message: string, 
+    type: 'success' | 'error' = 'success', 
+    duration = 3000,
+    context?: string
+  ) {
     const id = `toast-${Date.now()}-${Math.random()}`
-    const toast: Toast = { id, message, type, duration }
+    const toast: Toast = { id, message, type, duration, context }
     
     toasts.value.push(toast)
     
@@ -46,6 +64,12 @@ export const useUiStore = defineStore('ui', () => {
     }, duration)
     
     return id
+  }
+  
+  function showErrorToast(operationName: string, error: Error | string, duration = 5000) {
+    const errorMessage = error instanceof Error ? error.message : error
+    const message = `Failed to ${operationName}`
+    showToast(message, 'error', duration, errorMessage)
   }
 
   function removeToast(id: string) {
@@ -84,6 +108,26 @@ export const useUiStore = defineStore('ui', () => {
       confirmDialog.value.onCancel()
     } else {
       confirmDialog.value = null
+    }
+  }
+  
+  function setConfirmDialogLoading(loading: boolean) {
+    if (confirmDialog.value) {
+      confirmDialog.value.isLoading = loading
+    }
+  }
+  
+  function showOperationOverlay(message: string) {
+    operationOverlay.value = {
+      isVisible: true,
+      message,
+    }
+  }
+  
+  function hideOperationOverlay() {
+    operationOverlay.value = {
+      isVisible: false,
+      message: '',
     }
   }
 
@@ -137,14 +181,19 @@ export const useUiStore = defineStore('ui', () => {
     toasts,
     confirmDialog,
     isHamburgerMenuOpen,
+    operationOverlay,
     selectionMode,
     selectedIds,
     // Actions
     setLoading,
     showToast,
+    showErrorToast,
     removeToast,
     showConfirm,
     closeConfirm,
+    setConfirmDialogLoading,
+    showOperationOverlay,
+    hideOperationOverlay,
     openHamburgerMenu,
     closeHamburgerMenu,
     toggleHamburgerMenu,

@@ -53,13 +53,8 @@
         </template>
       </AppHeader>
 
-      <!-- Loading State -->
-      <div v-if="listsStore.isLoading" class="flex items-center justify-center py-20">
-        <LoadingSpinner />
-      </div>
-
       <!-- Empty State -->
-      <div v-else-if="!listsStore.isLoading && !currentList" class="text-center py-12 px-4">
+      <div v-if="!listsStore.isLoading && !currentList" class="text-center py-12 px-4">
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
         </svg>
@@ -112,6 +107,8 @@
                 v-else
                 :item="item"
                 @remove="handleRemove(item)"
+                @songDeleted="handleSongDeleted"
+                @tagsUpdated="handleTagsUpdated"
               />
             </div>
           </template>
@@ -315,8 +312,9 @@ import { supabase } from '@/utils/supabase'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
+import { executeOperation, executeConfirmedOperation } from '@/utils/operations'
+import { TIMEOUTS } from '@/utils/timeout'
 import AppHeader from '@/components/AppHeader.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import ListSongCard from '@/components/ListSongCard.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
 import FilterByTagsModal from '@/components/FilterByTagsModal.vue'
@@ -438,43 +436,69 @@ async function handleDragEnd() {
 }
 
 onMounted(async () => {
-  // Get the scrollable element from ion-content for drag auto-scroll
-  if (ionContentRef.value) {
-    try {
-      const content = await ionContentRef.value.$el.getScrollElement()
-      scrollElement.value = content
-    } catch (err) {
-      console.warn('Could not get scroll element:', err)
+  try {
+    // Get the scrollable element from ion-content for drag auto-scroll
+    if (ionContentRef.value) {
+      try {
+        const content = await ionContentRef.value.$el.getScrollElement()
+        scrollElement.value = content
+      } catch (err) {
+        console.warn('Could not get scroll element:', err)
+      }
     }
-  }
 
-  if (listId.value) {
-    const result = await listsStore.fetchListById(listId.value)
-    if (!result) {
-      // List not found, redirect to lists page
-      router.push(ROUTES.LISTS)
+    if (listId.value) {
+      const result = await listsStore.fetchListById(listId.value)
+      if (!result) {
+        // List not found, redirect to lists page
+        router.push(ROUTES.LISTS)
+        return
+      }
     }
-  }
-  
-  // Fetch tags for filtering
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await tagsStore.fetchTags(personalProjectId)
+    
+    // Fetch tags for filtering
+    const personalProjectId = await authStore.getPersonalProjectId()
+    if (personalProjectId) {
+      await tagsStore.fetchTags(personalProjectId)
+    }
+  } catch (error) {
+    console.error('Error loading list:', error)
+    uiStore.showToast('Failed to load list', 'error')
+  } finally {
+    // Always hide overlay
+    uiStore.hideOperationOverlay()
   }
 })
 
 async function handleRemove(item: any) {
   if (!currentList.value) return
   
+  uiStore.showOperationOverlay('Removing song from list...')
   const result = await listsStore.removeSongFromList(currentList.value.id, item.song_id)
+  uiStore.hideOperationOverlay()
   
   if (result.success) {
     uiStore.showToast(I18N.TOAST.REMOVED_FROM_LIST(currentList.value.name), 'success')
-    // Refresh list to remove the item from UI
-    await handleRefresh()
+    // No need to refresh - removeSongFromList already updates local state
   } else {
     uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
   }
+}
+
+function handleSongDeleted(songId: string) {
+  // Remove deleted song from list's local state
+  if (currentList.value) {
+    currentList.value.items = currentList.value.items.filter(
+      item => item.song_id !== songId
+    )
+  }
+}
+
+async function handleTagsUpdated(songId: string) {
+  console.log('[ListDetailPage] handleTagsUpdated called for song:', songId)
+  // Simply refresh the list like bulk actions do
+  await handleRefresh()
+  console.log('[ListDetailPage] handleTagsUpdated completed')
 }
 
 function handleAddTitle() {
@@ -588,19 +612,27 @@ async function handleBulkRemoveFromList() {
   
   if (!currentList.value) return
   
-  try {
-    // Remove all selected songs from the current list
-    for (const songId of uiStore.selectedIds) {
-      await listsStore.removeSongFromList(currentList.value.id, songId)
+  const listName = currentList.value.name
+  
+  await executeOperation(
+    async () => {
+      // Remove all selected songs from the current list
+      for (const songId of uiStore.selectedIds) {
+        await listsStore.removeSongFromList(currentList.value!.id, songId)
+      }
+      
+      return { success: true }
+    },
+    {
+      timeout: TIMEOUTS.BULK,
+      loadingMessage: `Removing ${count} song${count > 1 ? 's' : ''} from list...`,
+      successMessage: I18N.TOAST.BULK_REMOVED_FROM_LIST(count, listName),
+      errorContext: 'remove songs from list',
+      onSuccess: () => {
+        uiStore.exitSelectionMode()
+      },
     }
-    
-    uiStore.showToast(I18N.TOAST.BULK_REMOVED_FROM_LIST(count, currentList.value.name), 'success')
-    uiStore.exitSelectionMode()
-    await handleRefresh()
-  } catch (err) {
-    console.error('Failed to remove songs from list:', err)
-    uiStore.showToast('Failed to remove songs from list', 'error')
-  }
+  )
 }
 
 async function handleBulkDelete() {
@@ -615,13 +647,24 @@ async function handleBulkDelete() {
   if (confirmed) {
     const projectId = await authStore.getPersonalProjectId()
     if (projectId) {
-      const result = await songsStore.bulkDelete(uiStore.selectedIds, projectId)
-      if (result.success) {
-        uiStore.showToast(I18N.TOAST.BULK_DELETED_SONGS(count), 'success')
-        uiStore.exitSelectionMode()
-        await handleRefresh()
-      } else {
-        uiStore.showToast(result.error || 'Failed to delete songs', 'error')
+      const deletedIds = [...uiStore.selectedIds]
+      const result = await executeConfirmedOperation(
+        () => songsStore.bulkDelete(uiStore.selectedIds, projectId),
+        {
+          loadingMessage: `Deleting ${count} song${count > 1 ? 's' : ''}...`,
+          successMessage: I18N.TOAST.BULK_DELETED_SONGS(count),
+          errorContext: 'delete songs',
+          onSuccess: () => {
+            uiStore.exitSelectionMode()
+          },
+        }
+      )
+      
+      // Remove deleted songs from list's local state instead of re-fetching
+      if (result.success && currentList.value) {
+        currentList.value.items = currentList.value.items.filter(
+          item => !deletedIds.includes(item.song_id)
+        )
       }
     }
   }
@@ -634,20 +677,26 @@ async function handleBulkAddToLists() {
 async function handleBulkAddToListsApply(listIds: string[]) {
   const songCount = uiStore.selectedIds.length
   
-  try {
-    // Add each selected song to each selected list
-    for (const listId of listIds) {
-      for (const songId of uiStore.selectedIds) {
-        await listsStore.addSongToList(listId, songId)
+  await executeOperation(
+    async () => {
+      // Add each selected song to each selected list
+      for (const listId of listIds) {
+        for (const songId of uiStore.selectedIds) {
+          await listsStore.addSongToList(listId, songId)
+        }
       }
+      return { success: true }
+    },
+    {
+      timeout: TIMEOUTS.BULK,
+      loadingMessage: `Adding ${songCount} song${songCount > 1 ? 's' : ''} to lists...`,
+      successMessage: I18N.TOAST.BULK_ADDED_TO_LISTS(songCount),
+      errorContext: 'add songs to lists',
+      onSuccess: () => {
+        uiStore.exitSelectionMode()
+      },
     }
-    
-    uiStore.showToast(I18N.TOAST.BULK_ADDED_TO_LISTS(songCount), 'success')
-    uiStore.exitSelectionMode()
-  } catch (err) {
-    console.error('Failed to add songs to lists:', err)
-    uiStore.showToast('Failed to add songs to lists', 'error')
-  }
+  )
 }
 
 async function handleBulkAssignTags() {
@@ -657,30 +706,37 @@ async function handleBulkAssignTags() {
 async function handleBulkAssignTagsApply(tagIds: string[]) {
   const songCount = uiStore.selectedIds.length
   
-  try {
-    // Create song_tag entries for each song-tag combination
-    const inserts = []
-    for (const songId of uiStore.selectedIds) {
-      for (const tagId of tagIds) {
-        inserts.push({ song_id: songId, tag_id: tagId })
+  await executeOperation(
+    async () => {
+      // Create song_tag entries for each song-tag combination
+      const inserts = []
+      for (const songId of uiStore.selectedIds) {
+        for (const tagId of tagIds) {
+          inserts.push({ song_id: songId, tag_id: tagId })
+        }
       }
+      
+      const { error } = await supabase
+        .from('song_tags')
+        .upsert(inserts, { onConflict: 'song_id,tag_id', ignoreDuplicates: true })
+      
+      if (error) throw error
+      
+      // Refresh list to show updated tags
+      await handleRefresh()
+      
+      return { success: true }
+    },
+    {
+      timeout: TIMEOUTS.BULK,
+      loadingMessage: `Assigning tags to ${songCount} song${songCount > 1 ? 's' : ''}...`,
+      successMessage: I18N.TOAST.BULK_TAGS_ASSIGNED(songCount),
+      errorContext: 'assign tags',
+      onSuccess: () => {
+        uiStore.exitSelectionMode()
+      },
     }
-    
-    const { error } = await supabase
-      .from('song_tags')
-      .upsert(inserts, { onConflict: 'song_id,tag_id', ignoreDuplicates: true })
-    
-    if (error) throw error
-    
-    // Refresh list to show updated tags
-    await handleRefresh()
-    
-    uiStore.showToast(I18N.TOAST.BULK_TAGS_ASSIGNED(songCount), 'success')
-    uiStore.exitSelectionMode()
-  } catch (err) {
-    console.error('Failed to assign tags:', err)
-    uiStore.showToast('Failed to assign tags', 'error')
-  }
+  )
 }
 
 async function handleBulkRemoveTags() {
@@ -690,25 +746,32 @@ async function handleBulkRemoveTags() {
 async function handleBulkRemoveTagsApply(tagIds: string[]) {
   const songCount = uiStore.selectedIds.length
   
-  try {
-    // Remove tag associations for selected songs and tags
-    const { error } = await supabase
-      .from('song_tags')
-      .delete()
-      .in('song_id', uiStore.selectedIds)
-      .in('tag_id', tagIds)
-    
-    if (error) throw error
-    
-    // Refresh list to show updated tags
-    await handleRefresh()
-    
-    uiStore.showToast(I18N.TOAST.BULK_TAGS_REMOVED(songCount), 'success')
-    uiStore.exitSelectionMode()
-  } catch (err) {
-    console.error('Failed to remove tags:', err)
-    uiStore.showToast('Failed to remove tags', 'error')
-  }
+  await executeOperation(
+    async () => {
+      // Remove tag associations for selected songs and tags
+      const { error } = await supabase
+        .from('song_tags')
+        .delete()
+        .in('song_id', uiStore.selectedIds)
+        .in('tag_id', tagIds)
+      
+      if (error) throw error
+      
+      // Refresh list to show updated tags
+      await handleRefresh()
+      
+      return { success: true }
+    },
+    {
+      timeout: TIMEOUTS.BULK,
+      loadingMessage: `Removing tags from ${songCount} song${songCount > 1 ? 's' : ''}...`,
+      successMessage: I18N.TOAST.BULK_TAGS_REMOVED(songCount),
+      errorContext: 'remove tags',
+      onSuccess: () => {
+        uiStore.exitSelectionMode()
+      },
+    }
+  )
 }
 </script>
 

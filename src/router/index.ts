@@ -62,7 +62,19 @@ const router = createRouter({
 // Auth guard - redirect to login if not authenticated
 router.beforeEach(async (to, _from, next) => {
   const { useAuthStore } = await import('@/stores/auth')
+  const { useUiStore } = await import('@/stores/ui')
   const authStore = useAuthStore()
+  const uiStore = useUiStore()
+  
+  // Show loading overlay for non-public routes
+  if (!to.meta.public) {
+    uiStore.showOperationOverlay('Loading...')
+  }
+  
+  // Exit selection mode on navigation
+  if (uiStore.selectionMode) {
+    uiStore.exitSelectionMode()
+  }
   
   // Wait for auth to initialize before checking authentication
   if (!authStore.isInitialized) {
@@ -73,8 +85,10 @@ router.beforeEach(async (to, _from, next) => {
   const isAuthenticated = authStore.isAuthenticated
   
   if (!isPublic && !isAuthenticated) {
+    uiStore.hideOperationOverlay()
     next(ROUTES.LOGIN)
   } else if (isPublic && isAuthenticated) {
+    uiStore.hideOperationOverlay()
     next(ROUTES.ALL_SONGS)
   } else {
     next()

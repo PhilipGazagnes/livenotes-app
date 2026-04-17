@@ -37,16 +37,6 @@
         </button>
 
         <button
-          @click="handleDuplicate"
-          class="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-          </svg>
-          <span>{{ I18N.DROPDOWN.DUPLICATE }}</span>
-        </button>
-
-        <button
           @click="handleManageTags"
           class="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
         >
@@ -113,6 +103,7 @@ import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
+import { executeConfirmedOperation, executeOperation } from '@/utils/operations'
 import ManageTagsModal from './ManageTagsModal.vue'
 import ManageListsModal from './ManageListsModal.vue'
 
@@ -123,8 +114,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   remove: []
-  tagsUpdated: []
+  tagsUpdated: [songId: string]
   listsUpdated: []
+  songDeleted: [songId: string]
 }>()
 
 const router = useRouter()
@@ -159,6 +151,15 @@ function handleRemoveFromList() {
 }
 
 function handleEdit() {
+  // Check if offline
+  if (!navigator.onLine) {
+    uiStore.showToast(MESSAGES.ERROR.OFFLINE, 'error')
+    handleClose()
+    return
+  }
+  
+  // Show overlay immediately for better UX during navigation
+  uiStore.showOperationOverlay('Loading song...')
   router.push(`/song/${props.song.id}/edit`)
   handleClose()
 }
@@ -172,19 +173,23 @@ async function handleDuplicate() {
   )
 
   if (confirmed) {
-    const result = await songsStore.createSong({
-      project_id: props.song.project_id,
-      title: `${props.song.title} (copy)`,
-      artist: props.song.artist,
-      notes: props.song.notes,
-      livenotes_poc_id: null, // Don't copy POC ID
-    })
-
-    if (result.success) {
-      uiStore.showToast(MESSAGES.SUCCESS.SONG_DUPLICATED, 'success')
-    } else {
-      uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-    }
+    const tagIds = props.song.tags?.map(t => t.id) || []
+    const artistIds = props.song.artists?.map(a => a.id) || []
+    
+    await executeOperation(
+      () => songsStore.createSong({
+        project_id: props.song.project_id,
+        title: `${props.song.title} (copy)`,
+        artist: props.song.artist,
+        notes: props.song.notes,
+        livenotes_poc_id: null, // Don't copy POC ID
+      }, tagIds, artistIds),
+      {
+        loadingMessage: 'Duplicating song...',
+        successMessage: MESSAGES.SUCCESS.SONG_DUPLICATED,
+        errorContext: 'duplicate song',
+      }
+    )
   }
   
   handleClose()
@@ -206,11 +211,19 @@ function handleModalClose() {
 }
 
 async function handleTagsSaved() {
+  console.log('[ListSongDropdownMenu] handleTagsSaved called for song:', props.song.id)
+  
   // Refresh only this song's tags locally to avoid scroll reset
   await songsStore.refreshSongTags(props.song.id)
+  
+  // Close the modal
   showManageTagsModal.value = false
-  isOpen.value = false
-  emit('close')
+  
+  console.log('[ListSongDropdownMenu] Emitting tagsUpdated for song:', props.song.id)
+  // Emit tagsUpdated with songId
+  emit('tagsUpdated', props.song.id)
+  
+  console.log('[ListSongDropdownMenu] Tags saved completed')
 }
 
 async function handleManageLists() {
@@ -239,17 +252,22 @@ async function handleDelete() {
   )
 
   if (confirmed) {
-    const result = await songsStore.deleteSong(props.song.id, props.song.project_id)
-    
-    if (result.success) {
-      uiStore.showToast(MESSAGES.SUCCESS.SONG_DELETED, 'success')
-      // Refresh the list to remove deleted song from UI
-      emit('tagsUpdated') // Reusing this event to trigger refresh
-    } else {
-      uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-    }
+    const songId = props.song.id
+    await executeConfirmedOperation(
+      () => songsStore.deleteSong(props.song.id, props.song.project_id),
+      {
+        loadingMessage: 'Deleting song...',
+        successMessage: MESSAGES.SUCCESS.SONG_DELETED,
+        errorContext: 'delete song',
+        onSuccess: () => {
+          // Emit event so parent can update its local state
+          emit('songDeleted', songId)
+          handleClose()
+        },
+      }
+    )
+  } else {
+    handleClose()
   }
-  
-  handleClose()
 }
 </script>

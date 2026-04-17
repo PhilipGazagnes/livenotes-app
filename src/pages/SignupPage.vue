@@ -174,6 +174,7 @@ async function handleSignup() {
   
   if (result.success) {
     uiStore.showToast(MESSAGES.SUCCESS.SIGNUP, 'success')
+    uiStore.showOperationOverlay('Loading songs...')
     router.push(ROUTES.ALL_SONGS)
   } else {
     uiStore.showToast(result.error || MESSAGES.ERROR.SIGNUP_FAILED, 'error')

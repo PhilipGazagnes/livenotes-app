@@ -40,6 +40,7 @@ export const MESSAGES = {
     SONG_ALREADY_IN_LIST: 'Song already in list',
     NETWORK: 'Network error. Please try again.',
     SAVE_FAILED: 'Failed to save. Please try again.',
+    OFFLINE: 'You are offline. This action requires an internet connection.',
   },
 
   // Legacy flat messages (for backward compatibility if needed)

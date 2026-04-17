@@ -42,9 +42,15 @@
           </div>
 
           <!-- Message -->
-          <p :class="toast.type === 'success' ? 'text-green-100' : 'text-red-100'" class="flex-1 text-sm font-medium">
-            {{ toast.message }}
-          </p>
+          <div :class="toast.type === 'success' ? 'text-green-100' : 'text-red-100'" class="flex-1">
+            <p class="text-sm font-medium">
+              {{ toast.message }}
+            </p>
+            <!-- Context/Error Details -->
+            <p v-if="toast.context" class="text-xs mt-1 opacity-90">
+              {{ toast.context }}
+            </p>
+          </div>
 
           <!-- Close Button -->
           <button

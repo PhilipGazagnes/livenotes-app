@@ -290,8 +290,8 @@ export const useSongsStore = defineStore('songs', () => {
       
       if (deleteError) throw deleteError
       
-      // Refresh songs list
-      await fetchSongs(projectId)
+      // Remove song from local state instead of re-fetching everything
+      songs.value = songs.value.filter(song => song.id !== songId)
       
       return { success: true }
     } catch (err) {
@@ -314,8 +314,8 @@ export const useSongsStore = defineStore('songs', () => {
       
       if (deleteError) throw deleteError
       
-      // Refresh songs list
-      await fetchSongs(projectId)
+      // Remove songs from local state instead of re-fetching everything
+      songs.value = songs.value.filter(song => !songIds.includes(song.id))
       
       return { success: true }
     } catch (err) {

@@ -3,6 +3,7 @@ import { IonApp } from '@ionic/vue'
 import HamburgerMenu from '@/components/HamburgerMenu.vue'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import OperationOverlay from '@/components/OperationOverlay.vue'
 </script>
 
 <template>
@@ -13,6 +14,7 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
     <HamburgerMenu />
     <ToastNotification />
     <ConfirmDialog />
+    <OperationOverlay />
   </ion-app>
 </template>
 

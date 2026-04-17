@@ -19,6 +19,9 @@
       <div v-if="!uiStore.selectionMode" class="flex-shrink-0">
         <button
           @click.stop="toggleDropdown"
+          @mousedown.stop
+          @touchstart.stop
+          @pointerdown.stop
           class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           aria-label="Title options"
         >

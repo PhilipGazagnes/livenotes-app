@@ -161,10 +161,9 @@
         </button>
         <button
           type="submit"
-          :disabled="isSaving"
-          class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          {{ isSaving ? I18N.LOADING.CREATING : I18N.BUTTONS.CREATE }}
+          {{ I18N.BUTTONS.CREATE }}
         </button>
       </div>
     </form>
@@ -188,6 +187,7 @@ import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
+import { executeOperation } from '@/utils/operations'
 
 const router = useRouter()
 const songsStore = useSongsStore()
@@ -198,10 +198,18 @@ const settingsStore = useSettingsStore()
 
 // Load artists and settings on mount
 onMounted(async () => {
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await artistsStore.fetchArtists(personalProjectId)
-    await settingsStore.loadProjectSettings(personalProjectId)
+  try {
+    const personalProjectId = await authStore.getPersonalProjectId()
+    if (personalProjectId) {
+      await artistsStore.fetchArtists(personalProjectId)
+      await settingsStore.loadProjectSettings(personalProjectId)
+    }
+  } catch (error) {
+    console.error('Error loading new song page:', error)
+    uiStore.showToast('Failed to load page', 'error')
+  } finally {
+    // Always hide overlay
+    uiStore.hideOperationOverlay()
   }
 })
 
@@ -219,8 +227,6 @@ const errors = ref({
   notes: '',
   pocId: '',
 })
-
-const isSaving = ref(false)
 
 // Check if form has any changes
 const hasChanges = computed(() => {
@@ -289,34 +295,31 @@ async function handleSave() {
     return
   }
   
-  isSaving.value = true
+  const personalProjectId = await authStore.getPersonalProjectId()
+  if (!personalProjectId) {
+    uiStore.showToast('Project not found', 'error')
+    return
+  }
   
-  try {
-    const personalProjectId = await authStore.getPersonalProjectId()
-    if (!personalProjectId) {
-      uiStore.showToast('Project not found', 'error')
-      return
-    }
-    
-    // Filter out null artist IDs
-    const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
-    
-    const result = await songsStore.createSong({
+  // Filter out null artist IDs
+  const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
+  
+  await executeOperation(
+    () => songsStore.createSong({
       project_id: personalProjectId,
       title: normalizeText(form.value.title),
       notes: form.value.notes || null,
       livenotes_poc_id: form.value.pocId || null,
-    }, [], artistIds)  // Pass empty array for tags, artistIds for artists
-    
-    if (result.success) {
-      uiStore.showToast(MESSAGES.SUCCESS.SONG_CREATED, 'success')
-      router.push(ROUTES.ALL_SONGS)
-    } else {
-      uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
+    }, [], artistIds),
+    {
+      loadingMessage: 'Creating song...',
+      successMessage: MESSAGES.SUCCESS.SONG_CREATED,
+      errorContext: 'create song',
+      onSuccess: () => {
+        router.push(ROUTES.ALL_SONGS)
+      },
     }
-  } finally {
-    isSaving.value = false
-  }
+  )
 }
 
 // Handle cancel button
@@ -334,6 +337,7 @@ async function handleCancel() {
     }
   }
   
+  uiStore.showOperationOverlay('Loading...')
   router.back()
 }
 </script>

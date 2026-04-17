@@ -197,11 +197,19 @@ const notesFieldLabelInput = ref('')
 const isUpdatingSettings = ref(false)
 
 onMounted(async () => {
-  // Load project settings
-  const projectId = await authStore.getPersonalProjectId()
-  if (projectId) {
-    await settingsStore.loadProjectSettings(projectId)
-    notesFieldLabelInput.value = settingsStore.notesFieldLabel
+  try {
+    // Load project settings
+    const projectId = await authStore.getPersonalProjectId()
+    if (projectId) {
+      await settingsStore.loadProjectSettings(projectId)
+      notesFieldLabelInput.value = settingsStore.notesFieldLabel
+    }
+  } catch (error) {
+    console.error('Error loading settings:', error)
+    uiStore.showToast('Failed to load settings', 'error')
+  } finally {
+    // Always hide overlay
+    uiStore.hideOperationOverlay()
   }
 })
 
@@ -213,20 +221,25 @@ async function toggleNotesFieldEnabled() {
   }
 
   isUpdatingSettings.value = true
+  const newValue = !settingsStore.notesFieldEnabled
+  
   try {
     const result = await settingsStore.updateNotesFieldEnabled(
       projectId,
-      !settingsStore.notesFieldEnabled
+      newValue
     )
     
     if (result.success) {
       uiStore.showToast(
-        settingsStore.notesFieldEnabled ? 'Notes field enabled' : 'Notes field disabled',
+        newValue ? 'Notes field enabled' : 'Notes field disabled',
         'success'
       )
     } else {
       uiStore.showToast(result.error || 'Failed to update setting', 'error')
     }
+  } catch (error) {
+    console.error('Error toggling notes field:', error)
+    uiStore.showToast('Failed to update setting', 'error')
   } finally {
     isUpdatingSettings.value = false
   }

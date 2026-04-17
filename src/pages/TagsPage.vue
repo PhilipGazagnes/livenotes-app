@@ -19,13 +19,8 @@
         </template>
       </AppHeader>
 
-      <!-- Loading State -->
-      <div v-if="tagsStore.isLoading" class="flex items-center justify-center py-20">
-        <LoadingSpinner />
-      </div>
-
       <!-- Empty State -->
-      <div v-else-if="!tagsStore.isLoading && tagsStore.tagCount === 0" class="text-center py-12 px-4">
+      <div v-if="!tagsStore.isLoading && tagsStore.tagCount === 0" class="text-center py-12 px-4">
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
         </svg>
@@ -153,7 +148,6 @@
 import { ref, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import TagCard from '@/components/TagCard.vue'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
@@ -178,14 +172,22 @@ const renameError = ref('')
 const isRenaming = ref(false)
 
 onMounted(async () => {
-  if (!authStore.isInitialized) {
-    await authStore.initialize()
-  }
-  
-  const personalProjectId = await authStore.getPersonalProjectId()
-  
-  if (personalProjectId) {
-    await tagsStore.fetchTags(personalProjectId)
+  try {
+    if (!authStore.isInitialized) {
+      await authStore.initialize()
+    }
+    
+    const personalProjectId = await authStore.getPersonalProjectId()
+    
+    if (personalProjectId) {
+      await tagsStore.fetchTags(personalProjectId)
+    }
+  } catch (error) {
+    console.error('Error loading tags:', error)
+    uiStore.showToast('Failed to load tags', 'error')
+  } finally {
+    // Always hide overlay
+    uiStore.hideOperationOverlay()
   }
 })
 
@@ -211,11 +213,18 @@ async function handleCreate() {
   }
   
   isCreating.value = true
+  uiStore.showOperationOverlay('Creating tag...')
   
   const personalProjectId = await authStore.getPersonalProjectId()
-  if (!personalProjectId) return
+  if (!personalProjectId) {
+    uiStore.hideOperationOverlay()
+    isCreating.value = false
+    return
+  }
   
   const result = await tagsStore.createTag(personalProjectId, trimmed)
+  
+  uiStore.hideOperationOverlay()
   
   if (result.success) {
     uiStore.showToast(MESSAGES.SUCCESS.TAG_CREATED, 'success')
@@ -259,8 +268,11 @@ async function handleRenameSubmit() {
   }
   
   isRenaming.value = true
+  uiStore.showOperationOverlay('Renaming tag...')
   
   const result = await tagsStore.updateTag(editingTag.value.id, trimmed)
+  
+  uiStore.hideOperationOverlay()
   
   if (result.success) {
     uiStore.showToast(MESSAGES.SUCCESS.TAG_UPDATED, 'success')
@@ -282,7 +294,9 @@ async function handleDelete(tag: Tag) {
   )
   
   if (confirmed) {
+    uiStore.showOperationOverlay('Deleting tag...')
     const result = await tagsStore.deleteTag(tag.id)
+    uiStore.hideOperationOverlay()
     
     if (result.success) {
       uiStore.showToast(MESSAGES.SUCCESS.TAG_DELETED, 'success')

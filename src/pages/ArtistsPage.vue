@@ -19,13 +19,8 @@
         </template>
       </AppHeader>
 
-      <!-- Loading State -->
-      <div v-if="artistsStore.isLoading" class="flex items-center justify-center py-20">
-        <LoadingSpinner />
-      </div>
-
       <!-- Empty State -->
-      <div v-else-if="!artistsStore.isLoading && artistsWithCount.length === 0" class="text-center py-12 px-4">
+      <div v-if="!artistsStore.isLoading && artistsWithCount.length === 0" class="text-center py-12 px-4">
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
         </svg>
@@ -185,7 +180,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import ArtistCard from '@/components/ArtistCard.vue'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
@@ -223,14 +217,22 @@ const filteredArtists = computed(() => {
 })
 
 onMounted(async () => {
-  if (!authStore.isInitialized) {
-    await authStore.initialize()
-  }
-  
-  const personalProjectId = await authStore.getPersonalProjectId()
-  
-  if (personalProjectId) {
-    artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
+  try {
+    if (!authStore.isInitialized) {
+      await authStore.initialize()
+    }
+    
+    const personalProjectId = await authStore.getPersonalProjectId()
+    
+    if (personalProjectId) {
+      artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
+    }
+  } catch (error) {
+    console.error('Error loading artists:', error)
+    uiStore.showToast('Failed to load artists', 'error')
+  } finally {
+    // Always hide overlay
+    uiStore.hideOperationOverlay()
   }
 })
 
@@ -256,11 +258,18 @@ async function handleCreate() {
   }
   
   isCreating.value = true
+  uiStore.showOperationOverlay('Creating artist...')
   
   const personalProjectId = await authStore.getPersonalProjectId()
-  if (!personalProjectId) return
+  if (!personalProjectId) {
+    uiStore.hideOperationOverlay()
+    isCreating.value = false
+    return
+  }
   
   const result = await artistsStore.createArtist(personalProjectId, trimmed)
+  
+  uiStore.hideOperationOverlay()
   
   if (result.success) {
     uiStore.showToast('Artist created successfully', 'success')
@@ -306,8 +315,11 @@ async function handleRenameSubmit() {
   }
   
   isRenaming.value = true
+  uiStore.showOperationOverlay('Renaming artist...')
   
   const result = await artistsStore.updateArtist(editingArtist.value.id, trimmed)
+  
+  uiStore.hideOperationOverlay()
   
   if (result.success) {
     uiStore.showToast('Artist renamed successfully', 'success')

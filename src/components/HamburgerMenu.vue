@@ -40,7 +40,7 @@
             <nav class="flex flex-col p-4 space-y-2">
               <router-link
                 :to="ROUTES.ALL_SONGS"
-                @click="closeMenu"
+                @click="handleNavigate('Loading songs...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
 
               <router-link
                 :to="ROUTES.TAGS"
-                @click="closeMenu"
+                @click="handleNavigate('Loading tags...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +62,7 @@
 
               <router-link
                 :to="ROUTES.ARTISTS"
-                @click="closeMenu"
+                @click="handleNavigate('Loading artists...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +73,7 @@
 
               <router-link
                 :to="ROUTES.LISTS"
-                @click="closeMenu"
+                @click="handleNavigate('Loading lists...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@
 
               <router-link
                 :to="ROUTES.SETTINGS"
-                @click="closeMenu"
+                @click="handleNavigate('Loading settings...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,6 +129,11 @@ const uiStore = useUiStore()
 
 function closeMenu() {
   uiStore.closeHamburgerMenu()
+}
+
+function handleNavigate(message: string) {
+  uiStore.showOperationOverlay(message)
+  closeMenu()
 }
 
 async function handleLogout() {

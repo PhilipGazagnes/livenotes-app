@@ -73,6 +73,9 @@
       <div v-if="!uiStore.selectionMode" class="flex-shrink-0">
         <button
           @click.stop.prevent="toggleDropdown"
+          @mousedown.stop
+          @touchstart.stop
+          @pointerdown.stop
           class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           :aria-label="I18N.ARIA.SONG_OPTIONS"
         >
@@ -89,6 +92,8 @@
       :song="song"
       @close="isDropdownOpen = false"
       @remove="handleRemove"
+      @songDeleted="(songId) => emit('songDeleted', songId)"
+      @tagsUpdated="handleTagsUpdated"
     />
   </div>
 </template>
@@ -107,6 +112,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   remove: []
+  songDeleted: [songId: string]
+  tagsUpdated: [songId: string]
 }>()
 
 const uiStore = useUiStore()
@@ -129,5 +136,13 @@ function handleCardClick() {
 function handleRemove() {
   isDropdownOpen.value = false
   emit('remove')
+}
+
+function handleTagsUpdated(songId: string) {
+  console.log('[ListSongCard] tagsUpdated received for song:', songId)
+  // Close the dropdown first
+  isDropdownOpen.value = false
+  // Then emit to parent
+  emit('tagsUpdated', songId)
 }
 </script>

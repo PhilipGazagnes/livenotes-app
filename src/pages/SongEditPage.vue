@@ -1,11 +1,8 @@
 <template>
   <ion-page>
     <ion-content class="bg-gray-900">
-      <!-- Loading state -->
-      <LoadingSpinner v-if="isLoading" />
-
       <!-- Error state -->
-      <div v-else-if="loadError" class="p-4">
+      <div v-if="loadError" class="p-4">
         <p class="text-red-400">{{ loadError }}</p>
         <button
           @click="router.back()"
@@ -172,10 +169,9 @@
           <button
             type="button"
             @click="handleSave"
-            :disabled="isSaving"
-            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
+            {{ I18N.BUTTONS.SAVE }}
           </button>
         </div>
 
@@ -198,7 +194,6 @@ import { useRouter, useRoute } from 'vue-router'
 import { IonPage, IonContent, IonIcon } from '@ionic/vue'
 import { codeSlash } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import ArtistInput from '@/components/ArtistInput.vue'
 import SongCodeDrawer from '@/components/SongCodeDrawer.vue'
 import { useSongsStore } from '@/stores/songs'
@@ -211,6 +206,7 @@ import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, normalizeText } from '@/utils/validation'
+import { executeOperation } from '@/utils/operations'
 import type { SongWithTags } from '@/types/database'
 
 const router = useRouter()
@@ -245,8 +241,6 @@ const errors = ref({
   title: '',
   notes: '',
 })
-
-const isSaving = ref(false)
 
 // SongCode drawer state
 const showSongcodeDrawer = ref(false)
@@ -293,62 +287,71 @@ function moveArtistDown(index: number) {
 
 // Load song data
 onMounted(async () => {
-  const songId = route.params.id as string
-  
-  if (!songId) {
-    loadError.value = I18N.VALIDATION.SONG_ID_REQUIRED
+  try {
+    const songId = route.params.id as string
+    
+    if (!songId) {
+      loadError.value = I18N.VALIDATION.SONG_ID_REQUIRED
+      isLoading.value = false
+      return
+    }
+    
+    const personalProjectId = await authStore.getPersonalProjectId()
+    if (!personalProjectId) {
+      loadError.value = I18N.VALIDATION.PROJECT_NOT_FOUND
+      isLoading.value = false
+      return
+    }
+    
+    // Load artists
+    await artistsStore.fetchArtists(personalProjectId)
+    
+    // Load project settings
+    await settingsStore.loadProjectSettings(personalProjectId)
+    
+    // Fetch songs if not already loaded
+    if (songsStore.songs.length === 0) {
+      await songsStore.fetchSongs(personalProjectId)
+    }
+    
+    // Find song in store
+    const foundSong = songsStore.songs.find(s => s.id === songId)
+    
+    if (!foundSong) {
+      loadError.value = I18N.VALIDATION.SONG_NOT_FOUND
+      isLoading.value = false
+      return
+    }
+    
+    song.value = foundSong
+    
+    // Populate form
+    form.value.title = foundSong.title
+    form.value.notes = foundSong.notes || ''
+    
+    // Populate artists (sorted by position)
+    if (foundSong.artists && foundSong.artists.length > 0) {
+      form.value.artistIds = foundSong.artists.map(a => a.id)
+    } else {
+      form.value.artistIds = [null]
+    }
+    
+    // Store original values
+    originalForm.value = {
+      title: form.value.title,
+      artistIds: [...form.value.artistIds],
+      notes: form.value.notes,
+    }
+    
     isLoading.value = false
-    return
-  }
-  
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (!personalProjectId) {
-    loadError.value = I18N.VALIDATION.PROJECT_NOT_FOUND
+  } catch (error) {
+    console.error('Error loading song:', error)
+    loadError.value = 'Failed to load song. Please try again.'
     isLoading.value = false
-    return
+  } finally {
+    // Always hide the overlay, even if there's an error
+    uiStore.hideOperationOverlay()
   }
-  
-  // Load artists
-  await artistsStore.fetchArtists(personalProjectId)
-  
-  // Load project settings
-  await settingsStore.loadProjectSettings(personalProjectId)
-  
-  // Fetch songs if not already loaded
-  if (songsStore.songs.length === 0) {
-    await songsStore.fetchSongs(personalProjectId)
-  }
-  
-  // Find song in store
-  const foundSong = songsStore.songs.find(s => s.id === songId)
-  
-  if (!foundSong) {
-    loadError.value = I18N.VALIDATION.SONG_NOT_FOUND
-    isLoading.value = false
-    return
-  }
-  
-  song.value = foundSong
-  
-  // Populate form
-  form.value.title = foundSong.title
-  form.value.notes = foundSong.notes || ''
-  
-  // Populate artists (sorted by position)
-  if (foundSong.artists && foundSong.artists.length > 0) {
-    form.value.artistIds = foundSong.artists.map(a => a.id)
-  } else {
-    form.value.artistIds = [null]
-  }
-  
-  // Store original values
-  originalForm.value = {
-    title: form.value.title,
-    artistIds: [...form.value.artistIds],
-    notes: form.value.notes,
-  }
-  
-  isLoading.value = false
 })
 
 // Validate a single field
@@ -377,32 +380,29 @@ async function handleSave() {
     return
   }
   
-  isSaving.value = true
+  const personalProjectId = await authStore.getPersonalProjectId()
+  if (!personalProjectId) {
+    uiStore.showToast('Project not found', 'error')
+    return
+  }
   
-  try {
-    const personalProjectId = await authStore.getPersonalProjectId()
-    if (!personalProjectId) {
-      uiStore.showToast('Project not found', 'error')
-      return
-    }
-    
-    // Filter out null artist IDs
-    const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
-    
-    const result = await songsStore.updateSong(song.value.id, {
+  // Filter out null artist IDs
+  const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
+  
+  const result = await executeOperation(
+    () => songsStore.updateSong(song.value!.id, {
       title: normalizeText(form.value.title),
       notes: form.value.notes || null,
-    }, personalProjectId, undefined, artistIds)  // Pass undefined for tagIds, artistIds for artists
-    
-    if (result.success) {
-      uiStore.showToast(MESSAGES.SUCCESS.SONG_UPDATED, 'success')
-      router.push(ROUTES.ALL_SONGS)
-    } else {
-      uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
+    }, personalProjectId, undefined, artistIds),
+    {
+      loadingMessage: 'Saving song...',
+      successMessage: MESSAGES.SUCCESS.SONG_UPDATED,
+      errorContext: 'save song',
+      onSuccess: () => {
+        router.push(ROUTES.ALL_SONGS)
+      },
     }
-  } finally {
-    isSaving.value = false
-  }
+  )
 }
 
 // Handle cancel button
@@ -420,6 +420,7 @@ async function handleCancel() {
     }
   }
   
+  uiStore.showOperationOverlay('Loading...')
   router.back()
 }
 </script>

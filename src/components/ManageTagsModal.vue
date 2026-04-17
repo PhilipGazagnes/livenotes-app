@@ -93,10 +93,9 @@
           </button>
           <button
             @click="handleSave"
-            :disabled="isSaving"
-            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
+            {{ I18N.BUTTONS.SAVE }}
           </button>
         </div>
       </div>
@@ -112,6 +111,7 @@ import { useUiStore } from '@/stores/ui'
 import { supabase } from '@/utils/supabase'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
+import { executeOperation } from '@/utils/operations'
 
 const props = defineProps<{
   isOpen: boolean
@@ -133,7 +133,6 @@ const selectedTagIds = ref<string[]>([])
 const newTagName = ref('')
 const createError = ref('')
 const isCreatingTag = ref(false)
-const isSaving = ref(false)
 
 const sortedTags = computed(() => {
   return [...tagsStore.tags].sort((a, b) => a.name.localeCompare(b.name))
@@ -197,47 +196,50 @@ async function handleCreateTag() {
 }
 
 async function handleSave() {
-  isSaving.value = true
-  
-  try {
-    // Determine which tags to add and which to remove
-    const tagsToAdd = selectedTagIds.value.filter(id => !props.initialTagIds.includes(id))
-    const tagsToRemove = props.initialTagIds.filter(id => !selectedTagIds.value.includes(id))
-    
-    // Remove tags
-    if (tagsToRemove.length > 0) {
-      const { error: deleteError } = await supabase
-        .from('song_tags')
-        .delete()
-        .eq('song_id', props.songId)
-        .in('tag_id', tagsToRemove)
+  await executeOperation(
+    async () => {
+      // Determine which tags to add and which to remove
+      const tagsToAdd = selectedTagIds.value.filter(id => !props.initialTagIds.includes(id))
+      const tagsToRemove = props.initialTagIds.filter(id => !selectedTagIds.value.includes(id))
       
-      if (deleteError) throw deleteError
+      // Remove tags
+      if (tagsToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('song_tags')
+          .delete()
+          .eq('song_id', props.songId)
+          .in('tag_id', tagsToRemove)
+        
+        if (deleteError) throw deleteError
+      }
+      
+      // Add tags
+      if (tagsToAdd.length > 0) {
+        const inserts = tagsToAdd.map(tagId => ({
+          song_id: props.songId,
+          tag_id: tagId,
+        }))
+        
+        const { error: insertError } = await supabase
+          .from('song_tags')
+          .insert(inserts)
+        
+        if (insertError) throw insertError
+      }
+      
+      return { success: true }
+    },
+    {
+      loadingMessage: `Assigning tags to "${props.songTitle}"...`,
+      successMessage: MESSAGES.SUCCESS.TAGS_UPDATED,
+      errorContext: 'assign tags',
+      onSuccess: () => {
+        console.log('[ManageTagsModal] Tags saved successfully, emitting saved event')
+        emit('saved')
+        emit('close')
+      },
     }
-    
-    // Add tags
-    if (tagsToAdd.length > 0) {
-      const inserts = tagsToAdd.map(tagId => ({
-        song_id: props.songId,
-        tag_id: tagId,
-      }))
-      
-      const { error: insertError } = await supabase
-        .from('song_tags')
-        .insert(inserts)
-      
-      if (insertError) throw insertError
-    }
-    
-    uiStore.showToast(MESSAGES.SUCCESS.TAGS_UPDATED, 'success')
-    emit('saved')
-    emit('close')
-  } catch (err) {
-    console.error('Failed to save tags:', err)
-    uiStore.showToast(MESSAGES.ERROR.SAVE_FAILED, 'error')
-  } finally {
-    isSaving.value = false
-  }
+  )
 }
 
 function handleCancel() {

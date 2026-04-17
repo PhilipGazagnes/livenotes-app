@@ -54,13 +54,8 @@
         </template>
       </AppHeader>
 
-      <!-- Loading State -->
-      <div v-if="listsStore.isLoading" class="flex items-center justify-center py-20">
-        <LoadingSpinner />
-      </div>
-
       <!-- Empty State -->
-      <div v-else-if="!listsStore.isLoading && listsStore.listCount === 0" class="text-center py-12 px-4">
+      <div v-if="!listsStore.isLoading && listsStore.listCount === 0" class="text-center py-12 px-4">
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
         </svg>
@@ -247,7 +242,6 @@ import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { normalizeText } from '@/utils/validation'
 import AppHeader from '@/components/AppHeader.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import ListCard from '@/components/ListCard.vue'
 import type { List } from '@/types/database'
 
@@ -268,9 +262,17 @@ const renameError = ref('')
 const isRenaming = ref(false)
 
 onMounted(async () => {
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await listsStore.fetchLists(personalProjectId)
+  try {
+    const personalProjectId = await authStore.getPersonalProjectId()
+    if (personalProjectId) {
+      await listsStore.fetchLists(personalProjectId)
+    }
+  } catch (error) {
+    console.error('Error loading lists:', error)
+    uiStore.showToast('Failed to load lists', 'error')
+  } finally {
+    // Always hide overlay
+    uiStore.hideOperationOverlay()
   }
 })
 
@@ -301,7 +303,9 @@ async function handleBulkDelete() {
   if (confirmed) {
     const projectId = await authStore.getPersonalProjectId()
     if (projectId) {
+      uiStore.showOperationOverlay('Deleting lists...')
       const result = await listsStore.bulkDeleteLists(uiStore.selectedIds, projectId)
+      uiStore.hideOperationOverlay()
       if (result.success) {
         uiStore.showToast(I18N.TOAST.BULK_DELETED_LISTS(count), 'success')
         uiStore.exitSelectionMode()
@@ -335,15 +339,18 @@ async function handleCreateSubmit() {
   }
   
   isCreating.value = true
+  uiStore.showOperationOverlay('Creating list...')
   const personalProjectId = await authStore.getPersonalProjectId()
   
   if (!personalProjectId) {
     createError.value = I18N.VALIDATION.PROJECT_NOT_FOUND
+    uiStore.hideOperationOverlay()
     isCreating.value = false
     return
   }
   
   const result = await listsStore.createList(personalProjectId, newListName.value)
+  uiStore.hideOperationOverlay()
   isCreating.value = false
   
   if (result.success) {
@@ -411,7 +418,9 @@ async function handleDelete(list: List) {
   )
   
   if (confirmed) {
+    uiStore.showOperationOverlay('Deleting list...')
     const result = await listsStore.deleteList(list.id)
+    uiStore.hideOperationOverlay()
     
     if (result.success) {
       uiStore.showToast(MESSAGES.SUCCESS.LIST_DELETED, 'success')

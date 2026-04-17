@@ -101,6 +101,7 @@ import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
+import { executeConfirmedOperation, executeOperation } from '@/utils/operations'
 import ManageTagsModal from './ManageTagsModal.vue'
 import ManageListsModal from './ManageListsModal.vue'
 
@@ -139,6 +140,15 @@ function handleClose() {
 }
 
 function handleEdit() {
+  // Check if offline
+  if (!navigator.onLine) {
+    uiStore.showToast(MESSAGES.ERROR.OFFLINE, 'error')
+    handleClose()
+    return
+  }
+  
+  // Show overlay immediately for better UX during navigation
+  uiStore.showOperationOverlay('Loading song...')
   router.push(`/song/${props.song.id}/edit`)
   handleClose()
 }
@@ -152,19 +162,23 @@ async function handleDuplicate() {
   )
 
   if (confirmed) {
-    const result = await songsStore.createSong({
-      project_id: props.song.project_id,
-      title: `${props.song.title} (copy)`,
-      artist: props.song.artist,
-      notes: props.song.notes,
-      livenotes_poc_id: null, // Don't copy POC ID
-    })
-
-    if (result.success) {
-      uiStore.showToast(MESSAGES.SUCCESS.SONG_DUPLICATED, 'success')
-    } else {
-      uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-    }
+    const tagIds = props.song.tags?.map(t => t.id) || []
+    const artistIds = props.song.artists?.map(a => a.id) || []
+    
+    await executeOperation(
+      () => songsStore.createSong({
+        project_id: props.song.project_id,
+        title: `${props.song.title} (copy)`,
+        artist: props.song.artist,
+        notes: props.song.notes,
+        livenotes_poc_id: null, // Don't copy POC ID
+      }, tagIds, artistIds),
+      {
+        loadingMessage: 'Duplicating song...',
+        successMessage: MESSAGES.SUCCESS.SONG_DUPLICATED,
+        errorContext: 'duplicate song',
+      }
+    )
   }
   
   handleClose()
@@ -219,15 +233,19 @@ async function handleDelete() {
   )
 
   if (confirmed) {
-    const result = await songsStore.deleteSong(props.song.id, props.song.project_id)
-    
-    if (result.success) {
-      uiStore.showToast(MESSAGES.SUCCESS.SONG_DELETED, 'success')
-    } else {
-      uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
-    }
+    await executeConfirmedOperation(
+      () => songsStore.deleteSong(props.song.id, props.song.project_id),
+      {
+        loadingMessage: 'Deleting song...',
+        successMessage: MESSAGES.SUCCESS.SONG_DELETED,
+        errorContext: 'delete song',
+        onSuccess: () => {
+          handleClose()
+        },
+      }
+    )
+  } else {
+    handleClose()
   }
-  
-  handleClose()
 }
 </script>

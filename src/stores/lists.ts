@@ -57,7 +57,11 @@ export const useListsStore = defineStore('lists', () => {
           *,
           song:songs(
             *,
-            tags:song_tags(tag:tags(*))
+            tags:song_tags(tag:tags(*)),
+            artists:song_artists(
+              position,
+              artist:artists(*)
+            )
           )
         `)
         .eq('list_id', listId)
@@ -65,12 +69,16 @@ export const useListsStore = defineStore('lists', () => {
       
       if (itemsError) throw itemsError
       
-      // Transform the nested tags structure
+      // Transform the nested tags and artists structure
       const transformedItems = itemsData?.map(item => ({
         ...item,
         song: item.song ? {
           ...item.song,
-          tags: item.song.tags?.map((st: any) => st.tag) || []
+          tags: item.song.tags?.map((st: any) => st.tag) || [],
+          artists: item.song.artists?.map((sa: any) => ({
+            ...sa.artist,
+            position: sa.position
+          })).sort((a: any, b: any) => a.position - b.position) || []
         } : null
       })) || []
       
@@ -264,9 +272,11 @@ export const useListsStore = defineStore('lists', () => {
       
       if (deleteError) throw deleteError
       
-      // Refresh current list if it's the one we're updating
+      // Update local state instead of re-fetching everything
       if (currentList.value?.id === listId) {
-        await fetchListById(listId)
+        currentList.value.items = currentList.value.items.filter(
+          item => item.song_id !== songId
+        )
       }
       
       return { success: true }
