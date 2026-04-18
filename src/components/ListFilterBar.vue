@@ -64,7 +64,7 @@ import { I18N } from '@/constants/i18n'
 // Lazy load modal for better performance
 const FilterByTagsModal = defineAsyncComponent(() => import('./FilterByTagsModal.vue'))
 
-const props = defineProps<{
+defineProps<{
   searchQuery: string
   selectedTagIds: string[]
 }>()

@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(defineProps<{
+withDefaults(defineProps<{
   isOpen: boolean
   title: string
   label: string

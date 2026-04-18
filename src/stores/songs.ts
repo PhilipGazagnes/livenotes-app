@@ -278,7 +278,7 @@ export const useSongsStore = defineStore('songs', () => {
     }
   }
 
-  async function deleteSong(songId: string, projectId: string) {
+  async function deleteSong(songId: string, _projectId: string) {
     isLoading.value = true
     error.value = null
     
@@ -302,7 +302,7 @@ export const useSongsStore = defineStore('songs', () => {
     }
   }
 
-  async function bulkDelete(songIds: string[], projectId: string) {
+  async function bulkDelete(songIds: string[], _projectId: string) {
     isLoading.value = true
     error.value = null
     

@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   title: string
   subtitle: string
   ctaText: string
