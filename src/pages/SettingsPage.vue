@@ -132,10 +132,10 @@
                     maxlength="30"
                     class="flex-1 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
                     placeholder="Enter label..."
-                    @keyup.enter="saveNotesFieldLabel"
+                    @keyup.enter="handleSaveNotesFieldLabel"
                   />
                   <button
-                    @click="saveNotesFieldLabel"
+                    @click="handleSaveNotesFieldLabel"
                     :disabled="isUpdatingSettings || !notesFieldLabelInput.trim()"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
@@ -245,7 +245,7 @@ async function toggleNotesFieldEnabled() {
   }
 }
 
-async function saveNotesFieldLabel() {
+async function handleSaveNotesFieldLabel() {
   const projectId = await authStore.getPersonalProjectId()
   if (!projectId) {
     uiStore.showToast('Project not found', 'error')

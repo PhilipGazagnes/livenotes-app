@@ -213,7 +213,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import { useSongsStore } from '@/stores/songs'
 import { useAuthStore } from '@/stores/auth'
@@ -223,10 +223,11 @@ import { useUiStore } from '@/stores/ui'
 import { supabase } from '@/utils/supabase'
 import AppHeader from '@/components/AppHeader.vue'
 import SongCard from '@/components/SongCard.vue'
-import FilterByTagsModal from '@/components/FilterByTagsModal.vue'
-import BulkAddToListsModal from '@/components/BulkAddToListsModal.vue'
-import BulkAssignTagsModal from '@/components/BulkAssignTagsModal.vue'
-import BulkRemoveTagsModal from '@/components/BulkRemoveTagsModal.vue'
+// Lazy load modals for better performance
+const FilterByTagsModal = defineAsyncComponent(() => import('@/components/FilterByTagsModal.vue'))
+const BulkAddToListsModal = defineAsyncComponent(() => import('@/components/BulkAddToListsModal.vue'))
+const BulkAssignTagsModal = defineAsyncComponent(() => import('@/components/BulkAssignTagsModal.vue'))
+const BulkRemoveTagsModal = defineAsyncComponent(() => import('@/components/BulkRemoveTagsModal.vue'))
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'

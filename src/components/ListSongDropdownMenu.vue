@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import type { SongWithTags } from '@/types/database'
 import { useSongsStore } from '@/stores/songs'
@@ -105,8 +105,9 @@ import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { executeConfirmedOperation, executeOperation } from '@/utils/operations'
 import { logger } from '@/utils/logger'
-import ManageTagsModal from './ManageTagsModal.vue'
-import ManageListsModal from './ManageListsModal.vue'
+// Lazy load modals for better performance
+const ManageTagsModal = defineAsyncComponent(() => import('./ManageTagsModal.vue'))
+const ManageListsModal = defineAsyncComponent(() => import('./ManageListsModal.vue'))
 
 const props = defineProps<{
   song: SongWithTags

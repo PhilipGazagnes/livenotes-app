@@ -59,9 +59,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, defineAsyncComponent } from 'vue'
 import { I18N } from '@/constants/i18n'
-import FilterByTagsModal from './FilterByTagsModal.vue'
+// Lazy load modal for better performance
+const FilterByTagsModal = defineAsyncComponent(() => import('./FilterByTagsModal.vue'))
 
 const props = defineProps<{
   searchQuery: string

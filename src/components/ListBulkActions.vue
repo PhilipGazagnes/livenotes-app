@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, defineAsyncComponent } from 'vue'
 import { useListsStore } from '@/stores/lists'
 import { useSongsStore } from '@/stores/songs'
 import { useAuthStore } from '@/stores/auth'
@@ -117,9 +117,10 @@ import { supabase } from '@/utils/supabase'
 import { I18N } from '@/constants/i18n'
 import { executeOperation, executeConfirmedOperation } from '@/utils/operations'
 import { TIMEOUTS } from '@/utils/timeout'
-import BulkAddToListsModal from './BulkAddToListsModal.vue'
-import BulkAssignTagsModal from './BulkAssignTagsModal.vue'
-import BulkRemoveTagsModal from './BulkRemoveTagsModal.vue'
+// Lazy load modals for better performance
+const BulkAddToListsModal = defineAsyncComponent(() => import('./BulkAddToListsModal.vue'))
+const BulkAssignTagsModal = defineAsyncComponent(() => import('./BulkAssignTagsModal.vue'))
+const BulkRemoveTagsModal = defineAsyncComponent(() => import('./BulkRemoveTagsModal.vue'))
 
 const props = defineProps<{
   listId: string

@@ -19,7 +19,7 @@
       <!-- Clear Button -->
       <button
         v-if="selectedArtist"
-        @click="clearSelection"
+        @click="handleClearSelection"
         class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
         type="button"
       >
@@ -44,7 +44,7 @@
         v-for="(artist, index) in filteredArtists"
         :key="artist.id"
         type="button"
-        @click="selectArtist(artist)"
+        @click="handleSelectArtist(artist)"
         @mouseenter="highlightedIndex = index"
         class="w-full px-4 py-3 text-left text-gray-300 hover:bg-gray-700 transition-colors flex items-center gap-2"
         :class="{ 'bg-gray-700': highlightedIndex === index }"
@@ -59,7 +59,7 @@
       <button
         v-if="canCreateNew"
         type="button"
-        @click="createNewArtist"
+        @click="handleCreateNewArtist"
         @mouseenter="highlightedIndex = filteredArtists.length"
         class="w-full px-4 py-3 text-left text-blue-400 hover:bg-gray-700 transition-colors flex items-center gap-2 border-t border-gray-700"
         :class="{ 'bg-gray-700': highlightedIndex === filteredArtists.length }"
@@ -143,14 +143,14 @@ function handleInput() {
   highlightedIndex.value = 0
 }
 
-function selectArtist(artist: Artist) {
+function handleSelectArtist(artist: Artist) {
   selectedArtist.value = artist
   searchQuery.value = artist.name
   emit('update:modelValue', artist.id)
   closeDropdown()
 }
 
-async function createNewArtist() {
+async function handleCreateNewArtist() {
   const query = searchQuery.value.trim()
   if (!query) return
   
@@ -172,7 +172,7 @@ async function createNewArtist() {
   }
 }
 
-function clearSelection() {
+function handleClearSelection() {
   selectedArtist.value = null
   searchQuery.value = ''
   emit('update:modelValue', null)
@@ -203,9 +203,9 @@ function selectHighlighted() {
   }
   
   if (highlightedIndex.value < filteredArtists.value.length) {
-    selectArtist(filteredArtists.value[highlightedIndex.value])
+    handleSelectArtist(filteredArtists.value[highlightedIndex.value])
   } else if (canCreateNew.value) {
-    createNewArtist()
+    handleCreateNewArtist()
   }
 }
 </script>

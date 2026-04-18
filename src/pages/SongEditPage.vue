@@ -62,7 +62,7 @@
                     <button
                       v-if="index > 0"
                       type="button"
-                      @click="moveArtistUp(index)"
+                      @click="handleMoveArtistUp(index)"
                       class="p-1 text-gray-400 hover:text-white transition-colors"
                       title="Move up"
                     >
@@ -74,7 +74,7 @@
                     <button
                       v-if="index < form.artistIds.length - 1"
                       type="button"
-                      @click="moveArtistDown(index)"
+                      @click="handleMoveArtistDown(index)"
                       class="p-1 text-gray-400 hover:text-white transition-colors"
                       title="Move down"
                     >
@@ -92,7 +92,7 @@
                 <button
                   v-if="form.artistIds.length > 1"
                   type="button"
-                  @click="removeArtist(index)"
+                  @click="handleRemoveArtist(index)"
                   class="p-3 text-red-400 hover:text-red-300 hover:bg-gray-800 rounded-lg transition-colors mt-6"
                   title="Remove artist"
                 >
@@ -106,7 +106,7 @@
             <!-- Add Another Artist Button -->
             <button
               type="button"
-              @click="addArtist"
+              @click="handleAddArtist"
               class="mt-3 inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-gray-800 rounded-lg transition-colors"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,13 +189,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { IonPage, IonContent, IonIcon } from '@ionic/vue'
 import { codeSlash } from 'ionicons/icons'
 import AppHeader from '@/components/AppHeader.vue'
 import ArtistInput from '@/components/ArtistInput.vue'
-import SongCodeDrawer from '@/components/SongCodeDrawer.vue'
+// Lazy load drawer for better performance
+const SongCodeDrawer = defineAsyncComponent(() => import('@/components/SongCodeDrawer.vue'))
 import { useSongsStore } from '@/stores/songs'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
@@ -257,11 +258,11 @@ const hasChanges = computed(() => {
 })
 
 // Artist management functions
-function addArtist() {
+function handleAddArtist() {
   form.value.artistIds.push(null)
 }
 
-function removeArtist(index: number) {
+function handleRemoveArtist(index: number) {
   form.value.artistIds.splice(index, 1)
   // Ensure at least one artist input
   if (form.value.artistIds.length === 0) {
@@ -269,7 +270,7 @@ function removeArtist(index: number) {
   }
 }
 
-function moveArtistUp(index: number) {
+function handleMoveArtistUp(index: number) {
   if (index > 0) {
     const temp = form.value.artistIds[index]
     form.value.artistIds[index] = form.value.artistIds[index - 1]
@@ -277,7 +278,7 @@ function moveArtistUp(index: number) {
   }
 }
 
-function moveArtistDown(index: number) {
+function handleMoveArtistDown(index: number) {
   if (index < form.value.artistIds.length - 1) {
     const temp = form.value.artistIds[index]
     form.value.artistIds[index] = form.value.artistIds[index + 1]
