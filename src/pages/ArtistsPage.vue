@@ -149,10 +149,10 @@ const {
   handleRenameSubmit: handleRenameBase,
   handleDelete,
 } = useCRUD<ArtistWithCount>({
-  items: artistsStore.artists,
+  items: artistsWithCount.value,
   maxLength: 100,
   validateDuplicate: (name, excludeId) => {
-    return artistsStore.artists.some(a => 
+    return artistsWithCount.value.some(a => 
       a.name.toLowerCase() === name.toLowerCase() && a.id !== excludeId
     )
   },

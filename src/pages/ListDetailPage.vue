@@ -199,7 +199,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import VueDraggable from 'vuedraggable'
 import { useListsStore } from '@/stores/lists'
-import { useSongsStore } from '@/stores/songs'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -208,7 +207,6 @@ import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { executeOperation } from '@/utils/operations'
-import { usePageLoad } from '@/composables/usePageLoad'
 import AppHeader from '@/components/AppHeader.vue'
 import ListSongCard from '@/components/ListSongCard.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
@@ -218,7 +216,6 @@ import ListFilterBar from '@/components/ListFilterBar.vue'
 const route = useRoute()
 const router = useRouter()
 const listsStore = useListsStore()
-const songsStore = useSongsStore()
 const tagsStore = useTagsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -374,7 +371,7 @@ function handleSongDeleted(songId: string) {
   }
 }
 
-async function handleTagsUpdated(songId: string) {
+async function handleTagsUpdated(_songId: string) {
   // Refresh list to show updated tags (like bulk actions do)
   await handleRefresh()
 }
@@ -489,7 +486,7 @@ function handleSongsDeleted(deletedIds: string[]) {
   // Remove deleted songs from list's local state
   if (currentList.value) {
     currentList.value.items = currentList.value.items.filter(
-      item => !deletedIds.includes(item.song_id)
+      item => item.song_id && !deletedIds.includes(item.song_id)
     )
   }
 }

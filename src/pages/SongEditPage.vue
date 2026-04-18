@@ -389,7 +389,7 @@ async function handleSave() {
   // Filter out null artist IDs
   const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
   
-  const result = await executeOperation(
+  await executeOperation(
     () => songsStore.updateSong(song.value!.id, {
       title: normalizeText(form.value.title),
       notes: form.value.notes || null,

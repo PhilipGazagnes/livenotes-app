@@ -103,7 +103,7 @@ import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
-import { executeConfirmedOperation, executeOperation } from '@/utils/operations'
+import { executeConfirmedOperation } from '@/utils/operations'
 import { logger } from '@/utils/logger'
 // Lazy load modals for better performance
 const ManageTagsModal = defineAsyncComponent(() => import('./ManageTagsModal.vue'))
@@ -166,36 +166,7 @@ function handleEdit() {
   handleClose()
 }
 
-async function handleDuplicate() {
-  const confirmed = await uiStore.showConfirm(
-    'Duplicate Song',
-    `Create a copy of "${props.song.title}"?`,
-    'Duplicate',
-    'Cancel'
-  )
-
-  if (confirmed) {
-    const tagIds = props.song.tags?.map(t => t.id) || []
-    const artistIds = props.song.artists?.map(a => a.id) || []
-    
-    await executeOperation(
-      () => songsStore.createSong({
-        project_id: props.song.project_id,
-        title: `${props.song.title} (copy)`,
-        artist: props.song.artist,
-        notes: props.song.notes,
-        livenotes_poc_id: null, // Don't copy POC ID
-      }, tagIds, artistIds),
-      {
-        loadingMessage: 'Duplicating song...',
-        successMessage: MESSAGES.SUCCESS.SONG_DUPLICATED,
-        errorContext: 'duplicate song',
-      }
-    )
-  }
-  
-  handleClose()
-}
+// Duplicate functionality removed - was not being used
 
 async function handleManageTags() {
   // Lazy load tags only when modal is opened
