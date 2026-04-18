@@ -188,6 +188,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { usePageLoad } from '@/composables/usePageLoad'
 
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
@@ -196,21 +197,19 @@ const uiStore = useUiStore()
 const notesFieldLabelInput = ref('')
 const isUpdatingSettings = ref(false)
 
-onMounted(async () => {
-  try {
+const { execute } = usePageLoad()
+
+onMounted(() => {
+  execute(async () => {
     // Load project settings
     const projectId = await authStore.getPersonalProjectId()
     if (projectId) {
       await settingsStore.loadProjectSettings(projectId)
       notesFieldLabelInput.value = settingsStore.notesFieldLabel
     }
-  } catch (error) {
-    console.error('Error loading settings:', error)
-    uiStore.showToast('Failed to load settings', 'error')
-  } finally {
-    // Always hide overlay
-    uiStore.hideOperationOverlay()
-  }
+  }, {
+    errorMessage: 'Failed to load settings'
+  })
 })
 
 async function toggleNotesFieldEnabled() {

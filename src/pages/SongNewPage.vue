@@ -188,6 +188,7 @@ import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
+import { usePageLoad } from '@/composables/usePageLoad'
 
 const router = useRouter()
 const songsStore = useSongsStore()
@@ -196,21 +197,19 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 const settingsStore = useSettingsStore()
 
+const { execute } = usePageLoad()
+
 // Load artists and settings on mount
-onMounted(async () => {
-  try {
+onMounted(() => {
+  execute(async () => {
     const personalProjectId = await authStore.getPersonalProjectId()
     if (personalProjectId) {
       await artistsStore.fetchArtists(personalProjectId)
       await settingsStore.loadProjectSettings(personalProjectId)
     }
-  } catch (error) {
-    console.error('Error loading new song page:', error)
-    uiStore.showToast('Failed to load page', 'error')
-  } finally {
-    // Always hide overlay
-    uiStore.hideOperationOverlay()
-  }
+  }, {
+    errorMessage: 'Failed to load page'
+  })
 })
 
 // Form state

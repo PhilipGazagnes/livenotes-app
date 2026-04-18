@@ -40,7 +40,7 @@
             <nav class="flex flex-col p-4 space-y-2">
               <router-link
                 :to="ROUTES.ALL_SONGS"
-                @click="handleNavigate('Loading songs...')"
+                @click="handleNavigate(ROUTES.ALL_SONGS, 'Loading songs...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
 
               <router-link
                 :to="ROUTES.TAGS"
-                @click="handleNavigate('Loading tags...')"
+                @click="handleNavigate(ROUTES.TAGS, 'Loading tags...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +62,7 @@
 
               <router-link
                 :to="ROUTES.ARTISTS"
-                @click="handleNavigate('Loading artists...')"
+                @click="handleNavigate(ROUTES.ARTISTS, 'Loading artists...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +73,7 @@
 
               <router-link
                 :to="ROUTES.LISTS"
-                @click="handleNavigate('Loading lists...')"
+                @click="handleNavigate(ROUTES.LISTS, 'Loading lists...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@
 
               <router-link
                 :to="ROUTES.SETTINGS"
-                @click="handleNavigate('Loading settings...')"
+                @click="handleNavigate(ROUTES.SETTINGS, 'Loading settings...')"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
@@ -124,6 +124,7 @@ import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
@@ -131,8 +132,11 @@ function closeMenu() {
   uiStore.closeHamburgerMenu()
 }
 
-function handleNavigate(message: string) {
-  uiStore.showOperationOverlay(message)
+function handleNavigate(targetRoute: string, message: string) {
+  // Only show overlay if navigating to a different page
+  if (route.path !== targetRoute) {
+    uiStore.showOperationOverlay(message)
+  }
   closeMenu()
 }
 

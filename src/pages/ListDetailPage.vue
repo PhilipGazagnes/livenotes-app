@@ -145,60 +145,6 @@
         </div>
       </div>
 
-      <!-- Filter Modal -->
-      <FilterByTagsModal
-        :isOpen="showFilterModal"
-        :initialTagIds="selectedTagIds"
-        @close="showFilterModal = false"
-        @apply="handleApplyFilter"
-      />
-
-      <!-- Bulk Action Modals -->
-      <BulkAddToListsModal
-        :isOpen="showBulkAddToListsModal"
-        @close="showBulkAddToListsModal = false"
-        @apply="handleBulkAddToListsApply"
-      />
-
-      <BulkAssignTagsModal
-        :isOpen="showBulkAssignTagsModal"
-        @close="showBulkAssignTagsModal = false"
-        @apply="handleBulkAssignTagsApply"
-      />
-
-      <BulkRemoveTagsModal
-        :isOpen="showBulkRemoveTagsModal"
-        @close="showBulkRemoveTagsModal = false"
-        @apply="handleBulkRemoveTagsApply"
-      />
-
-      <!-- Filter Modal -->
-      <FilterByTagsModal
-        :isOpen="showFilterModal"
-        :initialTagIds="selectedTagIds"
-        @close="showFilterModal = false"
-        @apply="handleApplyFilter"
-      />
-
-      <!-- Bulk Action Modals -->
-      <BulkAddToListsModal
-        :isOpen="showBulkAddToListsModal"
-        @close="showBulkAddToListsModal = false"
-        @apply="handleBulkAddToListsApply"
-      />
-
-      <BulkAssignTagsModal
-        :isOpen="showBulkAssignTagsModal"
-        @close="showBulkAssignTagsModal = false"
-        @apply="handleBulkAssignTagsApply"
-      />
-
-      <BulkRemoveTagsModal
-        :isOpen="showBulkRemoveTagsModal"
-        @close="showBulkRemoveTagsModal = false"
-        @apply="handleBulkRemoveTagsApply"
-      />
-
       <!-- Title Modal -->
       <div
         v-if="showTitleModal"
@@ -262,6 +208,7 @@ import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { executeOperation } from '@/utils/operations'
+import { usePageLoad } from '@/composables/usePageLoad'
 import AppHeader from '@/components/AppHeader.vue'
 import ListSongCard from '@/components/ListSongCard.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
@@ -342,14 +289,6 @@ const displayedItems = computed({
     }
   }
 })
-
-function openFilterModal() {
-  showFilterModal.value = true
-}
-
-function handleApplyFilter(tagIds: string[]) {
-  selectedTagIds.value = tagIds
-}
 
 // Drag and drop handler - called when drag ends
 async function handleDragEnd() {

@@ -90,6 +90,7 @@ import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { useCRUD } from '@/composables/useCRUD'
+import { usePageLoad } from '@/composables/usePageLoad'
 import type { Tag } from '@/types/database'
 
 const tagsStore = useTagsStore()
@@ -146,23 +147,17 @@ const {
   },
 })
 
-onMounted(async () => {
-  try {
-    if (!authStore.isInitialized) {
-      await authStore.initialize()
-    }
-    
+const { execute } = usePageLoad()
+
+onMounted(() => {
+  execute(async () => {
     const personalProjectId = await authStore.getPersonalProjectId()
     
     if (personalProjectId) {
       await tagsStore.fetchTags(personalProjectId)
     }
-  } catch (error) {
-    console.error('Error loading tags:', error)
-    uiStore.showToast('Failed to load tags', 'error')
-  } finally {
-    // Always hide overlay
-    uiStore.hideOperationOverlay()
-  }
+  }, {
+    errorMessage: 'Failed to load tags'
+  })
 })
 </script>

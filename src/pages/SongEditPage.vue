@@ -208,6 +208,7 @@ import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, normalizeText } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
+import { usePageLoad } from '@/composables/usePageLoad'
 import type { SongWithTags } from '@/types/database'
 
 const router = useRouter()
@@ -286,9 +287,11 @@ function handleMoveArtistDown(index: number) {
   }
 }
 
+const { execute } = usePageLoad()
+
 // Load song data
-onMounted(async () => {
-  try {
+onMounted(() => {
+  execute(async () => {
     const songId = route.params.id as string
     
     if (!songId) {
@@ -345,14 +348,10 @@ onMounted(async () => {
     }
     
     isLoading.value = false
-  } catch (error) {
-    console.error('Error loading song:', error)
-    loadError.value = 'Failed to load song. Please try again.'
-    isLoading.value = false
-  } finally {
-    // Always hide the overlay, even if there's an error
-    uiStore.hideOperationOverlay()
-  }
+  }, {
+    errorMessage: 'Failed to load song',
+    timeout: 15000 // Longer timeout for song edit page
+  })
 })
 
 // Validate a single field

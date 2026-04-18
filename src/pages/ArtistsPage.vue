@@ -114,6 +114,7 @@ import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useCRUD } from '@/composables/useCRUD'
+import { usePageLoad } from '@/composables/usePageLoad'
 import type { ArtistWithCount } from '@/types/database'
 
 const artistsStore = useArtistsStore()
@@ -213,22 +214,17 @@ async function handleRenameSubmit() {
   await handleRenameBase()
 }
 
-onMounted(async () => {
-  try {
-    if (!authStore.isInitialized) {
-      await authStore.initialize()
-    }
-    
+const { execute } = usePageLoad()
+
+onMounted(() => {
+  execute(async () => {
     const personalProjectId = await authStore.getPersonalProjectId()
     
     if (personalProjectId) {
       artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
     }
-  } catch (error) {
-    console.error('Error loading artists:', error)
-    uiStore.showToast('Failed to load artists', 'error')
-  } finally {
-    uiStore.hideOperationOverlay()
-  }
+  }, {
+    errorMessage: 'Failed to load artists'
+  })
 })
 </script>

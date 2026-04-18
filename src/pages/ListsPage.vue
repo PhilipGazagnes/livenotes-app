@@ -241,6 +241,8 @@ import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { normalizeText } from '@/utils/validation'
+import { executeOperation, executeConfirmedOperation } from '@/utils/operations'
+import { usePageLoad } from '@/composables/usePageLoad'
 import AppHeader from '@/components/AppHeader.vue'
 import ListCard from '@/components/ListCard.vue'
 import type { List } from '@/types/database'
@@ -290,6 +292,19 @@ function handleSelectAll() {
   const allListIds = listsStore.listsByName.map(list => list.id)
   uiStore.selectAll(allListIds)
 }
+
+const { execute } = usePageLoad()
+
+onMounted(() => {
+  execute(async () => {
+    const personalProjectId = await authStore.getPersonalProjectId()
+    if (personalProjectId) {
+      await listsStore.fetchLists(personalProjectId)
+    }
+  }, {
+    errorMessage: 'Failed to load lists'
+  })
+})
 
 async function handleBulkDelete() {
   const count = uiStore.selectedIds.length

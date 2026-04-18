@@ -233,6 +233,7 @@ import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { executeOperation, executeConfirmedOperation } from '@/utils/operations'
 import { TIMEOUTS } from '@/utils/timeout'
+import { usePageLoad } from '@/composables/usePageLoad'
 
 const songsStore = useSongsStore()
 const authStore = useAuthStore()
@@ -433,14 +434,10 @@ async function handleBulkRemoveTagsApply(tagIds: string[]) {
   )
 }
 
-onMounted(async () => {
-  try {
-    // Ensure auth is initialized first
-    if (!authStore.isInitialized) {
-      await authStore.initialize()
-    }
-    
-    // Fetch user's personal project and songs
+const { execute } = usePageLoad()
+
+onMounted(() => {
+  execute(async () => {
     const personalProjectId = await authStore.getPersonalProjectId()
     
     if (personalProjectId) {
@@ -448,12 +445,9 @@ onMounted(async () => {
       await tagsStore.fetchTags(personalProjectId)
       await listsStore.fetchLists(personalProjectId)
     }
-  } catch (error) {
-    console.error('Error loading songs page:', error)
-    uiStore.showToast('Failed to load songs', 'error')
-  } finally {
-    // Always hide overlay
-    uiStore.hideOperationOverlay()
-  }
+  }, {
+    errorMessage: 'Failed to load songs',
+    timeoutMessage: 'Loading songs is taking too long. Please refresh.'
+  })
 })
 </script>
