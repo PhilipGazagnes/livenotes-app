@@ -124,6 +124,113 @@ export const useTagsStore = defineStore('tags', () => {
     return tags.value.filter(t => tagIds.includes(t.id))
   }
 
+  // V2: Library song tagging operations
+  
+  /**
+   * Tag a library song (V2)
+   */
+  async function tagLibrarySong(librarySongId: string, tagId: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const { error: insertError } = await supabase
+        .from('library_song_tags')
+        .insert({
+          library_song_id: librarySongId,
+          tag_id: tagId,
+        })
+      
+      if (insertError) throw insertError
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to tag song'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Untag a library song (V2)
+   */
+  async function untagLibrarySong(librarySongId: string, tagId: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const { error: deleteError } = await supabase
+        .from('library_song_tags')
+        .delete()
+        .eq('library_song_id', librarySongId)
+        .eq('tag_id', tagId)
+      
+      if (deleteError) throw deleteError
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to untag song'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Bulk assign tags to multiple library songs (V2)
+   */
+  async function bulkAssignTags(librarySongIds: string[], tagIds: string[]) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const inserts = librarySongIds.flatMap(librarySongId =>
+        tagIds.map(tagId => ({
+          library_song_id: librarySongId,
+          tag_id: tagId,
+        }))
+      )
+      
+      const { error: insertError } = await supabase
+        .from('library_song_tags')
+        .insert(inserts)
+      
+      if (insertError) throw insertError
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to assign tags'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Bulk remove tags from multiple library songs (V2)
+   */
+  async function bulkRemoveTags(librarySongIds: string[], tagIds: string[]) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      for (const librarySongId of librarySongIds) {
+        for (const tagId of tagIds) {
+          await supabase
+            .from('library_song_tags')
+            .delete()
+            .eq('library_song_id', librarySongId)
+            .eq('tag_id', tagId)
+        }
+      }
+      
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to remove tags'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // State
     tags,
@@ -139,5 +246,10 @@ export const useTagsStore = defineStore('tags', () => {
     deleteTag,
     getTagById,
     getTagsByIds,
+    // V2 Actions
+    tagLibrarySong,
+    untagLibrarySong,
+    bulkAssignTags,
+    bulkRemoveTags,
   }
 })

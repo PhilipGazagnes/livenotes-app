@@ -119,3 +119,120 @@ export interface TagWithCount extends Tag {
 export interface ArtistWithCount extends Artist {
   song_count: number
 }
+
+// =============================================================================
+// V2 Types - Global Catalog Architecture
+// =============================================================================
+
+// Note types enum
+export type NoteType =
+  | 'songcode'
+  | 'plain_text'
+  | 'youtube'
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'tablature'
+  | 'looper_notes'
+  | 'lyrics'
+  | 'chords'
+
+// Global song catalog
+export interface SongV2 {
+  id: string
+  title: string
+  fingerprint: string
+  is_verified: boolean
+  verified_by: string | null
+  verified_at: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  popularity_score: number
+  merged_into_id: string | null
+  merge_reason: string | null
+}
+
+// Global artist catalog
+export interface ArtistV2 {
+  id: string
+  name: string
+  fingerprint: string
+  is_verified: boolean
+  verified_by: string | null
+  verified_at: string | null
+  bio: string | null
+  image_url: string | null
+  external_links: any | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  merged_into_id: string | null
+  merge_reason: string | null
+}
+
+// Song-Artist junction (V2)
+export interface SongArtistV2 {
+  id: string
+  song_id: string
+  artist_id: string
+  position: number
+  created_at: string
+}
+
+// Library songs - junction between projects and global songs
+export interface LibrarySong {
+  id: string
+  project_id: string
+  song_id: string
+  added_by: string
+  added_at: string
+  custom_title: string | null
+  custom_notes: string | null
+}
+
+// Notes - multi-note system
+export interface Note {
+  id: string
+  library_song_id: string
+  type: NoteType
+  title: string | null
+  content: string
+  created_by: string
+  created_at: string
+  updated_by: string
+  updated_at: string
+  display_order: number
+  is_public: boolean
+  is_shareable: boolean
+  share_token: string | null
+}
+
+// Library song tags - new junction
+export interface LibrarySongTag {
+  id: string
+  library_song_id: string
+  tag_id: string
+  created_at: string
+}
+
+// Extended V2 types with relations
+export interface SongV2WithArtists extends SongV2 {
+  artists: Array<ArtistV2 & { position: number }>
+}
+
+export interface LibrarySongWithSong extends LibrarySong {
+  song: SongV2WithArtists
+}
+
+export interface LibrarySongWithDetails extends LibrarySong {
+  song: SongV2WithArtists
+  tags: Tag[]
+  notes: Note[]
+  lists: List[]
+}
+
+export interface NoteWithSong extends Note {
+  library_song: LibrarySongWithSong
+}
+

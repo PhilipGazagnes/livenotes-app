@@ -51,34 +51,43 @@ export const useListsStore = defineStore('lists', () => {
       
       if (listError) throw listError
       
+      // V2: Fetch items with library_songs
       const { data: itemsData, error: itemsError } = await supabase
         .from('list_items')
         .select(`
           *,
-          song:songs(
+          library_song:library_songs!list_items_library_song_id_fkey(
             *,
-            tags:song_tags(tag:tags(*)),
-            artists:song_artists(
-              position,
-              artist:artists(*)
+            song:songs_v2!library_songs_song_id_fkey(
+              *,
+              artists:song_artists_v2(
+                position,
+                artist:artists_v2(*)
+              )
+            ),
+            tags:library_song_tags(
+              tag:tags(*)
             )
           )
         `)
         .eq('list_id', listId)
+        .not('library_song_id', 'is', null)
         .order('position', { ascending: true })
       
       if (itemsError) throw itemsError
       
-      // Transform the nested tags and artists structure
+      // Transform the nested structure
       const transformedItems = itemsData?.map(item => ({
         ...item,
-        song: item.song ? {
-          ...item.song,
-          tags: item.song.tags?.map((st: any) => st.tag) || [],
-          artists: item.song.artists?.map((sa: any) => ({
-            ...sa.artist,
-            position: sa.position
-          })).sort((a: any, b: any) => a.position - b.position) || []
+        song: item.library_song?.song ? {
+          ...item.library_song.song,
+          artists: item.library_song.song.artists
+            ?.map((sa: any) => ({
+              ...sa.artist,
+              position: sa.position,
+            }))
+            .sort((a: any, b: any) => a.position - b.position) ?? [],
+          tags: item.library_song.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
         } : null
       })) || []
       
@@ -218,6 +227,136 @@ export const useListsStore = defineStore('lists', () => {
     }
   }
 
+  /**
+   * Add a library song to a list (V2)
+   */
+  async function addLibrarySongToList(listId: string, librarySongId: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      // Get current max position
+      const { data: items, error: fetchError } = await supabase
+        .from('list_items')
+        .select('position')
+        .eq('list_id', listId)
+        .order('position', { ascending: false })
+        .limit(1)
+      
+      if (fetchError) throw fetchError
+      
+      const nextPosition = items.length > 0 ? items[0].position + 1 : 0
+      
+      const { error: insertError } = await supabase
+        .from('list_items')
+        .insert({
+          list_id: listId,
+          library_song_id: librarySongId,
+          position: nextPosition,
+          type: 'song',
+        })
+      
+      if (insertError) throw insertError
+      
+      // Refresh current list if it's the one we're updating
+      if (currentList.value?.id === listId) {
+        await fetchListById(listId)
+      }
+      
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to add song to list'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Remove a library song from a list (V2)
+   */
+  async function removeLibrarySongFromList(listId: string, librarySongId: string) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const { error: deleteError } = await supabase
+        .from('list_items')
+        .delete()
+        .eq('list_id', listId)
+        .eq('library_song_id', librarySongId)
+      
+      if (deleteError) throw deleteError
+      
+      // Update local state
+      if (currentList.value?.id === listId) {
+        currentList.value.items = currentList.value.items.filter(
+          item => item.library_song_id !== librarySongId
+        )
+      }
+      
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to remove song from list'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Bulk add library songs to a list (V2)
+   */
+  async function bulkAddLibrarySongsToList(listId: string, librarySongIds: string[]) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      // Get current max position
+      const { data: items, error: fetchError } = await supabase
+        .from('list_items')
+        .select('position')
+        .eq('list_id', listId)
+        .order('position', { ascending: false })
+        .limit(1)
+      
+      if (fetchError) throw fetchError
+      
+      const startPosition = items.length > 0 ? items[0].position + 1 : 0
+      
+      const inserts = librarySongIds.map((librarySongId, index) => ({
+        list_id: listId,
+        library_song_id: librarySongId,
+        position: startPosition + index,
+        type: 'song' as const,
+      }))
+      
+      const { error: insertError } = await supabase
+        .from('list_items')
+        .insert(inserts)
+      
+      if (insertError) throw insertError
+      
+      // Refresh current list if it's the one we're updating
+      if (currentList.value?.id === listId) {
+        await fetchListById(listId)
+      }
+    // V2 Actions
+    addLibrarySongToList,
+    removeLibrarySongFromList,
+    bulkAddLibrarySongsToList,
+    // Legacy V1 Actions (for backward compatibility)
+      
+      return { success: true }
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to add songs to list'
+      return { success: false, error: error.value }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Legacy V1 methods (kept for backward compatibility during migration)
   async function addSongToList(listId: string, songId: string) {
     isLoading.value = true
     error.value = null

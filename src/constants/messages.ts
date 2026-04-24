@@ -20,6 +20,14 @@ export const MESSAGES = {
     LIST_DELETED: 'List deleted',
     LISTS_UPDATED: 'Lists updated',
     ORDER_UPDATED: 'Order updated',
+    
+    // V2 messages
+    NOTE_CREATED: 'Note created',
+    NOTE_UPDATED: 'Note updated',
+    NOTE_DELETED: 'Note deleted',
+    SONG_ADDED_TO_LIBRARY: 'Song added to library',
+    SONG_REMOVED_FROM_LIBRARY: 'Song removed from library',
+    ARTIST_CREATED: 'Artist created',
   },
 
   ERROR: {
@@ -41,6 +49,13 @@ export const MESSAGES = {
     NETWORK: 'Network error. Please try again.',
     SAVE_FAILED: 'Failed to save. Please try again.',
     OFFLINE: 'You are offline. This action requires an internet connection.',
+    
+    // V2 errors
+    NOTE_TITLE_TOO_LONG: 'Note title is too long (max 100 characters)',
+    NOTE_CONTENT_TOO_LONG: 'Note content is too long (max 100KB)',
+    NOTE_TYPE_REQUIRED: 'Note type is required',
+    SONG_ALREADY_IN_LIBRARY: 'Song already in your library',
+    ARTIST_NAME_REQUIRED: 'Artist name is required',
   },
 
   // Legacy flat messages (for backward compatibility if needed)
@@ -54,6 +69,12 @@ export const MESSAGES = {
   // Confirmation messages
   CONFIRM_DELETE_SONG: (title: string) => 
     `Delete '${title}'? This cannot be undone.`,
+  
+  // V2 confirmations
+  CONFIRM_DELETE_NOTE: (title: string | null) => 
+    `Delete ${title || 'this note'}? This cannot be undone.`,
+  CONFIRM_REMOVE_FROM_LIBRARY: (title: string) => 
+    `Remove '${title}' from your library? All your notes for this song will be deleted.`,
   CONFIRM_DELETE_SONGS: (count: number) => 
     `Delete ${count} songs? This cannot be undone.`,
   CONFIRM_DELETE_TAG: (name: string) => 
@@ -70,6 +91,13 @@ export const MESSAGES = {
   EMPTY_NO_FILTER_RESULTS: 'No songs with selected tags',
   EMPTY_NO_FILTER_RESULTS_SUBTITLE: 'Try different tag combinations',
   EMPTY_LIST_NO_SONGS: 'This list is empty',
+  
+  // V2 empty states
+  EMPTY_NO_NOTES: 'No notes yet',
+  EMPTY_NO_NOTES_SUBTITLE: 'Add your first note',
+  EMPTY_LIBRARY_NO_SONGS: 'Your library is empty',
+  EMPTY_LIBRARY_NO_SONGS_SUBTITLE: 'Search and add songs from the catalog',
+  EMPTY_NO_ARTISTS: 'No artists yet',
   EMPTY_LIST_NO_SONGS_SUBTITLE: 'Add songs from the All Songs page',
   EMPTY_LIST_NO_SEARCH_RESULTS: 'No songs match in this list',
   EMPTY_NO_TAGS: 'No tags yet',
