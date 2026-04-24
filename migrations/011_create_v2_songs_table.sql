@@ -1,6 +1,18 @@
 -- Migration: 011_create_v2_songs_table.sql
 -- Create global songs, artists, and song_artists tables for V2
 
+-- Enable unaccent extension for fingerprint generation
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
+-- Create an IMMUTABLE wrapper function for unaccent
+CREATE OR REPLACE FUNCTION immutable_unaccent(text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE PARALLEL SAFE STRICT
+AS $$
+  SELECT unaccent($1)
+$$;
+
 -- Create new global songs table
 CREATE TABLE IF NOT EXISTS songs_v2 (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -8,7 +20,7 @@ CREATE TABLE IF NOT EXISTS songs_v2 (
   
   -- Deduplication
   fingerprint TEXT GENERATED ALWAYS AS (
-    lower(regexp_replace(title, '[^a-z0-9]', '', 'g'))
+    lower(regexp_replace(immutable_unaccent(title), '[^a-zA-Z0-9]', '', 'g'))
   ) STORED,
   
   -- Verification (Phase 2)
@@ -75,7 +87,7 @@ CREATE TABLE IF NOT EXISTS artists_v2 (
   
   -- Deduplication
   fingerprint TEXT GENERATED ALWAYS AS (
-    lower(regexp_replace(name, '[^a-z0-9]', '', 'g'))
+    lower(regexp_replace(immutable_unaccent(name), '[^a-zA-Z0-9]', '', 'g'))
   ) STORED,
   
   -- Verification

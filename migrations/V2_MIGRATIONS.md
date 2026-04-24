@@ -34,6 +34,7 @@ Run this to verify the migration:
 ## Results (Dev Database)
 - ✅ 469 V1 songs → 468 V2 songs (1 duplicate merged)
 - ✅ 306 V1 artists → 302 V2 artists (4 duplicates merged)
+- ✅ Fingerprints correctly handle uppercase letters and accents (using `immutable_unaccent()`)
 - ✅ All data migrated successfully
 - ✅ All validation checks passed
 
