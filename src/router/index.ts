@@ -17,9 +17,9 @@ const router = createRouter({
       meta: { public: true }
     },
     {
-      path: ROUTES.ALL_SONGS,
-      name: 'AllSongs',
-      component: () => import('@/pages/AllSongsPage.vue'),
+      path: ROUTES.LIBRARY,
+      name: 'Library',
+      component: () => import('@/pages/LibraryPage.vue'),
     },
     {
       path: ROUTES.SONG_NEW,

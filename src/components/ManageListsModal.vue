@@ -115,7 +115,7 @@ import { normalizeText } from '@/utils/validation'
 
 const props = defineProps<{
   isOpen: boolean
-  songId: string
+  librarySongId: string
   songTitle: string
   initialListIds: string[]
 }>()
@@ -214,9 +214,9 @@ async function handleSave() {
       id => !selectedListIds.value.includes(id)
     )
     
-    // Add song to new lists
+    // Add library song to new lists
     for (const listId of listsToAdd) {
-      const result = await listsStore.addSongToList(listId, props.songId)
+      const result = await listsStore.addLibrarySongToList(listId, props.librarySongId)
       if (!result.success) {
         uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
         isSaving.value = false
@@ -224,9 +224,9 @@ async function handleSave() {
       }
     }
     
-    // Remove song from deselected lists
+    // Remove library song from deselected lists
     for (const listId of listsToRemove) {
-      const result = await listsStore.removeSongFromList(listId, props.songId)
+      const result = await listsStore.removeLibrarySongFromList(listId, props.librarySongId)
       if (!result.success) {
         uiStore.showToast(result.error || MESSAGES.ERROR.SAVE_FAILED, 'error')
         isSaving.value = false
