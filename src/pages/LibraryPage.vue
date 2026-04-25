@@ -23,8 +23,13 @@
         @filterByTags="showFilterByTagsModal = true"
       />
 
+      <!-- Loading State -->
+      <div v-if="libraryStore.isLoading" class="flex items-center justify-center py-24">
+        <LoadingSpinner />
+      </div>
+
       <!-- Empty State -->
-      <div v-if="!libraryStore.isLoading && libraryStore.librarySongCount === 0" class="text-center py-12 px-4">
+      <div v-else-if="libraryStore.librarySongCount === 0" class="text-center py-12 px-4">
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
         </svg>
@@ -226,6 +231,7 @@ import { MESSAGES } from '@/constants/messages'
 import AppHeader from '@/components/AppHeader.vue'
 import ListFilterBar from '@/components/ListFilterBar.vue'
 import NotesSection from '@/components/NotesSection.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 // Async components
 const SongSearchModal = defineAsyncComponent(() => import('@/components/SongSearchModal.vue'))

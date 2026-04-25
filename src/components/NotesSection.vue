@@ -25,8 +25,13 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="notesStore.isLoading" class="flex items-center justify-center py-8">
+      <LoadingSpinner />
+    </div>
+
     <!-- Notes grouped by type -->
-    <div v-if="hasNotes" class="space-y-6">
+    <div v-else-if="hasNotes" class="space-y-6">
       <div
         v-for="(typeNotes, type) in notesWithContent"
         :key="type"
@@ -78,6 +83,7 @@ import { MESSAGES } from '@/constants/messages'
 import NoteCard from './NoteCard.vue'
 import NoteEditor from './NoteEditor.vue'
 import CRUDEmptyState from './CRUDEmptyState.vue'
+import LoadingSpinner from './LoadingSpinner.vue'
 
 interface Props {
   librarySongId: string
