@@ -42,29 +42,54 @@ export const useArtistsStore = defineStore('artists', () => {
     error.value = null
     
     try {
-      // Fetch artists with song count
-      const { data, error: fetchError } = await supabase
-        .from('artists')
+      // V2: Get all library songs for this project with their artists
+      const { data: librarySongs, error: fetchError } = await supabase
+        .from('library_songs')
         .select(`
-          *,
-          song_artists(count)
+          id,
+          song_id,
+          songs_v2!inner(
+            id,
+            song_artists_v2!inner(
+              artist_id,
+              artists_v2!inner(
+                id,
+                name,
+                created_at,
+                updated_at
+              )
+            )
+          )
         `)
         .eq('project_id', projectId)
-        .order('name', { ascending: true })
       
       if (fetchError) throw fetchError
       
-      // Transform data to include song_count
-      const artistsWithCount: ArtistWithCount[] = (data || []).map((artist: any) => ({
-        id: artist.id,
-        project_id: artist.project_id,
-        name: artist.name,
-        created_at: artist.created_at,
-        updated_at: artist.updated_at,
-        song_count: artist.song_artists?.[0]?.count || 0
-      }))
+      // Aggregate artists and count library songs (not total songs)
+      const artistMap = new Map<string, ArtistWithCount>()
       
-      return artistsWithCount
+      librarySongs?.forEach((librarySong: any) => {
+        const songArtists = librarySong.songs_v2?.song_artists_v2 || []
+        songArtists.forEach((sa: any) => {
+          const artist = sa.artists_v2
+          if (artist) {
+            if (artistMap.has(artist.id)) {
+              artistMap.get(artist.id)!.song_count++
+            } else {
+              artistMap.set(artist.id, {
+                id: artist.id,
+                project_id: projectId, // Virtual field for compatibility
+                name: artist.name,
+                created_at: artist.created_at,
+                updated_at: artist.updated_at,
+                song_count: 1
+              })
+            }
+          }
+        })
+      })
+      
+      return Array.from(artistMap.values()).sort((a, b) => a.name.localeCompare(b.name))
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch artists with count'
       return []
@@ -79,28 +104,37 @@ export const useArtistsStore = defineStore('artists', () => {
     
     try {
       const trimmedName = name.trim()
+      const fingerprint = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '')
       
-      // Check for duplicate
-      const existing = artists.value.find(
-        a => a.name.toLowerCase() === trimmedName.toLowerCase()
-      )
+      // V2: Check if artist exists in shared catalog by fingerprint
+      const { data: existing, error: checkError } = await supabase
+        .from('artists_v2')
+        .select('*')
+        .eq('fingerprint', fingerprint)
+        .maybeSingle()
+      
+      if (checkError) throw checkError
+      
       if (existing) {
         return { success: true, data: existing, isDuplicate: true }
       }
       
+      // Get current user for created_by
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+      
+      // Create new artist in V2 shared catalog
       const { data: newArtist, error: createError } = await supabase
-        .from('artists')
+        .from('artists_v2')
         .insert({
-          project_id: projectId,
           name: trimmedName,
+          fingerprint: fingerprint,
+          created_by: user.id,
         })
         .select()
         .single()
       
       if (createError) throw createError
-      
-      artists.value.push(newArtist)
-      artists.value.sort((a, b) => a.name.localeCompare(b.name))
       
       return { success: true, data: newArtist, isDuplicate: false }
     } catch (err) {
@@ -116,20 +150,41 @@ export const useArtistsStore = defineStore('artists', () => {
     error.value = null
     
     try {
+      const trimmedName = name.trim()
+      const fingerprint = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '')
+      
+      // V2: Check if user is the creator of this artist
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+      
+      const { data: artist, error: fetchError } = await supabase
+        .from('artists_v2')
+        .select('created_by')
+        .eq('id', artistId)
+        .single()
+      
+      if (fetchError) throw fetchError
+      
+      if (artist.created_by !== user.id) {
+        return {
+          success: false,
+          error: 'Cannot edit artists created by others in the shared catalog'
+        }
+      }
+      
+      // Update artist in V2 shared catalog
       const { data: updatedArtist, error: updateError } = await supabase
-        .from('artists')
-        .update({ name: name.trim() })
+        .from('artists_v2')
+        .update({ 
+          name: trimmedName,
+          fingerprint: fingerprint,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', artistId)
         .select()
         .single()
       
       if (updateError) throw updateError
-      
-      const index = artists.value.findIndex(a => a.id === artistId)
-      if (index !== -1) {
-        artists.value[index] = updatedArtist
-        artists.value.sort((a, b) => a.name.localeCompare(b.name))
-      }
       
       return { success: true, data: updatedArtist }
     } catch (err) {
@@ -145,11 +200,40 @@ export const useArtistsStore = defineStore('artists', () => {
     error.value = null
     
     try {
-      // Check if artist is used by any songs
+      // V2: Can't delete from shared catalog
+      // Instead, check if artist is used in user's library songs
+      
+      // Get user's library songs
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+      
+      // Get user's project
+      const { data: project } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single()
+      
+      if (!project) throw new Error('Project not found')
+      
+      // Get all library_songs for this project
+      const { data: librarySongs } = await supabase
+        .from('library_songs')
+        .select('song_id')
+        .eq('project_id', project.id)
+      
+      if (!librarySongs || librarySongs.length === 0) {
+        return { success: true }
+      }
+      
+      const songIds = librarySongs.map(ls => ls.song_id)
+      
+      // Check if artist is used in any of user's library songs
       const { data: songArtists, error: checkError } = await supabase
-        .from('song_artists')
+        .from('song_artists_v2')
         .select('id')
         .eq('artist_id', artistId)
+        .in('song_id', songIds)
         .limit(1)
       
       if (checkError) throw checkError
@@ -157,19 +241,11 @@ export const useArtistsStore = defineStore('artists', () => {
       if (songArtists && songArtists.length > 0) {
         return { 
           success: false, 
-          error: 'Cannot delete artist that is assigned to songs' 
+          error: 'Cannot remove artist that is assigned to songs. Remove it from songs first.' 
         }
       }
       
-      const { error: deleteError } = await supabase
-        .from('artists')
-        .delete()
-        .eq('id', artistId)
-      
-      if (deleteError) throw deleteError
-      
-      artists.value = artists.value.filter(a => a.id !== artistId)
-      
+      // If artist is not used in any songs, it will just disappear from the list
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete artist'

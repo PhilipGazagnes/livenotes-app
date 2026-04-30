@@ -125,6 +125,7 @@ function noteTypeLabel(type: NoteType): string {
     audio: 'Audio',
     tablature: 'Tablature',
     looper_notes: 'Looper Notes',
+    looper: 'Looper',
     lyrics: 'Lyrics',
     chords: 'Chords',
   }

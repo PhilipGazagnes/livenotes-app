@@ -1,5 +1,8 @@
 <template>
-  <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+  <div 
+    class="bg-gray-800 rounded-lg p-4 border border-gray-700 cursor-pointer hover:border-blue-500 transition-colors"
+    @click="handleCardClick"
+  >
     <div class="flex items-start justify-between gap-3">
       <!-- Tag Info -->
       <div class="flex-1 min-w-0">
@@ -72,9 +75,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import type { Tag } from '@/types/database'
 import { supabase } from '@/utils/supabase'
 import { I18N } from '@/constants/i18n'
+import { ROUTES } from '@/constants/routes'
+
+const router = useRouter()
 
 const props = defineProps<{
   tag: Tag
@@ -90,14 +97,25 @@ const menuPosition = ref({ top: '50%', left: '50%', transform: 'translate(-50%, 
 const songCount = ref(0)
 
 onMounted(async () => {
-  // Load song count for this tag
+  // Load song count for this tag (V2: library_song_tags)
   const { count } = await supabase
-    .from('song_tags')
+    .from('library_song_tags')
     .select('*', { count: 'exact', head: true })
     .eq('tag_id', props.tag.id)
   
   songCount.value = count || 0
 })
+
+function handleCardClick() {
+  // Navigate to library filtered by this tag
+  router.push({
+    path: ROUTES.LIBRARY,
+    query: {
+      tag: props.tag.id,
+      tagName: props.tag.name
+    }
+  })
+}
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value

@@ -67,11 +67,13 @@ export const useListsStore = defineStore('lists', () => {
             ),
             tags:library_song_tags(
               tag:tags(*)
+            ),
+            lists:list_items(
+              list:lists(*)
             )
           )
         `)
         .eq('list_id', listId)
-        .not('library_song_id', 'is', null)
         .order('position', { ascending: true })
       
       if (itemsError) throw itemsError
@@ -88,6 +90,7 @@ export const useListsStore = defineStore('lists', () => {
             }))
             .sort((a: any, b: any) => a.position - b.position) ?? [],
           tags: item.library_song.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
+          lists: item.library_song.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
         } : null
       })) || []
       
@@ -341,11 +344,6 @@ export const useListsStore = defineStore('lists', () => {
       if (currentList.value?.id === listId) {
         await fetchListById(listId)
       }
-    // V2 Actions
-    addLibrarySongToList,
-    removeLibrarySongFromList,
-    bulkAddLibrarySongsToList,
-    // Legacy V1 Actions (for backward compatibility)
       
       return { success: true }
     } catch (err) {
@@ -464,13 +462,17 @@ export const useListsStore = defineStore('lists', () => {
     // Getters
     listCount,
     listsByName,
-    // Actions
+    // Actions - V2
     fetchLists,
     fetchListById,
     createList,
     updateList,
     deleteList,
     bulkDeleteLists,
+    addLibrarySongToList,
+    removeLibrarySongFromList,
+    bulkAddLibrarySongsToList,
+    // Actions - V1 (legacy, for backward compatibility)
     addSongToList,
     removeSongFromList,
     reorderListItems,

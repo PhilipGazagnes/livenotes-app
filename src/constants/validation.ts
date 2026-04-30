@@ -41,6 +41,7 @@ export const NOTE_TYPES = [
   'audio',
   'tablature',
   'looper_notes',
+  'looper',
   'lyrics',
   'chords',
 ] as const

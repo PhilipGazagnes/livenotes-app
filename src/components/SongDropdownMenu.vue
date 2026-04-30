@@ -87,7 +87,8 @@
     <!-- Manage Tags Modal -->
     <ManageTagsModal
       :isOpen="showManageTagsModal"
-      :songId="props.song.id"
+      :songId="props.librarySongId ? undefined : props.song.id"
+      :librarySongId="props.librarySongId"
       :songTitle="props.song.title"
       :initialTagIds="props.song.tags?.map(t => t.id) || []"
       @close="handleModalClose"
@@ -97,7 +98,7 @@
     <!-- Manage Lists Modal -->
     <ManageListsModal
       :isOpen="showManageListsModal"
-      :songId="props.song.id"
+      :librarySongId="props.librarySongId || ''"
       :songTitle="props.song.title"
       :initialListIds="props.song.lists?.map(l => l.id) || []"
       @close="() => { showManageListsModal = false; handleClose(); }"
@@ -125,6 +126,7 @@ const ManageListsModal = defineAsyncComponent(() => import('./ManageListsModal.v
 
 const props = withDefaults(defineProps<{
   song: SongWithTags
+  librarySongId?: string  // V2: If provided, use this for manage tags/lists
   showRemoveFromList?: boolean
   showDuplicate?: boolean
 }>(), {
@@ -136,6 +138,7 @@ const emit = defineEmits<{
   close: []
   remove: []
   tagsUpdated: [songId: string]
+  listsUpdated: [songId: string]
   songDeleted: [songId: string]
 }>()
 
@@ -224,7 +227,30 @@ async function handleManageTags() {
   if (personalProjectId) {
     await tagsStore.fetchTags(personalProjectId)
   }
+  
+  // For list context, ensure we have librarySongId
+  if (props.showRemoveFromList && !props.librarySongId) {
+    uiStore.showToast('Cannot manage tags: missing library song ID', 'error')
+    return
+  }
+  
   showManageTagsModal.value = true
+}
+
+async function handleManageLists() {
+  // Lazy load lists only when modal is opened
+  const personalProjectId = await authStore.getPersonalProjectId()
+  if (personalProjectId) {
+    await listsStore.fetchLists(personalProjectId)
+  }
+  
+  // For list context, ensure we have librarySongId
+  if (props.showRemoveFromList && !props.librarySongId) {
+    uiStore.showToast('Cannot manage lists: missing library song ID', 'error')
+    return
+  }
+  
+  showManageListsModal.value = true
 }
 
 function handleModalClose() {
@@ -248,20 +274,20 @@ async function handleTagsSaved() {
   }
 }
 
-async function handleManageLists() {
-  // Lazy load lists only when modal is opened
-  const personalProjectId = await authStore.getPersonalProjectId()
-  if (personalProjectId) {
-    await listsStore.fetchLists(personalProjectId)
-  }
-  showManageListsModal.value = true
-}
-
 async function handleListsSaved() {
-  // Refresh only this song's lists to avoid scroll reset
-  await songsStore.refreshSongLists(props.song.id)
+  logger.debug('SongDropdownMenu: handleListsSaved called for song:', props.song.id)
+  
+  // Close the modal
   showManageListsModal.value = false
-  handleClose()
+  
+  if (props.showRemoveFromList) {
+    // In list context: emit event to trigger list refresh
+    emit('listsUpdated', props.song.id)
+  } else {
+    // In regular context: refresh song lists and close dropdown
+    await songsStore.refreshSongLists(props.song.id)
+    handleClose()
+  }
 }
 
 async function handleDelete() {

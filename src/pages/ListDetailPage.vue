@@ -109,6 +109,8 @@
                 @remove="handleRemove(item)"
                 @songDeleted="handleSongDeleted"
                 @tagsUpdated="handleTagsUpdated"
+                @listsUpdated="handleListsUpdated"
+                @openNotes="handleOpenNotes"
               />
             </div>
           </template>
@@ -131,6 +133,7 @@
             v-if="uiStore.selectionMode"
             :listId="listId"
             :listName="currentList?.name || ''"
+            :listItems="listItems"
             @selectAll="handleSelectAll"
             @refresh="handleRefresh"
             @songsDeleted="handleSongsDeleted"
@@ -189,6 +192,32 @@
           </div>
         </div>
       </div>
+
+      <!-- Song Notes Drawer -->
+      <SongNotesDrawer
+        :isOpen="uiStore.songNotesDrawerOpen"
+        :librarySong="uiStore.selectedLibrarySong"
+        @close="uiStore.closeSongNotesDrawer"
+        @noteClick="handleNoteClick"
+        @addNote="handleAddNote"
+      />
+
+      <!-- Note Content Drawer -->
+      <NoteContentDrawer
+        :isOpen="uiStore.noteContentDrawerOpen"
+        :note="uiStore.selectedNote"
+        @close="uiStore.closeNoteContentDrawer"
+        @edit="handleEditNote"
+        @delete="handleDeleteNote"
+      />
+
+      <!-- Note Creation Drawer -->
+      <NoteCreationDrawer
+        :isOpen="uiStore.noteCreationDrawerOpen"
+        :librarySongId="uiStore.selectedLibrarySong?.id || ''"
+        @close="uiStore.closeNoteCreationDrawer"
+        @saved="handleNoteSaved"
+      />
     </ion-content>
   </ion-page>
 </template>
@@ -212,6 +241,10 @@ import ListSongCard from '@/components/ListSongCard.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
 import ListBulkActions from '@/components/ListBulkActions.vue'
 import ListFilterBar from '@/components/ListFilterBar.vue'
+import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
+import NoteContentDrawer from '@/components/NoteContentDrawer.vue'
+import NoteCreationDrawer from '@/components/NoteCreationDrawer.vue'
+import type { Note, LibrarySongWithDetails, ListItem, SongWithTags } from '@/types/database'
 
 const route = useRoute()
 const router = useRouter()
@@ -376,6 +409,11 @@ async function handleTagsUpdated(_songId: string) {
   await handleRefresh()
 }
 
+async function handleListsUpdated(_songId: string) {
+  // Refresh list to show updated list badges
+  await handleRefresh()
+}
+
 function handleAddTitle() {
   editingTitle.value = null
   titleInput.value = ''
@@ -476,10 +514,10 @@ function handleEnterSelectionMode() {
 }
 
 function handleSelectAll() {
-  const allSongIds = displayedItems.value
-    .filter(item => item.type === 'song' && item.song)
-    .map(item => item.song!.id)
-  uiStore.selectAll(allSongIds)
+  const allListItemIds = displayedItems.value
+    .filter(item => item.type === 'song')
+    .map(item => item.id)
+  uiStore.selectAll(allListItemIds)
 }
 
 function handleSongsDeleted(deletedIds: string[]) {
@@ -489,6 +527,155 @@ function handleSongsDeleted(deletedIds: string[]) {
       item => item.song_id && !deletedIds.includes(item.song_id)
     )
   }
+}
+
+// Notes drawer handlers
+async function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
+  // Fetch full library song details including notes
+  const librarySongId = (item as any).library_song_id
+  if (!librarySongId) {
+    uiStore.showToast('Cannot open notes for this song', 'error')
+    return
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('library_songs')
+      .select(`
+        *,
+        song:songs_v2!library_songs_song_id_fkey(
+          *,
+          artists:song_artists_v2(
+            position,
+            artist:artists_v2(*)
+          )
+        ),
+        tags:library_song_tags(
+          tag:tags(*)
+        ),
+        notes:notes(*),
+        lists:list_items(
+          list:lists(*)
+        )
+      `)
+      .eq('id', librarySongId)
+      .single()
+    
+    if (error) throw error
+    
+    // Transform the data
+    const librarySong: LibrarySongWithDetails = {
+      ...data,
+      song: {
+        ...data.song,
+        artists: data.song.artists
+          ?.map((sa: any) => ({
+            ...sa.artist,
+            position: sa.position,
+          }))
+          .filter(Boolean)
+          .sort((a: any, b: any) => a.position - b.position) ?? [],
+      },
+      tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
+      notes: data.notes ?? [],
+      lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
+    }
+    
+    uiStore.openSongNotesDrawer(librarySong)
+  } catch (err) {
+    console.error('Failed to load song notes:', err)
+    uiStore.showToast('Failed to load song notes', 'error')
+  }
+}
+
+function handleNoteClick(note: Note) {
+  uiStore.openNoteContentDrawer(note)
+}
+
+function handleAddNote() {
+  uiStore.openNoteCreationDrawer()
+}
+
+async function handleNoteSaved() {
+  // Refresh the library song data to show the new note in the drawer
+  if (uiStore.selectedLibrarySong) {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('library_songs')
+        .select(`
+          *,
+          song:songs_v2!library_songs_song_id_fkey(
+            *,
+            artists:song_artists_v2(
+              position,
+              artist:artists_v2(*)
+            )
+          ),
+          tags:library_song_tags(
+            tag:tags(*)
+          ),
+          notes:notes(
+            id,
+            type,
+            title,
+            content,
+            display_order,
+            created_at,
+            updated_at
+          ),
+          lists:list_items(
+            list:lists(*)
+          )
+        `)
+        .eq('id', uiStore.selectedLibrarySong.id)
+        .single()
+      
+      if (fetchError) throw fetchError
+      if (!data) return
+      
+      // Update the selectedLibrarySong with fresh data
+      const refreshedSong: LibrarySongWithDetails = {
+        ...data,
+        song: {
+          ...data.song,
+          artists: data.song.artists
+            ?.map((sa: any) => ({
+              ...sa.artist,
+              position: sa.position,
+            }))
+            .filter(Boolean)
+            .sort((a: any, b: any) => a.position - b.position) ?? [],
+        },
+        tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
+        notes: data.notes ?? [],
+        lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
+      }
+      
+      uiStore.selectedLibrarySong = refreshedSong
+    } catch (err) {
+      console.error('Failed to refresh library song:', err)
+    }
+  }
+}
+
+function handleEditNote(note: Note) {
+  uiStore.showToast('Edit note functionality coming soon', 'success')
+  console.log('Edit note:', note)
+}
+
+async function handleDeleteNote(note: Note) {
+  const confirmed = await uiStore.showConfirm(
+    'Delete Note',
+    `Are you sure you want to delete this ${note.title || 'note'}?`,
+    'Delete',
+    'Cancel'
+  )
+  
+  if (!confirmed) return
+  
+  uiStore.closeNoteContentDrawer()
+  uiStore.showToast('Delete note functionality coming soon', 'success')
+  console.log('Delete note:', note)
 }
 </script>
 

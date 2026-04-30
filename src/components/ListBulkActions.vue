@@ -110,7 +110,6 @@
 <script setup lang="ts">
 import { ref, computed, defineAsyncComponent } from 'vue'
 import { useListsStore } from '@/stores/lists'
-import { useSongsStore } from '@/stores/songs'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { supabase } from '@/utils/supabase'
@@ -125,6 +124,7 @@ const BulkRemoveTagsModal = defineAsyncComponent(() => import('./BulkRemoveTagsM
 const props = defineProps<{
   listId: string
   listName: string
+  listItems: any[]
 }>()
 
 const emit = defineEmits<{
@@ -134,7 +134,6 @@ const emit = defineEmits<{
 }>()
 
 const listsStore = useListsStore()
-const songsStore = useSongsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
@@ -144,14 +143,29 @@ const showBulkRemoveTagsModal = ref(false)
 
 const selectedCount = computed(() => uiStore.selectedIds.length)
 
+// Map selected list_item IDs to library_song_ids
+const selectedLibrarySongIds = computed(() => {
+  return uiStore.selectedIds
+    .map(listItemId => {
+      const item = props.listItems.find(i => i.id === listItemId)
+      return item?.library_song_id
+    })
+    .filter(Boolean) as string[]
+})
+
 async function handleBulkRemoveFromList() {
   const count = selectedCount.value
   
   await executeOperation(
     async () => {
-      // Remove all selected songs from the current list
-      for (const songId of uiStore.selectedIds) {
-        await listsStore.removeSongFromList(props.listId, songId)
+      // Remove all selected list items by their IDs
+      for (const listItemId of uiStore.selectedIds) {
+        const { error } = await supabase
+          .from('list_items')
+          .delete()
+          .eq('id', listItemId)
+        
+        if (error) throw error
       }
       
       return { success: true }
@@ -163,6 +177,7 @@ async function handleBulkRemoveFromList() {
       errorContext: 'remove songs from list',
       onSuccess: () => {
         uiStore.exitSelectionMode()
+        emit('refresh')
       },
     }
   )
@@ -180,35 +195,45 @@ async function handleBulkDelete() {
   if (confirmed) {
     const projectId = await authStore.getPersonalProjectId()
     if (projectId) {
-      const deletedIds = [...uiStore.selectedIds]
-      const result = await executeConfirmedOperation(
-        () => songsStore.bulkDelete(uiStore.selectedIds, projectId),
+      const librarySongIds = selectedLibrarySongIds.value
+      
+      await executeConfirmedOperation(
+        async () => {
+          // Delete library songs (which will cascade to list items)
+          for (const librarySongId of librarySongIds) {
+            const { error } = await supabase
+              .from('library_songs')
+              .delete()
+              .eq('id', librarySongId)
+            
+            if (error) throw error
+          }
+          return { success: true }
+        },
         {
           loadingMessage: `Deleting ${count} song${count > 1 ? 's' : ''}...`,
           successMessage: I18N.TOAST.BULK_DELETED_SONGS(count),
           errorContext: 'delete songs',
           onSuccess: () => {
             uiStore.exitSelectionMode()
+            emit('refresh')
           },
         }
       )
-      
-      if (result.success) {
-        emit('songsDeleted', deletedIds)
-      }
     }
   }
 }
 
 async function handleBulkAddToListsApply(listIds: string[]) {
   const songCount = selectedCount.value
+  const librarySongIds = selectedLibrarySongIds.value
   
   await executeOperation(
     async () => {
-      // Add each selected song to each selected list
+      // Add each selected library song to each selected list
       for (const listId of listIds) {
-        for (const songId of uiStore.selectedIds) {
-          await listsStore.addSongToList(listId, songId)
+        for (const librarySongId of librarySongIds) {
+          await listsStore.addLibrarySongToList(listId, librarySongId)
         }
       }
       return { success: true }
@@ -220,6 +245,7 @@ async function handleBulkAddToListsApply(listIds: string[]) {
       errorContext: 'add songs to lists',
       onSuccess: () => {
         uiStore.exitSelectionMode()
+        emit('refresh')
       },
     }
   )
@@ -227,20 +253,21 @@ async function handleBulkAddToListsApply(listIds: string[]) {
 
 async function handleBulkAssignTagsApply(tagIds: string[]) {
   const songCount = selectedCount.value
+  const librarySongIds = selectedLibrarySongIds.value
   
   await executeOperation(
     async () => {
-      // Create song_tag entries for each song-tag combination
+      // Create library_song_tags entries for each library_song-tag combination
       const inserts = []
-      for (const songId of uiStore.selectedIds) {
+      for (const librarySongId of librarySongIds) {
         for (const tagId of tagIds) {
-          inserts.push({ song_id: songId, tag_id: tagId })
+          inserts.push({ library_song_id: librarySongId, tag_id: tagId })
         }
       }
       
       const { error } = await supabase
-        .from('song_tags')
-        .upsert(inserts, { onConflict: 'song_id,tag_id', ignoreDuplicates: true })
+        .from('library_song_tags')
+        .upsert(inserts, { onConflict: 'library_song_id,tag_id', ignoreDuplicates: true })
       
       if (error) throw error
       
@@ -263,14 +290,15 @@ async function handleBulkAssignTagsApply(tagIds: string[]) {
 
 async function handleBulkRemoveTagsApply(tagIds: string[]) {
   const songCount = selectedCount.value
+  const librarySongIds = selectedLibrarySongIds.value
   
   await executeOperation(
     async () => {
-      // Remove tag associations for selected songs and tags
+      // Remove tag associations for selected library songs and tags
       const { error } = await supabase
-        .from('song_tags')
+        .from('library_song_tags')
         .delete()
-        .in('song_id', uiStore.selectedIds)
+        .in('library_song_id', librarySongIds)
         .in('tag_id', tagIds)
       
       if (error) throw error

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import type { LibrarySongWithDetails, Note } from '@/types/database'
 
 export interface Toast {
   id: string
@@ -41,6 +42,13 @@ export const useUiStore = defineStore('ui', () => {
   // Bulk selection state
   const selectionMode = ref(false)
   const selectedIds = ref<string[]>([])
+  
+  // Notes drawer state
+  const songNotesDrawerOpen = ref(false)
+  const selectedLibrarySong = ref<LibrarySongWithDetails | null>(null)
+  const noteContentDrawerOpen = ref(false)
+  const selectedNote = ref<Note | null>(null)
+  const noteCreationDrawerOpen = ref(false)
 
   // Actions
   function setLoading(loading: boolean) {
@@ -174,6 +182,54 @@ export const useUiStore = defineStore('ui', () => {
   function isSelected(id: string): boolean {
     return selectedIds.value.includes(id)
   }
+  
+  // Notes drawer actions
+  function openSongNotesDrawer(librarySong: LibrarySongWithDetails) {
+    console.log('🎼 UI Store: Opening SongNotesDrawer with library_song_id:', librarySong.id)
+    console.log('🎼 UI Store: Notes attached:', librarySong.notes)
+    selectedLibrarySong.value = librarySong
+    songNotesDrawerOpen.value = true
+  }
+  
+  function closeSongNotesDrawer() {
+    songNotesDrawerOpen.value = false
+    // Don't clear selectedLibrarySong immediately to allow for smooth transition
+    setTimeout(() => {
+      if (!songNotesDrawerOpen.value) {
+        selectedLibrarySong.value = null
+      }
+    }, 300)
+  }
+  
+  function openNoteContentDrawer(note: Note) {
+    console.log('📝 UI Store: Opening NoteContentDrawer with note:', {
+      id: note.id,
+      type: note.type,
+      title: note.title,
+      content_length: note.content?.length || 0,
+      content_preview: note.content?.substring(0, 50)
+    })
+    selectedNote.value = note
+    noteContentDrawerOpen.value = true
+  }
+  
+  function closeNoteContentDrawer() {
+    noteContentDrawerOpen.value = false
+    setTimeout(() => {
+      if (!noteContentDrawerOpen.value) {
+        selectedNote.value = null
+      }
+    }, 300)
+  }
+  
+  function openNoteCreationDrawer() {
+    console.log('✏️ UI Store: Opening NoteCreationDrawer')
+    noteCreationDrawerOpen.value = true
+  }
+  
+  function closeNoteCreationDrawer() {
+    noteCreationDrawerOpen.value = false
+  }
 
   return {
     // State
@@ -184,6 +240,11 @@ export const useUiStore = defineStore('ui', () => {
     operationOverlay,
     selectionMode,
     selectedIds,
+    songNotesDrawerOpen,
+    selectedLibrarySong,
+    noteContentDrawerOpen,
+    selectedNote,
+    noteCreationDrawerOpen,
     // Actions
     setLoading,
     showToast,
@@ -203,5 +264,11 @@ export const useUiStore = defineStore('ui', () => {
     selectAll,
     deselectAll,
     isSelected,
+    openSongNotesDrawer,
+    closeSongNotesDrawer,
+    openNoteContentDrawer,
+    closeNoteContentDrawer,
+    openNoteCreationDrawer,
+    closeNoteCreationDrawer,
   }
 })

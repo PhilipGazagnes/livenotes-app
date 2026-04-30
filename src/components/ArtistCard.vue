@@ -1,5 +1,8 @@
 <template>
-  <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+  <div 
+    class="bg-gray-800 rounded-lg p-4 border border-gray-700 cursor-pointer hover:border-purple-500 transition-colors"
+    @click="handleCardClick"
+  >
     <div class="flex items-start justify-between gap-3">
       <!-- Artist Info -->
       <div class="flex-1 min-w-0">
@@ -72,7 +75,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { ArtistWithCount } from '@/types/database'
+import { ROUTES } from '@/constants/routes'
+
+const router = useRouter()
 
 const props = defineProps<{
   artist: ArtistWithCount
@@ -87,6 +94,17 @@ const isDropdownOpen = ref(false)
 const menuPosition = ref({ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' })
 
 const songCount = props.artist.song_count
+
+function handleCardClick() {
+  // Navigate to library filtered by this artist
+  router.push({
+    path: ROUTES.LIBRARY,
+    query: {
+      artist: props.artist.id,
+      artistName: props.artist.name
+    }
+  })
+}
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value

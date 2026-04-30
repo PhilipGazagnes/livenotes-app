@@ -89,10 +89,17 @@ router.beforeEach(async (to, _from, next) => {
     next(ROUTES.LOGIN)
   } else if (isPublic && isAuthenticated) {
     uiStore.hideOperationOverlay()
-    next(ROUTES.ALL_SONGS)
+    next(ROUTES.LIBRARY)
   } else {
     next()
   }
+})
+
+// Hide loading overlay after navigation completes
+router.afterEach(async () => {
+  const { useUiStore } = await import('@/stores/ui')
+  const uiStore = useUiStore()
+  uiStore.hideOperationOverlay()
 })
 
 export default router

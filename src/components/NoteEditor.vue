@@ -16,17 +16,17 @@
         <input
           v-model="formData.title"
           type="text"
-          :maxlength="NOTE_TITLE_MAX_LENGTH"
+          :maxlength="VALIDATION.NOTE_TITLE_MAX_LENGTH"
           placeholder="Enter note title"
           class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
         />
         <p class="text-xs text-gray-500 mt-1">
-          {{ formData.title.length }} / {{ NOTE_TITLE_MAX_LENGTH }}
+          {{ formData.title.length }} / {{ VALIDATION.NOTE_TITLE_MAX_LENGTH }}
         </p>
       </div>
 
       <!-- Content (varies by note type) -->
-      <div>
+      <div v-if="effectiveNoteType !== 'looper'">
         <label class="block text-sm font-medium text-gray-300 mb-2">
           Content <span class="text-red-500">*</span>
         </label>
@@ -44,7 +44,7 @@
         <textarea
           v-else-if="isFormattedType"
           v-model="formData.content"
-          :maxlength="NOTE_CONTENT_MAX_LENGTH"
+          :maxlength="VALIDATION.NOTE_CONTENT_MAX_LENGTH"
           :rows="15"
           :placeholder="contentPlaceholder"
           class="w-full px-4 py-3 bg-black/30 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono text-sm resize-none"
@@ -54,15 +54,98 @@
         <textarea
           v-else
           v-model="formData.content"
-          :maxlength="NOTE_CONTENT_MAX_LENGTH"
+          :maxlength="VALIDATION.NOTE_CONTENT_MAX_LENGTH"
           :rows="10"
           :placeholder="contentPlaceholder"
           class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
         />
 
         <p v-if="!isUrlType" class="text-xs text-gray-500 mt-1">
-          {{ formData.content.length }} / {{ NOTE_CONTENT_MAX_LENGTH }}
+          {{ formData.content.length }} / {{ VALIDATION.NOTE_CONTENT_MAX_LENGTH }}
         </p>
+      </div>
+
+      <!-- Custom form for looper type -->
+      <div v-else class="space-y-4">
+        <!-- BPM -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">
+            BPM <span class="text-red-500">*</span>
+          </label>
+          <input
+            v-model.number="looperData.bpm"
+            type="number"
+            min="1"
+            max="300"
+            placeholder="120"
+            class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <!-- Pattern 1 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">
+            Pattern 1 <span class="text-red-500">*</span>
+          </label>
+          <input
+            v-model="looperData.pattern1"
+            type="text"
+            placeholder="e.g., Kick-Snare-Kick-Snare"
+            class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <!-- Pattern 1 Variation -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">
+            Pattern 1 Variation
+          </label>
+          <input
+            v-model="looperData.pattern1_var"
+            type="text"
+            placeholder="e.g., Double time on chorus"
+            class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <!-- Pattern 2 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">
+            Pattern 2
+          </label>
+          <input
+            v-model="looperData.pattern2"
+            type="text"
+            placeholder="e.g., Bass line loop"
+            class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <!-- Pattern 2 Variation -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">
+            Pattern 2 Variation
+          </label>
+          <input
+            v-model="looperData.pattern2_var"
+            type="text"
+            placeholder="e.g., Variation for bridge"
+            class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+        </div>
+
+        <!-- Comment -->
+        <div>
+          <label class="block text-sm font-medium text-gray-300 mb-2">
+            Comment
+          </label>
+          <textarea
+            v-model="looperData.comment"
+            rows="3"
+            placeholder="Additional notes about the looper setup..."
+            class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
+          />
+        </div>
       </div>
 
       <!-- SongCode Converter Hint -->
@@ -82,8 +165,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useNotesStore } from '@/stores/notes'
 import { useUiStore } from '@/stores/ui'
-import type { Note, NoteType } from '@/types/database'
-import { NOTE_TITLE_MAX_LENGTH, NOTE_CONTENT_MAX_LENGTH } from '@/constants/validation'
+import type { Note, NoteType, LooperContent } from '@/types/database'
+import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import CRUDModal from './CRUDModal.vue'
 
@@ -108,6 +191,15 @@ const formData = ref({
   content: ''
 })
 
+const looperData = ref<LooperContent>({
+  bpm: 120,
+  pattern1: '',
+  pattern1_var: '',
+  pattern2: '',
+  pattern2_var: '',
+  comment: ''
+})
+
 // Computed
 const isEditing = computed(() => !!props.note)
 
@@ -125,6 +217,7 @@ const noteTypeLabel = computed(() => {
     audio: 'Audio',
     tablature: 'Tablature',
     looper_notes: 'Looper Notes',
+    looper: 'Looper',
     lyrics: 'Lyrics',
     chords: 'Chords',
   }
@@ -162,6 +255,12 @@ const contentPlaceholder = computed(() => {
 })
 
 const isValid = computed(() => {
+  if (effectiveNoteType.value === 'looper') {
+    // For looper type, require title, bpm, and pattern1
+    return formData.value.title.trim().length > 0 && 
+           looperData.value.bpm > 0 && 
+           looperData.value.pattern1.trim().length > 0
+  }
   return formData.value.title.trim().length > 0 && 
          formData.value.content.trim().length > 0
 })
@@ -171,6 +270,16 @@ onMounted(() => {
   if (props.note) {
     formData.value.title = props.note.title
     formData.value.content = props.note.content
+    
+    // Parse looper data if it's a looper note
+    if (props.note.type === 'looper') {
+      try {
+        const parsed = JSON.parse(props.note.content) as LooperContent
+        looperData.value = parsed
+      } catch (err) {
+        console.error('Failed to parse looper content:', err)
+      }
+    }
   }
 })
 
@@ -178,14 +287,27 @@ async function handleSave() {
   if (!isValid.value) return
 
   try {
+    let content: string
+    
+    // Serialize looper data as JSON
+    if (effectiveNoteType.value === 'looper') {
+      content = JSON.stringify(looperData.value)
+    } else {
+      content = formData.value.content.trim()
+    }
+    
     if (isEditing.value) {
-      await notesStore.updateNote(props.note!.id, formData.value, props.librarySongId)
+      await notesStore.updateNote(
+        props.note!.id, 
+        { title: formData.value.title, content }, 
+        props.librarySongId
+      )
       uiStore.showToast(MESSAGES.SUCCESS.NOTE_UPDATED, 'success')
     } else {
       await notesStore.createNote(
         props.librarySongId,
         effectiveNoteType.value,
-        formData.value.content.trim(),
+        content,
         formData.value.title.trim()
       )
       uiStore.showToast(MESSAGES.SUCCESS.NOTE_CREATED, 'success')

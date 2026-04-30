@@ -69,7 +69,7 @@
           <div v-else class="space-y-3">
             <label
               v-for="tag in sortedTags"
-              :key="tag.id"
+              :key="`${tag.id}-${selectedTagIds.includes(tag.id)}`"
               class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
             >
               <input
@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -116,7 +116,8 @@ import { logger } from '@/utils/logger'
 
 const props = defineProps<{
   isOpen: boolean
-  songId: string
+  songId?: string // V1 compatibility
+  librarySongId?: string // V2
   songTitle: string
   initialTagIds: string[]
 }>()
@@ -139,7 +140,14 @@ const sortedTags = computed(() => {
   return [...tagsStore.tags].sort((a, b) => a.name.localeCompare(b.name))
 })
 
-// Initialize selected tags when modal opens
+// Initialize on mount
+onMounted(() => {
+  selectedTagIds.value = [...props.initialTagIds]
+  newTagName.value = ''
+  createError.value = ''
+})
+
+// Reset when modal opens again
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     selectedTagIds.value = [...props.initialTagIds]
@@ -203,12 +211,18 @@ async function handleSave() {
       const tagsToAdd = selectedTagIds.value.filter(id => !props.initialTagIds.includes(id))
       const tagsToRemove = props.initialTagIds.filter(id => !selectedTagIds.value.includes(id))
       
+      // Use V2 table if librarySongId is provided, otherwise V1
+      const isV2 = !!props.librarySongId
+      const tableName = isV2 ? 'library_song_tags' : 'song_tags'
+      const idColumn = isV2 ? 'library_song_id' : 'song_id'
+      const idValue = isV2 ? props.librarySongId : props.songId
+      
       // Remove tags
       if (tagsToRemove.length > 0) {
         const { error: deleteError } = await supabase
-          .from('song_tags')
+          .from(tableName)
           .delete()
-          .eq('song_id', props.songId)
+          .eq(idColumn, idValue)
           .in('tag_id', tagsToRemove)
         
         if (deleteError) throw deleteError
@@ -217,12 +231,12 @@ async function handleSave() {
       // Add tags
       if (tagsToAdd.length > 0) {
         const inserts = tagsToAdd.map(tagId => ({
-          song_id: props.songId,
+          [idColumn]: idValue,
           tag_id: tagId,
         }))
         
         const { error: insertError } = await supabase
-          .from('song_tags')
+          .from(tableName)
           .insert(inserts)
         
         if (insertError) throw insertError

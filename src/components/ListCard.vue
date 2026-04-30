@@ -117,11 +117,12 @@ const songCount = ref(0)
 const isSelected = computed(() => uiStore.isSelected(props.list.id))
 
 onMounted(async () => {
-  // Load song count for this list
+  // Load song count for this list (only count songs, not titles)
   const { count, error } = await supabase
     .from('list_items')
     .select('*', { count: 'exact', head: true })
     .eq('list_id', props.list.id)
+    .eq('type', 'song')
   
   if (!error && count !== null) {
     songCount.value = count

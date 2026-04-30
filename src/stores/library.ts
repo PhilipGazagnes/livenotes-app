@@ -27,7 +27,7 @@ export const useLibraryStore = defineStore('library', () => {
    */
   const currentProjectId = computed(() => {
     // TODO: In Phase 3, this will be dynamic when multi-project support is added
-    return authStore.currentProject?.id || ''
+    return authStore.personalProjectId || ''
   })
 
   /**
@@ -96,7 +96,13 @@ export const useLibraryStore = defineStore('library', () => {
           notes:notes(
             id,
             type,
-            title
+            title,
+            content,
+            created_at,
+            updated_at,
+            display_order,
+            is_public,
+            is_shareable
           ),
           lists:list_items(
             list:lists(*)

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Version 2 of Livenotes introduces a **global song catalog** architecture with a **multi-note system**, replacing the previous project-scoped songs with single songcode notes.
+Version 2 of Livenotes introduces a **global song catalog** architecture with a **multi-note system**, replacing the previous project-scoped songs with a single songcode field. The new system supports unlimited notes per song, including multiple notes of the same type (e.g., multiple songcode notes for different arrangements/versions).
 
 ## Architecture Changes
 
@@ -54,9 +54,10 @@ User → Project → Library Songs ──→ Global Songs ──→ Artists
 ### 3. Multi-Note System
 
 **Notes (notes table)** replace the single `songcode` field:
-- Each library song can have **multiple notes**
+- Each library song can have **unlimited notes**
+- **Multiple notes of the same type** are allowed (e.g., multiple songcode notes for different arrangements, versions, etc.)
 - 10 note types supported:
-  - `songcode` - SongCode notation
+  - `songcode` - SongCode notation (multiple allowed per song)
   - `plain_text` - General notes
   - `lyrics` - Song lyrics
   - `chords` - Chord progressions

@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="bg-gray-800 rounded-lg p-4 border transition-colors"
+    class="bg-gray-800 rounded-lg p-4 border transition-colors relative"
     :class="{
       'border-blue-500 bg-gray-700': uiStore.selectionMode && isSelected,
       'border-gray-700 hover:border-gray-600': !uiStore.selectionMode || !isSelected,
@@ -18,33 +18,26 @@
           </svg>
         </div>
       </div>
+      
       <!-- Song Info -->
       <div class="flex-1 min-w-0">
         <!-- Title -->
         <h3 class="text-lg font-semibold text-white mb-1 truncate">
-          {{ song.title }}
+          {{ librarySong.custom_title || librarySong.song?.title }}
         </h3>
 
-        <!-- Artists (new many-to-many relationship) -->
-        <p v-if="settingsStore.showArtistsInLists && song.artists && song.artists.length > 0" class="text-gray-400 text-sm mb-2 truncate">
+        <!-- Artists -->
+        <p v-if="librarySong.song?.artists && librarySong.song.artists.length > 0" class="text-gray-400 text-sm mb-2 truncate">
           <svg class="w-3 h-3 inline mr-1 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
           </svg>
-          {{ song.artists.map(a => a.name).join(', ') }}
+          {{ librarySong.song.artists.map(a => a.name).join(', ') }}
         </p>
         
-        <!-- Legacy Artist (fallback for old data) -->
-        <p v-else-if="settingsStore.showArtistsInLists && song.artist" class="text-gray-400 text-sm mb-2 truncate">
-          <svg class="w-3 h-3 inline mr-1 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-          </svg>
-          {{ song.artist }}
-        </p>
-
         <!-- Tags -->
-        <div v-if="settingsStore.showTagsInLists && song.tags && song.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
+        <div v-if="librarySong.tags && librarySong.tags.length > 0" class="flex flex-wrap gap-2 mb-2">
           <span
-            v-for="tag in song.tags"
+            v-for="tag in librarySong.tags"
             :key="tag.id"
             class="inline-flex items-center px-2 py-1 bg-blue-900/30 border border-blue-700 rounded text-blue-400 text-xs"
           >
@@ -56,9 +49,9 @@
         </div>
 
         <!-- Lists -->
-        <div v-if="settingsStore.showListsInLists && song.lists && song.lists.length > 0" class="flex flex-wrap gap-2">
+        <div v-if="librarySong.lists && librarySong.lists.length > 0" class="flex flex-wrap gap-2">
           <span
-            v-for="list in song.lists"
+            v-for="list in librarySong.lists"
             :key="list.id"
             class="inline-flex items-center px-2 py-1 bg-green-900/30 border border-green-700 rounded text-green-400 text-xs"
           >
@@ -78,7 +71,6 @@
           @touchstart.stop
           @pointerdown.stop
           class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-          :aria-label="I18N.ARIA.SONG_OPTIONS"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
@@ -88,47 +80,57 @@
     </div>
 
     <!-- Dropdown Menu -->
-    <SongDropdownMenu
-      v-if="isDropdownOpen"
-      :song="song"
-      :librarySongId="(props.item as any).library_song_id"
-      :showRemoveFromList="true"
-      :showDuplicate="false"
-      @close="isDropdownOpen = false"
-      @remove="handleRemove"
-      @songDeleted="(songId) => emit('songDeleted', songId)"
-      @tagsUpdated="handleTagsUpdated"
-      @listsUpdated="(songId) => emit('listsUpdated', songId)"
-    />
+    <div v-if="isDropdownOpen">
+      <!-- Backdrop -->
+      <div
+        @click="isDropdownOpen = false"
+        class="fixed inset-0 z-10"
+      />
+      
+      <!-- Menu -->
+      <div class="absolute right-0 top-10 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+        <button
+          @click="handleManageTags"
+          class="w-full text-left px-4 py-2 text-white hover:bg-gray-800 transition-colors"
+        >
+          Manage Tags
+        </button>
+        <button
+          @click="handleManageLists"
+          class="w-full text-left px-4 py-2 text-white hover:bg-gray-800 transition-colors"
+        >
+          Manage Lists
+        </button>
+        <button
+          @click="handleRemoveFromLibrary"
+          class="w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 transition-colors"
+        >
+          Remove from Library
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { ListItem, SongWithTags } from '@/types/database'
-import SongDropdownMenu from './SongDropdownMenu.vue'
+import type { LibrarySongWithDetails } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
-import { useSettingsStore } from '@/stores/settings'
-import { I18N } from '@/constants/i18n'
 
 const props = defineProps<{
-  item: ListItem & { song: SongWithTags }
+  librarySong: LibrarySongWithDetails
 }>()
 
 const emit = defineEmits<{
-  remove: []
-  songDeleted: [songId: string]
-  tagsUpdated: [songId: string]
-  listsUpdated: [songId: string]
-  openNotes: [item: ListItem & { song: SongWithTags }]
+  manageTags: [librarySong: LibrarySongWithDetails]
+  manageLists: [librarySong: LibrarySongWithDetails]
+  removeFromLibrary: [librarySong: LibrarySongWithDetails]
 }>()
 
 const uiStore = useUiStore()
-const settingsStore = useSettingsStore()
 const isDropdownOpen = ref(false)
 
-const song = computed(() => props.item.song)
-const isSelected = computed(() => uiStore.isSelected(props.item.id))
+const isSelected = computed(() => uiStore.isSelected(props.librarySong.id))
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value
@@ -136,20 +138,30 @@ function toggleDropdown() {
 
 function handleCardClick() {
   if (uiStore.selectionMode) {
-    uiStore.toggleSelection(props.item.id)
+    uiStore.toggleSelection(props.librarySong.id)
   } else {
-    // Open notes drawer - need to fetch full library song first
-    emit('openNotes', props.item)
+    // Open notes drawer
+    console.log('🎵 LibrarySongCard: Opening notes drawer for:', {
+      id: props.librarySong.id,
+      title: props.librarySong.custom_title || props.librarySong.song?.title,
+      notes: props.librarySong.notes
+    })
+    uiStore.openSongNotesDrawer(props.librarySong)
   }
 }
 
-function handleRemove() {
+function handleManageTags() {
   isDropdownOpen.value = false
-  emit('remove')
+  emit('manageTags', props.librarySong)
 }
 
-function handleTagsUpdated(songId: string) {
-  // Propagate event to parent page which will refresh the list
-  emit('tagsUpdated', songId)
+function handleManageLists() {
+  isDropdownOpen.value = false
+  emit('manageLists', props.librarySong)
+}
+
+function handleRemoveFromLibrary() {
+  isDropdownOpen.value = false
+  emit('removeFromLibrary', props.librarySong)
 }
 </script>

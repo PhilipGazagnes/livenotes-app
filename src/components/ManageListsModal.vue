@@ -69,7 +69,7 @@
           <div v-else class="space-y-3">
             <label
               v-for="list in sortedLists"
-              :key="list.id"
+              :key="`${list.id}-${selectedListIds.includes(list.id)}`"
               class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
             >
               <input
@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -140,7 +140,14 @@ const sortedLists = computed(() => {
   return [...listsStore.lists].sort((a, b) => a.name.localeCompare(b.name))
 })
 
-// Initialize selectedListIds when modal opens
+// Initialize on mount
+onMounted(() => {
+  selectedListIds.value = [...props.initialListIds]
+  newListName.value = ''
+  createError.value = ''
+})
+
+// Reset when modal opens again
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     selectedListIds.value = [...props.initialListIds]

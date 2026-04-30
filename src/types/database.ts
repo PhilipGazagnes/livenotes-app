@@ -59,10 +59,13 @@ export interface ListItem {
   id: string
   list_id: string
   song_id: string | null
+  library_song_id: string | null  // V2: Reference to library_songs
   position: number
   type: 'song' | 'title'
   title: string | null
   added_at: string
+  note_id: string | null  // V2: Reference to notes
+  list_annotations: string | null  // V2: List-specific annotations
 }
 
 export interface Artist {
@@ -134,6 +137,7 @@ export type NoteType =
   | 'audio'
   | 'tablature'
   | 'looper_notes'
+  | 'looper'
   | 'lyrics'
   | 'chords'
 
@@ -206,6 +210,16 @@ export interface Note {
   is_public: boolean
   is_shareable: boolean
   share_token: string | null
+}
+
+// Structured content types for specific note types
+export interface LooperContent {
+  bpm: number
+  pattern1: string
+  pattern1_var: string
+  pattern2: string
+  pattern2_var: string
+  comment: string
 }
 
 // Library song tags - new junction

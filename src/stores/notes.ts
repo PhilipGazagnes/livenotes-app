@@ -29,6 +29,7 @@ export const useNotesStore = defineStore('notes', () => {
       audio: [],
       tablature: [],
       looper_notes: [],
+      looper: [],
       lyrics: [],
       chords: [],
     }
@@ -53,13 +54,6 @@ export const useNotesStore = defineStore('notes', () => {
   function getNotesByType(type: NoteType): Note[] {
     return notesByType.value[type] || []
   }
-
-  /**
-   * Get songcode note (there should be only one typically)
-   */
-  const songcodeNote = computed(() => {
-    return notes.value.find(n => n.type === 'songcode') || null
-  })
 
   const noteCount = computed(() => notes.value.length)
 
@@ -146,7 +140,8 @@ export const useNotesStore = defineStore('notes', () => {
       title?: string
       content?: string
       display_order?: number
-    }
+    },
+    librarySongId: string
   ) {
     isLoading.value = true
     error.value = null
@@ -165,11 +160,8 @@ export const useNotesStore = defineStore('notes', () => {
       
       if (updateError) throw updateError
       
-      // Update local state
-      const index = notes.value.findIndex(n => n.id === noteId)
-      if (index !== -1) {
-        notes.value[index] = { ...notes.value[index], ...updates }
-      }
+      // Reload notes to get fresh data
+      await loadNotes(librarySongId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update note'
       throw err
@@ -276,7 +268,6 @@ export const useNotesStore = defineStore('notes', () => {
     // Getters
     notesByType,
     getNotesByType,
-    songcodeNote,
     noteCount,
     
     // Actions
