@@ -75,7 +75,7 @@
 
       <!-- Library Songs List -->
       <div v-else class="pb-24">
-        <div v-if="displayedSongs.length === 0 && (searchQuery || selectedTagIds.length > 0)" class="text-center py-12 px-4">
+        <div v-if="displayedSongs.length === 0 && (searchQuery || selectedTagIds.length > 0 || route.query.artist)" class="text-center py-12 px-4">
           <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
@@ -421,11 +421,15 @@ watch(() => route.query, () => {
 })
 
 function applyQueryFilters() {
-  // Apply tag filter if in query params
   if (route.query.tag) {
+    // Tag-filtered view: show all songs with this tag, no other filters
     libraryStore.selectedTagIds = [route.query.tag as string]
-  } else if (!route.query.artist) {
-    // Only clear if not filtering by artist
+    libraryStore.searchQuery = ''
+  } else if (route.query.artist) {
+    // Artist-filtered view: show all songs by this artist, no other filters
+    libraryStore.selectedTagIds = []
+    libraryStore.searchQuery = ''
+  } else {
     libraryStore.selectedTagIds = []
   }
 }
