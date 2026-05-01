@@ -78,7 +78,7 @@
           
           <!-- Note Metadata -->
           <div class="flex items-center gap-3 mt-3 text-xs text-gray-500">
-            <span>{{ formatDate(note.updated_at) }}</span>
+            <span>{{ formatDate(note.updated_at ?? '') }}</span>
             <span v-if="note.is_public" class="flex items-center gap-1">
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -197,7 +197,7 @@ watch(() => props.librarySong, (newLibrarySong) => {
 
 const sortedNotes = computed(() => {
   if (!props.librarySong?.notes) return []
-  return [...props.librarySong.notes].sort((a, b) => a.display_order - b.display_order)
+  return [...props.librarySong.notes].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
 })
 
 function handleClose() {

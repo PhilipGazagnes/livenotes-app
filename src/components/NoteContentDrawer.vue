@@ -124,8 +124,8 @@
 
         <!-- Metadata -->
         <div class="text-xs text-gray-500 space-y-1">
-          <p>Created: {{ formatFullDate(note.created_at) }}</p>
-          <p>Last updated: {{ formatFullDate(note.updated_at) }}</p>
+          <p>Created: {{ formatFullDate(note.created_at ?? '') }}</p>
+          <p>Last updated: {{ formatFullDate(note.updated_at ?? '') }}</p>
         </div>
       </div>
 

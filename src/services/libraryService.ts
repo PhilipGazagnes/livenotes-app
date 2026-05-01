@@ -1,5 +1,5 @@
 import { supabase } from '@/utils/supabase'
-import type { LibrarySongWithDetails } from '@/types/database'
+import type { LibrarySongWithDetails, Note } from '@/types/database'
 
 export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySongWithDetails> {
   const { data, error } = await supabase
@@ -16,18 +16,7 @@ export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySo
       tags:library_song_tags(
         tag:tags(*)
       ),
-      notes:notes(
-        id,
-        type,
-        title,
-        content,
-        data,
-        display_order,
-        created_at,
-        updated_at,
-        is_public,
-        is_shareable
-      ),
+      notes:notes(*),
       lists:list_items(
         list:lists(*)
       )
@@ -51,7 +40,7 @@ export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySo
         .sort((a: any, b: any) => a.position - b.position) ?? [],
     },
     tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-    notes: data.notes ?? [],
+    notes: (data.notes ?? []) as unknown as Note[],
     lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
   }
 }

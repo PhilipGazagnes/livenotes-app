@@ -165,7 +165,7 @@ const {
     if (result.success) {
       artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
     }
-    return result
+    return { success: result.success, error: result.error }
   },
   onUpdate: async (id, name) => {
     const result = await artistsStore.updateArtist(id, name)

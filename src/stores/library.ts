@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/utils/supabase'
-import type { LibrarySong, LibrarySongWithDetails, Tag } from '@/types/database'
+import type { LibrarySong, LibrarySongWithDetails, Note, Tag } from '@/types/database'
 import { useAuthStore } from './auth'
 
 /**
@@ -128,7 +128,7 @@ export const useLibraryStore = defineStore('library', () => {
             .sort((a: any, b: any) => a.position - b.position) ?? [],
         },
         tags: ls.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-        notes: ls.notes ?? [],
+        notes: (ls.notes ?? []) as unknown as Note[],
         lists: ls.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
       }))
     } catch (err) {
@@ -151,22 +151,23 @@ export const useLibraryStore = defineStore('library', () => {
     error.value = null
     
     try {
-      const userId = (await supabase.auth.getUser()).data.user?.id
-      
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
+
       const { data, error: insertError } = await supabase
         .from('library_songs')
         .insert({
           project_id: currentProjectId.value,
           song_id: songId,
-          added_by: userId,
+          added_by: user.id,
         })
         .select()
         .single()
       
       if (insertError) throw insertError
       
-      // Update popularity score
-      await supabase.rpc('increment_song_popularity', { song_id: songId })
+      // Update popularity score — RPC not yet reflected in generated schema
+      await (supabase as any).rpc('increment_song_popularity', { song_id: songId })
       
       // Reload library to get full details
       await loadLibrary()
@@ -286,7 +287,7 @@ export const useLibraryStore = defineStore('library', () => {
             .sort((a: any, b: any) => a.position - b.position) ?? [],
         },
         tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-        notes: data.notes ?? [],
+        notes: (data.notes ?? []) as unknown as Note[],
         lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
       }
     } catch (err) {

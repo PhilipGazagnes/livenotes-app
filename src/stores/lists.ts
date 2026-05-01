@@ -96,7 +96,7 @@ export const useListsStore = defineStore('lists', () => {
       
       currentList.value = {
         ...listData,
-        items: transformedItems
+        items: transformedItems as unknown as ListWithItems['items']
       }
       
       return currentList.value

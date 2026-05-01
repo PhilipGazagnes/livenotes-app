@@ -77,12 +77,12 @@ export const useGlobalSongsStore = defineStore('globalSongs', () => {
     
     try {
       // 1. Create the song
+      const { data: { user: songUser } } = await supabase.auth.getUser()
+      if (!songUser) throw new Error('User not authenticated')
+
       const { data: song, error: songError } = await supabase
         .from('songs_v2')
-        .insert({ 
-          title,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        })
+        .insert({ title, created_by: songUser.id })
         .select()
         .single()
       
@@ -180,12 +180,12 @@ export const useGlobalSongsStore = defineStore('globalSongs', () => {
     error.value = null
     
     try {
+      const { data: { user: artistUser } } = await supabase.auth.getUser()
+      if (!artistUser) throw new Error('User not authenticated')
+
       const { data, error: createError } = await supabase
         .from('artists_v2')
-        .insert({ 
-          name,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        })
+        .insert({ name, created_by: artistUser.id })
         .select()
         .single()
       

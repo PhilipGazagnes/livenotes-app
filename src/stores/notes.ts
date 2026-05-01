@@ -44,7 +44,7 @@ export const useNotesStore = defineStore('notes', () => {
     
     // Sort each group by display_order
     Object.keys(grouped).forEach(type => {
-      grouped[type as NoteType].sort((a, b) => a.display_order - b.display_order)
+      grouped[type as NoteType].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
     })
     
     return grouped
@@ -77,7 +77,7 @@ export const useNotesStore = defineStore('notes', () => {
         .order('display_order')
       
       if (fetchError) throw fetchError
-      notes.value = data || []
+      notes.value = (data || []) as unknown as Note[]
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load notes'
       throw err
@@ -112,12 +112,13 @@ export const useNotesStore = defineStore('notes', () => {
         } satisfies SongcodeNoteData
       }
 
-      const userId = (await supabase.auth.getUser()).data.user?.id
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('User not authenticated')
 
       // Calculate display_order (max + 1 for the type)
       const existingOfType = notes.value.filter(n => n.type === type)
       const maxOrder = existingOfType.length > 0
-        ? Math.max(...existingOfType.map(n => n.display_order))
+        ? Math.max(...existingOfType.map(n => n.display_order ?? -1))
         : -1
 
       const { data: created, error: createError } = await supabase
@@ -126,10 +127,10 @@ export const useNotesStore = defineStore('notes', () => {
           library_song_id: librarySongId,
           type,
           content: content ?? null,
-          data: resolvedData,
+          data: resolvedData as Record<string, any>,
           title: title || null,
-          created_by: userId,
-          updated_by: userId,
+          created_by: user.id,
+          updated_by: user.id,
           display_order: maxOrder + 1,
         })
         .select()
@@ -138,7 +139,7 @@ export const useNotesStore = defineStore('notes', () => {
       if (createError) throw createError
 
       await loadNotes(librarySongId)
-      return created
+      return created as unknown as Note
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create note'
       throw err
@@ -176,13 +177,15 @@ export const useNotesStore = defineStore('notes', () => {
         } satisfies SongcodeNoteData
       }
 
-      const userId = (await supabase.auth.getUser()).data.user?.id
+      const { data: { user: updateUser } } = await supabase.auth.getUser()
+      if (!updateUser) throw new Error('User not authenticated')
 
       const { error: updateError } = await supabase
         .from('notes')
         .update({
           ...resolvedUpdates,
-          updated_by: userId,
+          data: resolvedUpdates.data as Record<string, any> | null,
+          updated_by: updateUser.id,
           updated_at: new Date().toISOString(),
         })
         .eq('id', noteId)
@@ -214,7 +217,9 @@ export const useNotesStore = defineStore('notes', () => {
       const conversionResult = await generateLivenotesJson(note.content)
       if (!conversionResult.success) throw new Error(conversionResult.error)
 
-      const userId = (await supabase.auth.getUser()).data.user?.id
+      const { data: { user: genUser } } = await supabase.auth.getUser()
+      if (!genUser) throw new Error('User not authenticated')
+
       const newData: SongcodeNoteData = {
         livenotes_json: conversionResult.json,
         livenotes_json_updated_at: new Date().toISOString(),
@@ -222,7 +227,7 @@ export const useNotesStore = defineStore('notes', () => {
 
       const { error: updateError } = await supabase
         .from('notes')
-        .update({ data: newData, updated_by: userId, updated_at: new Date().toISOString() })
+        .update({ data: newData as Record<string, any>, updated_by: genUser.id, updated_at: new Date().toISOString() })
         .eq('id', noteId)
 
       if (updateError) throw updateError
@@ -310,7 +315,7 @@ export const useNotesStore = defineStore('notes', () => {
         .single()
       
       if (fetchError) throw fetchError
-      return data
+      return data as unknown as Note
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch note'
       return null

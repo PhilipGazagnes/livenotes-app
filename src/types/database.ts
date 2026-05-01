@@ -25,8 +25,8 @@ export interface Song {
   artist: string | null
   notes: string | null
   livenotes_poc_id: string | null
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
   created_by: string | null
   updated_by: string | null
 }
@@ -35,7 +35,7 @@ export interface Tag {
   id: string
   project_id: string
   name: string
-  created_at: string
+  created_at: string | null
 }
 
 export interface SongTag {
@@ -50,8 +50,8 @@ export interface List {
   project_id: string
   name: string
   description: string | null
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
   created_by: string | null
 }
 
@@ -72,8 +72,8 @@ export interface Artist {
   id: string
   project_id: string
   name: string
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
 }
 
 export interface SongArtist {
@@ -92,7 +92,7 @@ export interface SongCode {
   livenotes_json: any | null
   livenotes_json_updated_at: string | null
   livenotes_json_updated_by: string | null
-  created_at: string
+  created_at: string | null
 }
 
 // Extended types with relations
@@ -145,14 +145,14 @@ export type NoteType =
 export interface SongV2 {
   id: string
   title: string
-  fingerprint: string
-  is_verified: boolean
+  fingerprint: string | null
+  is_verified: boolean | null
   verified_by: string | null
   verified_at: string | null
   created_by: string
-  created_at: string
-  updated_at: string
-  popularity_score: number
+  created_at: string | null
+  updated_at: string | null
+  popularity_score: number | null
   merged_into_id: string | null
   merge_reason: string | null
 }
@@ -161,16 +161,16 @@ export interface SongV2 {
 export interface ArtistV2 {
   id: string
   name: string
-  fingerprint: string
-  is_verified: boolean
+  fingerprint: string | null
+  is_verified: boolean | null
   verified_by: string | null
   verified_at: string | null
   bio: string | null
   image_url: string | null
   external_links: any | null
   created_by: string
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
   merged_into_id: string | null
   merge_reason: string | null
 }
@@ -190,7 +190,7 @@ export interface LibrarySong {
   project_id: string
   song_id: string
   added_by: string
-  added_at: string
+  added_at: string | null
   custom_title: string | null
   custom_notes: string | null
 }
@@ -217,14 +217,14 @@ export interface Note {
   type: NoteType
   title: string | null
   content: string | null
-  data: SongcodeNoteData | LooperNoteData | Record<string, any> | null
+  data: Record<string, any> | null
   created_by: string
-  created_at: string
+  created_at: string | null
   updated_by: string
-  updated_at: string
-  display_order: number
-  is_public: boolean
-  is_shareable: boolean
+  updated_at: string | null
+  display_order: number | null
+  is_public: boolean | null
+  is_shareable: boolean | null
   share_token: string | null
 }
 

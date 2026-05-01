@@ -5,7 +5,7 @@
       <div class="flex-1 min-w-0">
         <h4 class="text-white font-medium truncate">{{ note.title }}</h4>
         <p class="text-xs text-gray-500 mt-1">
-          Updated {{ formatDate(note.updated_at) }}
+          Updated {{ formatDate(note.updated_at ?? '') }}
         </p>
       </div>
       

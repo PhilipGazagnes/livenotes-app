@@ -211,35 +211,38 @@ async function handleSave() {
       const tagsToAdd = selectedTagIds.value.filter(id => !props.initialTagIds.includes(id))
       const tagsToRemove = props.initialTagIds.filter(id => !selectedTagIds.value.includes(id))
       
-      // Use V2 table if librarySongId is provided, otherwise V1
-      const isV2 = !!props.librarySongId
-      const tableName = isV2 ? 'library_song_tags' : 'song_tags'
-      const idColumn = isV2 ? 'library_song_id' : 'song_id'
-      const idValue = isV2 ? props.librarySongId : props.songId
-      
-      // Remove tags
-      if (tagsToRemove.length > 0) {
-        const { error: deleteError } = await supabase
-          .from(tableName)
-          .delete()
-          .eq(idColumn, idValue)
-          .in('tag_id', tagsToRemove)
-        
-        if (deleteError) throw deleteError
-      }
-      
-      // Add tags
-      if (tagsToAdd.length > 0) {
-        const inserts = tagsToAdd.map(tagId => ({
-          [idColumn]: idValue,
-          tag_id: tagId,
-        }))
-        
-        const { error: insertError } = await supabase
-          .from(tableName)
-          .insert(inserts)
-        
-        if (insertError) throw insertError
+      if (props.librarySongId) {
+        // V2 path
+        if (tagsToRemove.length > 0) {
+          const { error } = await supabase
+            .from('library_song_tags')
+            .delete()
+            .eq('library_song_id', props.librarySongId)
+            .in('tag_id', tagsToRemove)
+          if (error) throw error
+        }
+        if (tagsToAdd.length > 0) {
+          const { error } = await supabase
+            .from('library_song_tags')
+            .insert(tagsToAdd.map(tagId => ({ library_song_id: props.librarySongId!, tag_id: tagId })))
+          if (error) throw error
+        }
+      } else if (props.songId) {
+        // V1 path
+        if (tagsToRemove.length > 0) {
+          const { error } = await supabase
+            .from('song_tags')
+            .delete()
+            .eq('song_id', props.songId)
+            .in('tag_id', tagsToRemove)
+          if (error) throw error
+        }
+        if (tagsToAdd.length > 0) {
+          const { error } = await supabase
+            .from('song_tags')
+            .insert(tagsToAdd.map(tagId => ({ song_id: props.songId!, tag_id: tagId })))
+          if (error) throw error
+        }
       }
       
       return { success: true }

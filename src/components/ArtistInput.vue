@@ -164,10 +164,11 @@ async function handleCreateNewArtist() {
   const result = await artistsStore.createArtist(projectId, query)
   
   if (result.success && result.data) {
-    selectedArtist.value = result.data
-    searchQuery.value = result.data.name
-    emit('update:modelValue', result.data.id)
-    emit('artistCreated', result.data)
+    const artist = result.data as unknown as Artist
+    selectedArtist.value = artist
+    searchQuery.value = artist.name
+    emit('update:modelValue', artist.id)
+    emit('artistCreated', artist)
     closeDropdown()
   }
 }

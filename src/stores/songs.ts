@@ -113,6 +113,7 @@ export const useSongsStore = defineStore('songs', () => {
       currentSong.value = {
         ...data,
         tags: data.tags?.map((st: any) => st.tag) ?? [],
+        lists: [],
         artists: data.artists?.map((sa: any) => ({
           ...sa.artist,
           position: sa.position
@@ -139,14 +140,13 @@ export const useSongsStore = defineStore('songs', () => {
     error.value = null
     
     try {
+      if (!songData.project_id) throw new Error('project_id is required')
+
       // Create song
       const { data: newSong, error: createError } = await supabase
         .from('songs')
-        .insert({
-          ...songData,
-          created_by: authStore.userId,
-          updated_by: authStore.userId,
-        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({ ...songData, created_by: authStore.userId, updated_by: authStore.userId } as any)
         .select()
         .single()
       
