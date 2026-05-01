@@ -299,7 +299,7 @@ import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { supabase } from '@/utils/supabase'
+import { fetchLibrarySongWithDetails } from '@/services/libraryService'
 import type { LibrarySongWithDetails, Note } from '@/types/database'
 import { MESSAGES } from '@/constants/messages'
 import AppHeader from '@/components/AppHeader.vue'
@@ -568,64 +568,9 @@ function handleAddNote() {
 }
 
 async function handleNoteSaved() {
-  // Refresh the library song data to show the new note in the drawer
   if (uiStore.selectedLibrarySong) {
     try {
-      const { data, error: fetchError } = await supabase
-        .from('library_songs')
-        .select(`
-          *,
-          song:songs_v2!library_songs_song_id_fkey(
-            *,
-            artists:song_artists_v2(
-              position,
-              artist:artists_v2(*)
-            )
-          ),
-          tags:library_song_tags(
-            tag:tags(*)
-          ),
-          notes:notes(
-            id,
-            type,
-            title,
-            content,
-            data,
-            display_order,
-            created_at,
-            updated_at,
-            is_public,
-            is_shareable
-          ),
-          lists:list_items(
-            list:lists(*)
-          )
-        `)
-        .eq('id', uiStore.selectedLibrarySong.id)
-        .single()
-      
-      if (fetchError) throw fetchError
-      if (!data) return
-      
-      // Update the selectedLibrarySong with fresh data
-      const refreshedSong: LibrarySongWithDetails = {
-        ...data,
-        song: {
-          ...data.song,
-          artists: data.song.artists
-            ?.map((sa: any) => ({
-              ...sa.artist,
-              position: sa.position,
-            }))
-            .filter(Boolean)
-            .sort((a: any, b: any) => a.position - b.position) ?? [],
-        },
-        tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-        notes: data.notes ?? [],
-        lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
-      }
-      
-      uiStore.selectedLibrarySong = refreshedSong
+      uiStore.selectedLibrarySong = await fetchLibrarySongWithDetails(uiStore.selectedLibrarySong.id)
     } catch (err) {
       console.error('Failed to refresh library song:', err)
     }

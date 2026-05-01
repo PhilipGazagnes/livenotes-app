@@ -242,7 +242,8 @@ import { useListsStore } from '@/stores/lists'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { supabase } from '@/utils/supabase'
+import { fetchLibrarySongWithDetails } from '@/services/libraryService'
+import { updateListItemTitle, createListItemTitle, deleteListItem } from '@/services/listItemService'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
@@ -256,7 +257,7 @@ import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import NoteContentDrawer from '@/components/NoteContentDrawer.vue'
 import NoteCreationDrawer from '@/components/NoteCreationDrawer.vue'
 import NoteEditor from '@/components/NoteEditor.vue'
-import type { Note, LibrarySongWithDetails, ListItem, SongWithTags } from '@/types/database'
+import type { Note, ListItem, SongWithTags } from '@/types/database'
 
 const route = useRoute()
 const router = useRouter()
@@ -452,30 +453,13 @@ async function handleSaveTitle() {
   
   try {
     if (editingTitle.value) {
-      // Update existing title
-      const { error } = await supabase
-        .from('list_items')
-        .update({ title: titleInput.value.trim() })
-        .eq('id', editingTitle.value.id)
-      
-      if (error) throw error
+      await updateListItemTitle(editingTitle.value.id, titleInput.value.trim())
       uiStore.showToast('Title updated', 'success')
     } else {
-      // Create new title at the end
-      const maxPosition = listItems.value.length > 0 
+      const maxPosition = listItems.value.length > 0
         ? Math.max(...listItems.value.map(item => item.position))
         : -1
-      
-      const { error } = await supabase
-        .from('list_items')
-        .insert({
-          list_id: currentList.value.id,
-          type: 'title',
-          title: titleInput.value.trim(),
-          position: maxPosition + 1,
-        })
-      
-      if (error) throw error
+      await createListItemTitle(currentList.value.id, titleInput.value.trim(), maxPosition + 1)
       uiStore.showToast('Title added', 'success')
     }
     
@@ -500,13 +484,7 @@ async function handleDeleteTitle(item: any) {
   if (!confirmed) return
   
   try {
-    const { error } = await supabase
-      .from('list_items')
-      .delete()
-      .eq('id', item.id)
-    
-    if (error) throw error
-    
+    await deleteListItem(item.id)
     uiStore.showToast('Title deleted', 'success')
     await handleRefresh()
   } catch (err) {
@@ -553,48 +531,7 @@ async function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
   }
   
   try {
-    const { data, error } = await supabase
-      .from('library_songs')
-      .select(`
-        *,
-        song:songs_v2!library_songs_song_id_fkey(
-          *,
-          artists:song_artists_v2(
-            position,
-            artist:artists_v2(*)
-          )
-        ),
-        tags:library_song_tags(
-          tag:tags(*)
-        ),
-        notes:notes(*),
-        lists:list_items(
-          list:lists(*)
-        )
-      `)
-      .eq('id', librarySongId)
-      .single()
-    
-    if (error) throw error
-    
-    // Transform the data
-    const librarySong: LibrarySongWithDetails = {
-      ...data,
-      song: {
-        ...data.song,
-        artists: data.song.artists
-          ?.map((sa: any) => ({
-            ...sa.artist,
-            position: sa.position,
-          }))
-          .filter(Boolean)
-          .sort((a: any, b: any) => a.position - b.position) ?? [],
-      },
-      tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-      notes: data.notes ?? [],
-      lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
-    }
-    
+    const librarySong = await fetchLibrarySongWithDetails(librarySongId)
     uiStore.openSongNotesDrawer(librarySong)
   } catch (err) {
     console.error('Failed to load song notes:', err)
@@ -611,64 +548,9 @@ function handleAddNote() {
 }
 
 async function handleNoteSaved() {
-  // Refresh the library song data to show the new note in the drawer
   if (uiStore.selectedLibrarySong) {
     try {
-      const { data, error: fetchError } = await supabase
-        .from('library_songs')
-        .select(`
-          *,
-          song:songs_v2!library_songs_song_id_fkey(
-            *,
-            artists:song_artists_v2(
-              position,
-              artist:artists_v2(*)
-            )
-          ),
-          tags:library_song_tags(
-            tag:tags(*)
-          ),
-          notes:notes(
-            id,
-            type,
-            title,
-            content,
-            data,
-            display_order,
-            created_at,
-            updated_at,
-            is_public,
-            is_shareable
-          ),
-          lists:list_items(
-            list:lists(*)
-          )
-        `)
-        .eq('id', uiStore.selectedLibrarySong.id)
-        .single()
-      
-      if (fetchError) throw fetchError
-      if (!data) return
-      
-      // Update the selectedLibrarySong with fresh data
-      const refreshedSong: LibrarySongWithDetails = {
-        ...data,
-        song: {
-          ...data.song,
-          artists: data.song.artists
-            ?.map((sa: any) => ({
-              ...sa.artist,
-              position: sa.position,
-            }))
-            .filter(Boolean)
-            .sort((a: any, b: any) => a.position - b.position) ?? [],
-        },
-        tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-        notes: data.notes ?? [],
-        lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
-      }
-      
-      uiStore.selectedLibrarySong = refreshedSong
+      uiStore.selectedLibrarySong = await fetchLibrarySongWithDetails(uiStore.selectedLibrarySong.id)
     } catch (err) {
       console.error('Failed to refresh library song:', err)
     }
