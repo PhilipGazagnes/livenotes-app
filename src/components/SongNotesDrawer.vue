@@ -47,9 +47,8 @@
 
       <!-- Notes Cards -->
       <div v-else class="space-y-3">
+        <template v-for="note in sortedNotes" :key="note.id">
         <div
-          v-for="note in sortedNotes"
-          :key="note.id"
           @click="handleNoteClick(note)"
           class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 cursor-pointer transition-colors group"
         >
@@ -87,7 +86,29 @@
               Public
             </span>
           </div>
+
         </div>
+
+        <!-- Synthetic lyrics card — injected after the songcode card when livenotes_json exists -->
+        <div
+          v-if="note.type === 'songcode' && getLivenotesJson(note)"
+          @click="openLyricsDrawer(note)"
+          class="bg-gray-800 rounded-lg p-4 border border-gray-700 hover:border-gray-600 cursor-pointer transition-colors group"
+        >
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+              <h3 class="text-base font-semibold text-white">Lyrics</h3>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+          <p class="text-sm text-gray-400 line-clamp-2">{{ getLyricsPreview(note) }}</p>
+        </div>
+        </template>
       </div>
     </div>
 
@@ -104,11 +125,18 @@
       </button>
     </div>
   </div>
+
+  <SongcodeLyricsDrawer
+    :isOpen="lyricsDrawerOpen"
+    :livenotesJson="currentLyricsJson"
+    @close="lyricsDrawerOpen = false"
+  />
 </template>
 
 <script setup lang="ts">
-import { computed, h, watch } from 'vue'
-import type { LibrarySongWithDetails, Note } from '@/types/database'
+import { computed, h, ref, watch } from 'vue'
+import type { LibrarySongWithDetails, Note, SongcodeNoteData } from '@/types/database'
+import SongcodeLyricsDrawer from './SongcodeLyricsDrawer.vue'
 
 interface Props {
   isOpen: boolean
@@ -123,6 +151,38 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const lyricsDrawerOpen = ref(false)
+const currentLyricsJson = ref<any | null>(null)
+
+watch(() => props.isOpen, (isOpen) => {
+  if (!isOpen) lyricsDrawerOpen.value = false
+})
+
+function getSongcodeData(note: Note): SongcodeNoteData | null {
+  if (note.type !== 'songcode' || !note.data) return null
+  return note.data as SongcodeNoteData
+}
+
+function getLivenotesJson(note: Note): any | null {
+  return getSongcodeData(note)?.livenotes_json ?? null
+}
+
+function getLyricsPreview(note: Note): string {
+  const sections = getLivenotesJson(note)?.sections
+  if (!sections) return ''
+  for (const section of sections) {
+    for (const lyric of (section.lyrics ?? [])) {
+      if (lyric.style === 'normal') return lyric.text
+    }
+  }
+  return ''
+}
+
+function openLyricsDrawer(note: Note) {
+  currentLyricsJson.value = getLivenotesJson(note)
+  lyricsDrawerOpen.value = true
+}
 
 // Debug log when librarySong changes
 watch(() => props.librarySong, (newLibrarySong) => {

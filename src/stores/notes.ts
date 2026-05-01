@@ -1,7 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/utils/supabase'
-import type { Note, NoteType } from '@/types/database'
+import type { Note, NoteType, SongcodeNoteData } from '@/types/database'
+import { generateLivenotesJson } from '@/utils/songcodeConverter'
+import { useUiStore } from './ui'
 
 /**
  * Notes Store (V2)
@@ -90,27 +92,41 @@ export const useNotesStore = defineStore('notes', () => {
   async function createNote(
     librarySongId: string,
     type: NoteType,
-    content: string,
-    title?: string
+    content: string | null,
+    title?: string,
+    data?: Record<string, any> | null
   ): Promise<Note> {
     isLoading.value = true
     error.value = null
-    
+
     try {
+      // For songcode, auto-generate livenotes JSON before saving
+      let resolvedData = data ?? null
+      if (type === 'songcode' && content) {
+        const conversionResult = await generateLivenotesJson(content)
+        if (!conversionResult.success) throw new Error(conversionResult.error)
+        resolvedData = {
+          ...resolvedData,
+          livenotes_json: conversionResult.json,
+          livenotes_json_updated_at: new Date().toISOString(),
+        } satisfies SongcodeNoteData
+      }
+
       const userId = (await supabase.auth.getUser()).data.user?.id
-      
+
       // Calculate display_order (max + 1 for the type)
       const existingOfType = notes.value.filter(n => n.type === type)
       const maxOrder = existingOfType.length > 0
         ? Math.max(...existingOfType.map(n => n.display_order))
         : -1
-      
-      const { data, error: createError } = await supabase
+
+      const { data: created, error: createError } = await supabase
         .from('notes')
         .insert({
           library_song_id: librarySongId,
           type,
-          content,
+          content: content ?? null,
+          data: resolvedData,
           title: title || null,
           created_by: userId,
           updated_by: userId,
@@ -118,11 +134,11 @@ export const useNotesStore = defineStore('notes', () => {
         })
         .select()
         .single()
-      
+
       if (createError) throw createError
-      
+
       await loadNotes(librarySongId)
-      return data
+      return created
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create note'
       throw err
@@ -138,33 +154,87 @@ export const useNotesStore = defineStore('notes', () => {
     noteId: string,
     updates: {
       title?: string
-      content?: string
+      content?: string | null
       display_order?: number
+      data?: Record<string, any> | null
     },
-    librarySongId: string
+    librarySongId: string,
+    noteType?: NoteType
   ) {
     isLoading.value = true
     error.value = null
-    
+
     try {
+      // For songcode, auto-generate livenotes JSON when content is being updated
+      const resolvedUpdates = { ...updates }
+      if (noteType === 'songcode' && updates.content !== undefined && updates.content) {
+        const conversionResult = await generateLivenotesJson(updates.content)
+        if (!conversionResult.success) throw new Error(conversionResult.error)
+        resolvedUpdates.data = {
+          livenotes_json: conversionResult.json,
+          livenotes_json_updated_at: new Date().toISOString(),
+        } satisfies SongcodeNoteData
+      }
+
       const userId = (await supabase.auth.getUser()).data.user?.id
-      
+
       const { error: updateError } = await supabase
         .from('notes')
         .update({
-          ...updates,
+          ...resolvedUpdates,
           updated_by: userId,
           updated_at: new Date().toISOString(),
         })
         .eq('id', noteId)
-      
+
       if (updateError) throw updateError
-      
-      // Reload notes to get fresh data
+
       await loadNotes(librarySongId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update note'
       throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  /**
+   * Generate livenotes JSON from a songcode note's content and store it in note.data
+   */
+  async function generateSongcodeJson(noteId: string, librarySongId: string): Promise<{ success: boolean; error?: string }> {
+    const uiStore = useUiStore()
+    const note = notes.value.find(n => n.id === noteId)
+    if (!note || note.type !== 'songcode') return { success: false, error: 'Note not found or not a songcode note' }
+    if (!note.content) return { success: false, error: 'No songcode content to convert' }
+
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const conversionResult = await generateLivenotesJson(note.content)
+      if (!conversionResult.success) throw new Error(conversionResult.error)
+
+      const userId = (await supabase.auth.getUser()).data.user?.id
+      const newData: SongcodeNoteData = {
+        livenotes_json: conversionResult.json,
+        livenotes_json_updated_at: new Date().toISOString(),
+      }
+
+      const { error: updateError } = await supabase
+        .from('notes')
+        .update({ data: newData, updated_by: userId, updated_at: new Date().toISOString() })
+        .eq('id', noteId)
+
+      if (updateError) throw updateError
+
+      await loadNotes(librarySongId)
+      uiStore.showToast('Livenotes JSON generated', 'success')
+      return { success: true }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to generate JSON'
+      error.value = msg
+      uiStore.showToast(msg, 'error')
+      return { success: false, error: msg }
     } finally {
       isLoading.value = false
     }
@@ -274,6 +344,7 @@ export const useNotesStore = defineStore('notes', () => {
     loadNotes,
     createNote,
     updateNote,
+    generateSongcodeJson,
     deleteNote,
     reorderNotes,
     getNoteById,

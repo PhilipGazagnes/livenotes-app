@@ -485,21 +485,22 @@ async function handleSave() {
   isSaving.value = true
 
   try {
-    let content: string
-    
-    // For looper type, serialize structured data as JSON
     if (selectedType.value === 'looper') {
-      content = JSON.stringify(looperData.value)
+      await notesStore.createNote(
+        props.librarySongId,
+        selectedType.value,
+        null,
+        formData.value.name.trim(),
+        looperData.value
+      )
     } else {
-      content = formData.value.content.trim()
+      await notesStore.createNote(
+        props.librarySongId,
+        selectedType.value,
+        formData.value.content.trim(),
+        formData.value.name.trim()
+      )
     }
-    
-    await notesStore.createNote(
-      props.librarySongId,
-      selectedType.value,
-      content,
-      formData.value.name.trim()
-    )
     
     uiStore.showToast(MESSAGES.SUCCESS.NOTE_CREATED, 'success')
     emit('saved')

@@ -64,9 +64,9 @@
       @create="showAddNoteMenu = true"
     />
 
-    <!-- Note Editor Modal -->
+    <!-- Note Editor Drawer -->
     <NoteEditor
-      v-if="showEditor"
+      :isOpen="showEditor"
       :note="editingNote"
       :library-song-id="librarySongId"
       :note-type="newNoteType"
@@ -168,8 +168,10 @@ async function handleDeleteNote(note: Note) {
 
 function closeEditor() {
   showEditor.value = false
-  editingNote.value = null
-  newNoteType.value = null
+  setTimeout(() => {
+    editingNote.value = null
+    newNoteType.value = null
+  }, 300)
 }
 
 async function handleNoteSaved() {

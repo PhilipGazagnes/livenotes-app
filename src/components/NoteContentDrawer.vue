@@ -100,9 +100,9 @@
           
           <!-- YouTube embed -->
           <div v-else-if="note.type === 'youtube'" class="space-y-3">
-            <div v-if="getYouTubeId(note.content)" class="aspect-video bg-gray-900 rounded overflow-hidden">
+            <div v-if="getYouTubeId(note.content ?? '')" class="aspect-video bg-gray-900 rounded overflow-hidden">
               <iframe
-                :src="`https://www.youtube.com/embed/${getYouTubeId(note.content)}`"
+                :src="`https://www.youtube.com/embed/${getYouTubeId(note.content ?? '')}`"
                 class="w-full h-full"
                 frameborder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -114,7 +114,7 @@
           
           <!-- Image -->
           <div v-else-if="note.type === 'image'" class="space-y-3">
-            <img v-if="isValidUrl(note.content)" :src="note.content" alt="Note image" class="w-full rounded border border-gray-700" />
+            <img v-if="isValidUrl(note.content ?? '')" :src="note.content ?? undefined" alt="Note image" class="w-full rounded border border-gray-700" />
             <p class="text-sm text-gray-400 break-all">{{ note.content }}</p>
           </div>
           
@@ -180,15 +180,9 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// Parse looper content if it's a looper note
 const looperContent = computed(() => {
-  if (props.note?.type === 'looper') {
-    try {
-      return JSON.parse(props.note.content) as LooperContent
-    } catch (err) {
-      console.error('Failed to parse looper content:', err)
-      return null
-    }
+  if (props.note?.type === 'looper' && props.note.data) {
+    return props.note.data as LooperContent
   }
   return null
 })

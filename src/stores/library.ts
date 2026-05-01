@@ -98,6 +98,7 @@ export const useLibraryStore = defineStore('library', () => {
             type,
             title,
             content,
+            data,
             created_at,
             updated_at,
             display_order,
@@ -253,7 +254,14 @@ export const useLibraryStore = defineStore('library', () => {
           notes:notes(
             id,
             type,
-            title
+            title,
+            content,
+            data,
+            created_at,
+            updated_at,
+            display_order,
+            is_public,
+            is_shareable
           ),
           lists:list_items(
             list:lists(*)

@@ -220,6 +220,15 @@
         @close="uiStore.closeNoteCreationDrawer"
         @saved="handleNoteSaved"
       />
+
+      <!-- Note Editor (edit existing note) -->
+      <NoteEditor
+        :isOpen="noteEditorOpen"
+        :note="editingNote"
+        :librarySongId="uiStore.selectedLibrarySong?.id || ''"
+        @close="closeNoteEditor"
+        @saved="closeNoteEditor(); handleNoteSaved()"
+      />
     </ion-content>
   </ion-page>
 </template>
@@ -246,6 +255,7 @@ import ListFilterBar from '@/components/ListFilterBar.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import NoteContentDrawer from '@/components/NoteContentDrawer.vue'
 import NoteCreationDrawer from '@/components/NoteCreationDrawer.vue'
+import NoteEditor from '@/components/NoteEditor.vue'
 import type { Note, LibrarySongWithDetails, ListItem, SongWithTags } from '@/types/database'
 
 const route = useRoute()
@@ -256,6 +266,8 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 const isPageMenuOpen = ref(false)
+const editingNote = ref<Note | null>(null)
+const noteEditorOpen = ref(false)
 const searchQuery = ref('')
 const selectedTagIds = ref<string[]>([])
 const showTitleModal = ref(false)
@@ -621,9 +633,12 @@ async function handleNoteSaved() {
             type,
             title,
             content,
+            data,
             display_order,
             created_at,
-            updated_at
+            updated_at,
+            is_public,
+            is_shareable
           ),
           lists:list_items(
             list:lists(*)
@@ -661,8 +676,13 @@ async function handleNoteSaved() {
 }
 
 function handleEditNote(note: Note) {
-  uiStore.showToast('Edit note functionality coming soon', 'success')
-  console.log('Edit note:', note)
+  editingNote.value = note
+  noteEditorOpen.value = true
+}
+
+function closeNoteEditor() {
+  noteEditorOpen.value = false
+  setTimeout(() => { editingNote.value = null }, 300)
 }
 
 async function handleDeleteNote(note: Note) {

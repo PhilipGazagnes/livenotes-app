@@ -195,13 +195,29 @@ export interface LibrarySong {
   custom_notes: string | null
 }
 
+// Note type-specific data structures (stored in notes.data JSONB)
+export interface SongcodeNoteData {
+  livenotes_json: any | null
+  livenotes_json_updated_at: string | null
+}
+
+export interface LooperNoteData {
+  bpm: number
+  pattern1: string
+  pattern1_var: string
+  pattern2: string
+  pattern2_var: string
+  comment: string
+}
+
 // Notes - multi-note system
 export interface Note {
   id: string
   library_song_id: string
   type: NoteType
   title: string | null
-  content: string
+  content: string | null
+  data: SongcodeNoteData | LooperNoteData | Record<string, any> | null
   created_by: string
   created_at: string
   updated_by: string
@@ -212,7 +228,7 @@ export interface Note {
   share_token: string | null
 }
 
-// Structured content types for specific note types
+// Kept as alias for backward compatibility with existing component references
 export interface LooperContent {
   bpm: number
   pattern1: string
