@@ -19,34 +19,36 @@
     </div>
   </div>
 
-  <!-- Content -->
-  <div class="flex-1 overflow-y-auto p-5 pb-16 relative">
-    <div v-if="sections.length === 0" class="text-center py-12">
-      <p class="text-gray-400 text-sm">No lyrics found</p>
-    </div>
-    <div v-else class="space-y-7">
-      <div v-for="(section, index) in sections" :key="index">
-        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800">
-          {{ section.name }}
-        </h3>
-        <div class="space-y-1">
-          <p
-            v-for="(lyric, lineIndex) in section.lyrics"
-            :key="lineIndex"
-            :class="lyricClass(lyric.style)"
-            :style="{ fontSize: `${fontSize}rem`, lineHeight: '1.7' }"
-          >
-            <span
-              v-for="(segment, segIndex) in parseVocalSegments(lyric.text)"
-              :key="segIndex"
-              :class="vocalClass(segment.vocal)"
-            >{{ segment.text }}</span>
-          </p>
+  <!-- Content wrapper: fills remaining height, zoom buttons float over it -->
+  <div class="flex-1 relative overflow-hidden">
+    <div class="h-full overflow-y-auto p-5 pb-16">
+      <div v-if="sections.length === 0" class="text-center py-12">
+        <p class="text-gray-400 text-sm">No lyrics found</p>
+      </div>
+      <div v-else class="space-y-7">
+        <div v-for="(section, index) in sections" :key="index">
+          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800">
+            {{ section.name }}
+          </h3>
+          <div class="space-y-1">
+            <p
+              v-for="(lyric, lineIndex) in section.lyrics"
+              :key="lineIndex"
+              :class="lyricClass(lyric.style)"
+              :style="{ fontSize: `${fontSize}rem`, lineHeight: '1.7' }"
+            >
+              <span
+                v-for="(segment, segIndex) in parseVocalSegments(lyric.text)"
+                :key="segIndex"
+                :class="vocalClass(segment.vocal)"
+              >{{ segment.text }}</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Zoom controls -->
+    <!-- Zoom controls — absolute within the non-scrolling wrapper, always visible -->
     <div class="absolute bottom-4 right-4 flex items-center gap-1">
       <button
         @click="zoomOut"
