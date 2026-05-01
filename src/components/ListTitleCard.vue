@@ -1,6 +1,7 @@
 <template>
-  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
-    <div class="flex items-center gap-3 px-4 py-3">
+  <div class="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden flex items-stretch">
+    <!-- Main content area -->
+    <div class="flex items-center gap-3 px-4 py-3 flex-1 min-w-0">
       <!-- Title Icon -->
       <div class="flex-shrink-0">
         <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -30,6 +31,22 @@
           </svg>
         </button>
       </div>
+    </div>
+
+    <!-- Drag handle zone (only in draggable contexts, not in selection mode) -->
+    <div
+      v-if="draggable && !uiStore.selectionMode"
+      class="drag-handle w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
+      @click.stop
+    >
+      <svg class="w-2.5 h-5 text-gray-600" viewBox="0 0 10 20" fill="currentColor" aria-hidden="true">
+        <circle cx="3" cy="4" r="1.5"/>
+        <circle cx="7" cy="4" r="1.5"/>
+        <circle cx="3" cy="10" r="1.5"/>
+        <circle cx="7" cy="10" r="1.5"/>
+        <circle cx="3" cy="16" r="1.5"/>
+        <circle cx="7" cy="16" r="1.5"/>
+      </svg>
     </div>
 
     <!-- Dropdown Menu -->
@@ -80,6 +97,7 @@ import { useUiStore } from '@/stores/ui'
 
 defineProps<{
   item: ListItem
+  draggable?: boolean
 }>()
 
 const emit = defineEmits<{

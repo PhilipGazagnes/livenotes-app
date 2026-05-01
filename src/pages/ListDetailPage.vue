@@ -93,19 +93,21 @@
           handle=".drag-handle"
         >
           <template #item="{ element: item }">
-            <div class="mb-3 drag-handle">
+            <div class="mb-3">
               <!-- Title Card -->
               <ListTitleCard
                 v-if="item.type === 'title'"
                 :item="item"
+                :draggable="true"
                 @edit="handleEditTitle(item)"
                 @delete="handleDeleteTitle(item)"
               />
-              
+
               <!-- Song Card -->
               <ListSongCard
                 v-else
                 :item="item"
+                :draggable="true"
                 @remove="handleRemove(item)"
                 @songDeleted="handleSongDeleted"
                 @tagsUpdated="handleTagsUpdated"
@@ -700,7 +702,6 @@ async function handleDeleteNote(note: Note) {
   z-index: 1000;
 }
 
-/* Make entire card draggable */
 .drag-handle {
   cursor: grab;
 }
