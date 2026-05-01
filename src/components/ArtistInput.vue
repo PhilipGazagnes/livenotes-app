@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useArtistsStore } from '@/stores/artists'
-import type { Artist } from '@/types/database'
+import type { Artist, ArtistV2 } from '@/types/database'
 
 const props = defineProps<{
   modelValue: string | null  // artist ID
@@ -164,7 +164,14 @@ async function handleCreateNewArtist() {
   const result = await artistsStore.createArtist(projectId, query)
   
   if (result.success && result.data) {
-    const artist = result.data as unknown as Artist
+    const artistV2: ArtistV2 = result.data
+    const artist: Artist = {
+      id: artistV2.id,
+      project_id: projectId,
+      name: artistV2.name,
+      created_at: artistV2.created_at,
+      updated_at: artistV2.updated_at,
+    }
     selectedArtist.value = artist
     searchQuery.value = artist.name
     emit('update:modelValue', artist.id)

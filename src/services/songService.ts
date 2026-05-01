@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
-import type { Song, SongWithTags, ArtistWithPosition } from '@/types/database'
+import type { TablesInsert } from '@/types/supabase'
+import type { Song, SongWithTags, Tag, List, Artist, ArtistWithPosition } from '@/types/database'
 
 const SONG_SELECT = `
   *,
@@ -15,15 +16,34 @@ const SONG_SELECT = `
   )
 `
 
-function transformSong(song: any): SongWithTags {
+interface RawTagJoin { tag: Tag | null }
+interface RawListJoin { list: List | null }
+interface RawArtistJoin { position: number; artist: Artist | null }
+
+interface RawSongRow extends Song {
+  tags: RawTagJoin[]
+  lists: RawListJoin[]
+  artists: RawArtistJoin[]
+}
+
+interface RawSongDetailRow extends Song {
+  tags: RawTagJoin[]
+  artists: RawArtistJoin[]
+}
+
+function mapArtists(rows: RawArtistJoin[]): ArtistWithPosition[] {
+  return rows
+    .filter((sa): sa is { position: number; artist: Artist } => sa.artist != null)
+    .map((sa) => ({ ...sa.artist, position: sa.position }))
+    .sort((a, b) => a.position - b.position) as ArtistWithPosition[]
+}
+
+function transformSong(song: RawSongRow): SongWithTags {
   return {
     ...song,
-    tags: song.tags?.map((st: any) => st.tag).filter(Boolean) ?? [],
-    lists: song.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
-    artists: (song.artists?.map((sa: any) => ({
-      ...sa.artist,
-      position: sa.position,
-    })).sort((a: any, b: any) => a.position - b.position) ?? []) as ArtistWithPosition[],
+    tags: song.tags.map((st) => st.tag).filter((t): t is Tag => t != null),
+    lists: song.lists.map((li) => li.list).filter((l): l is List => l != null),
+    artists: mapArtists(song.artists),
   }
 }
 
@@ -34,7 +54,7 @@ export async function fetchSongs(projectId: string): Promise<SongWithTags[]> {
     .eq('project_id', projectId)
     .order('title', { ascending: true })
   if (error) throw error
-  return (data || []).map(transformSong)
+  return (data || []).map((row) => transformSong(row as unknown as RawSongRow))
 }
 
 export async function fetchSongById(songId: string): Promise<SongWithTags | null> {
@@ -53,21 +73,19 @@ export async function fetchSongById(songId: string): Promise<SongWithTags | null
     .eq('id', songId)
     .single()
   if (error) throw error
+  const row = data as unknown as RawSongDetailRow
   return {
-    ...data,
-    tags: data.tags?.map((st: any) => st.tag) ?? [],
+    ...row,
+    tags: row.tags.map((st) => st.tag).filter((t): t is Tag => t != null),
     lists: [],
-    artists: (data.artists?.map((sa: any) => ({
-      ...sa.artist,
-      position: sa.position,
-    })).sort((a: any, b: any) => a.position - b.position) ?? []) as ArtistWithPosition[],
+    artists: mapArtists(row.artists),
   }
 }
 
 export async function insertSong(songData: Partial<Song>, userId: string): Promise<Song> {
   const { data, error } = await supabase
     .from('songs')
-    .insert({ ...songData, created_by: userId, updated_by: userId } as any)
+    .insert({ ...songData, created_by: userId, updated_by: userId } as TablesInsert<'songs'>)
     .select()
     .single()
   if (error) throw error
@@ -137,24 +155,26 @@ export async function bulkDeleteSongs(songIds: string[]): Promise<void> {
   if (error) throw error
 }
 
-export async function fetchSongTags(songId: string) {
+export async function fetchSongTags(songId: string): Promise<Tag[]> {
   const { data, error } = await supabase
     .from('songs')
     .select('tags:song_tags(tag:tags(*))')
     .eq('id', songId)
     .single()
   if (error) throw error
-  return data.tags?.map((st: any) => st.tag).filter(Boolean) ?? []
+  const row = data as unknown as { tags: RawTagJoin[] }
+  return row.tags.map((st) => st.tag).filter((t): t is Tag => t != null)
 }
 
-export async function fetchSongLists(songId: string) {
+export async function fetchSongLists(songId: string): Promise<List[]> {
   const { data, error } = await supabase
     .from('songs')
     .select('lists:list_items(list:lists(*))')
     .eq('id', songId)
     .single()
   if (error) throw error
-  return data.lists?.map((li: any) => li.list).filter(Boolean) ?? []
+  const row = data as unknown as { lists: RawListJoin[] }
+  return row.lists.map((li) => li.list).filter((l): l is List => l != null)
 }
 
 export async function fetchSongArtists(songId: string): Promise<ArtistWithPosition[]> {
@@ -164,8 +184,6 @@ export async function fetchSongArtists(songId: string): Promise<ArtistWithPositi
     .eq('id', songId)
     .single()
   if (error) throw error
-  return (data.artists?.map((sa: any) => ({
-    ...sa.artist,
-    position: sa.position,
-  })).sort((a: any, b: any) => a.position - b.position) ?? []) as ArtistWithPosition[]
+  const row = data as unknown as { artists: RawArtistJoin[] }
+  return mapArtists(row.artists)
 }

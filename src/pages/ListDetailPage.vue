@@ -282,7 +282,7 @@ const {
 } = useNotesDrawer()
 const selectedTagIds = ref<string[]>([])
 const showTitleModal = ref(false)
-const editingTitle = ref<any>(null)
+const editingTitle = ref<ListItem | null>(null)
 const titleInput = ref('')
 const isSavingTitle = ref(false)
 
@@ -406,7 +406,7 @@ onMounted(async () => {
   }
 })
 
-async function handleRemove(item: any) {
+async function handleRemove(item: ListItem) {
   if (!currentList.value) return
   
   await executeOperation(
@@ -450,7 +450,7 @@ function handleAddTitleFromMenu() {
   handleAddTitle()
 }
 
-function handleEditTitle(item: any) {
+function handleEditTitle(item: ListItem) {
   editingTitle.value = item
   titleInput.value = item.title || ''
   showTitleModal.value = true
@@ -533,7 +533,7 @@ function handleSongsDeleted(deletedIds: string[]) {
 
 async function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
   // Fetch full library song details including notes
-  const librarySongId = (item as any).library_song_id
+  const librarySongId = item.library_song_id
   if (!librarySongId) {
     uiStore.showToast('Cannot open notes for this song', 'error')
     return

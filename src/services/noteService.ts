@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { Json } from '@/types/supabase'
 import type { Note, NoteType, SongcodeNoteData, LooperNoteData } from '@/types/database'
 
 const NOTE_COLUMNS = 'id, library_song_id, type, title, content, data, display_order, created_at, updated_at, is_public, is_shareable, created_by, updated_by, share_token'
@@ -26,7 +27,7 @@ export async function insertNote(payload: {
 }): Promise<Note> {
   const { data, error } = await supabase
     .from('notes')
-    .insert({ ...payload, data: payload.data as Record<string, any> })
+    .insert({ ...payload, data: payload.data as unknown as Json })
     .select()
     .single()
   if (error) throw error
@@ -47,7 +48,7 @@ export async function updateNote(
     .from('notes')
     .update({
       ...updates,
-      data: updates.data as Record<string, any> | null,
+      data: updates.data as unknown as Json | null,
       updated_by: userId,
       updated_at: new Date().toISOString(),
     })

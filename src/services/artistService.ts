@@ -1,6 +1,26 @@
 import { supabase } from '@/lib/supabase'
 import type { Artist, ArtistV2, ArtistWithCount } from '@/types/database'
 
+interface RawArtistV2Field {
+  id: string
+  name: string
+  created_at: string | null
+  updated_at: string | null
+}
+interface RawSongArtistV2Row {
+  artist_id: string
+  artists_v2: RawArtistV2Field | null
+}
+interface RawSongV2ForCount {
+  id: string
+  song_artists_v2: RawSongArtistV2Row[]
+}
+interface RawLibrarySongForCount {
+  id: string
+  song_id: string
+  songs_v2: RawSongV2ForCount | null
+}
+
 export async function fetchArtists(projectId: string): Promise<Artist[]> {
   const { data, error } = await supabase
     .from('artists')
@@ -34,9 +54,10 @@ export async function fetchArtistsWithCount(projectId: string): Promise<ArtistWi
   if (error) throw error
 
   const artistMap = new Map<string, ArtistWithCount>()
-  librarySongs?.forEach((librarySong: any) => {
-    const songArtists = librarySong.songs_v2?.song_artists_v2 || []
-    songArtists.forEach((sa: any) => {
+  const rows = (librarySongs as unknown as RawLibrarySongForCount[]) ?? []
+  rows.forEach((librarySong) => {
+    const songArtists = librarySong.songs_v2?.song_artists_v2 ?? []
+    songArtists.forEach((sa) => {
       const artist = sa.artists_v2
       if (artist) {
         if (artistMap.has(artist.id)) {

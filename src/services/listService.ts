@@ -1,7 +1,30 @@
 import { supabase } from '@/lib/supabase'
-import type { List, ListWithItems } from '@/types/database'
+import type { List, ListWithItems, LibrarySong, SongV2, ArtistV2, Tag } from '@/types/database'
 
 const LIST_COLUMNS = 'id, project_id, name, description, created_at, updated_at, created_by'
+
+interface RawArtistV2Join { position: number; artist: ArtistV2 | null }
+interface RawSongV2Row extends SongV2 { artists: RawArtistV2Join[] }
+interface RawTagJoin { tag: Tag | null }
+interface RawListJoin { list: List | null }
+interface RawLibrarySongJoin extends LibrarySong {
+  song: RawSongV2Row | null
+  tags: RawTagJoin[]
+  lists: RawListJoin[]
+}
+interface RawListItemRow {
+  id: string
+  list_id: string
+  library_song_id: string | null
+  song_id: string | null
+  position: number
+  type: string
+  title: string | null
+  added_at: string
+  note_id: string | null
+  list_annotations: string | null
+  library_song: RawLibrarySongJoin | null
+}
 
 export async function fetchLists(projectId: string): Promise<List[]> {
   const { data, error } = await supabase
@@ -46,15 +69,16 @@ export async function fetchListWithItems(listId: string): Promise<ListWithItems 
     .order('position', { ascending: true })
   if (itemsError) throw itemsError
 
-  const transformedItems = itemsData?.map(item => ({
+  const transformedItems = (itemsData as unknown as RawListItemRow[]).map(item => ({
     ...item,
     song: item.library_song?.song ? {
       ...item.library_song.song,
       artists: item.library_song.song.artists
-        ?.map((sa: any) => ({ ...sa.artist, position: sa.position }))
-        .sort((a: any, b: any) => a.position - b.position) ?? [],
-      tags: item.library_song.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-      lists: item.library_song.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
+        .filter((sa): sa is { position: number; artist: ArtistV2 } => sa.artist != null)
+        .map((sa) => ({ ...sa.artist, position: sa.position }))
+        .sort((a, b) => a.position - b.position),
+      tags: item.library_song.tags.map((lst) => lst.tag).filter((t): t is Tag => t != null),
+      lists: item.library_song.lists.map((li) => li.list).filter((l): l is List => l != null),
     } : null,
   })) || []
 

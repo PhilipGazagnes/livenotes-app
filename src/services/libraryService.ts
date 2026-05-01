@@ -1,5 +1,36 @@
 import { supabase } from '@/lib/supabase'
-import type { LibrarySong, LibrarySongWithDetails, Note } from '@/types/database'
+import type { LibrarySong, LibrarySongWithDetails, Note, SongV2, ArtistV2, Tag, List } from '@/types/database'
+
+interface RawArtistV2Join { position: number; artist: ArtistV2 | null }
+interface RawSongV2Row extends SongV2 { artists: RawArtistV2Join[] }
+interface RawTagJoin { tag: Tag | null }
+interface RawListJoin { list: List | null }
+interface RawLibrarySongRow extends LibrarySong {
+  song: RawSongV2Row | null
+  tags: RawTagJoin[]
+  notes: unknown[]
+  lists: RawListJoin[]
+}
+
+function mapArtistsV2(rows: RawArtistV2Join[]): Array<ArtistV2 & { position: number }> {
+  return rows
+    .filter((sa): sa is { position: number; artist: ArtistV2 } => sa.artist != null)
+    .map((sa) => ({ ...sa.artist, position: sa.position }))
+    .sort((a, b) => a.position - b.position)
+}
+
+function transformLibrarySong(ls: RawLibrarySongRow): LibrarySongWithDetails {
+  return {
+    ...ls,
+    song: {
+      ...ls.song!,
+      artists: mapArtistsV2(ls.song?.artists ?? []),
+    },
+    tags: ls.tags.map((lst) => lst.tag).filter((t): t is Tag => t != null),
+    notes: (ls.notes ?? []) as unknown as Note[],
+    lists: ls.lists.map((li) => li.list).filter((l): l is List => l != null),
+  }
+}
 
 export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySongWithDetails> {
   const { data, error } = await supabase
@@ -27,22 +58,7 @@ export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySo
   if (error) throw error
   if (!data) throw new Error('Library song not found')
 
-  return {
-    ...data,
-    song: {
-      ...data.song,
-      artists: data.song.artists
-        ?.map((sa: any) => ({
-          ...sa.artist,
-          position: sa.position,
-        }))
-        .filter(Boolean)
-        .sort((a: any, b: any) => a.position - b.position) ?? [],
-    },
-    tags: data.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-    notes: (data.notes ?? []) as unknown as Note[],
-    lists: data.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
-  }
+  return transformLibrarySong(data as unknown as RawLibrarySongRow)
 }
 
 const LIBRARY_SONG_SELECT = `
@@ -74,22 +90,6 @@ const LIBRARY_SONG_SELECT = `
   )
 `
 
-function transformLibrarySong(ls: any): LibrarySongWithDetails {
-  return {
-    ...ls,
-    song: {
-      ...ls.song,
-      artists: ls.song.artists
-        ?.map((sa: any) => ({ ...sa.artist, position: sa.position }))
-        .filter(Boolean)
-        .sort((a: any, b: any) => a.position - b.position) ?? [],
-    },
-    tags: ls.tags?.map((lst: any) => lst.tag).filter(Boolean) ?? [],
-    notes: (ls.notes ?? []) as unknown as Note[],
-    lists: ls.lists?.map((li: any) => li.list).filter(Boolean) ?? [],
-  }
-}
-
 export async function fetchLibrarySongs(projectId: string): Promise<LibrarySongWithDetails[]> {
   const { data, error } = await supabase
     .from('library_songs')
@@ -97,7 +97,7 @@ export async function fetchLibrarySongs(projectId: string): Promise<LibrarySongW
     .eq('project_id', projectId)
     .order('added_at', { ascending: false })
   if (error) throw error
-  return (data || []).map(transformLibrarySong)
+  return (data || []).map((row) => transformLibrarySong(row as unknown as RawLibrarySongRow))
 }
 
 export async function addToLibrary(

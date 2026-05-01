@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Artist, ArtistWithCount } from '@/types/database'
+import type { Artist, ArtistV2, ArtistWithCount } from '@/types/database'
 import { useAuthStore } from './auth'
 import * as artistService from '@/services/artistService'
 
@@ -42,7 +42,10 @@ export const useArtistsStore = defineStore('artists', () => {
     }
   }
 
-  async function createArtist(_projectId: string, name: string) {
+  async function createArtist(
+    _projectId: string,
+    name: string
+  ): Promise<{ success: true; data: ArtistV2; isDuplicate: boolean } | { success: false; error: string }> {
     isLoading.value = true
     error.value = null
     try {
