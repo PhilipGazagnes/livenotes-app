@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { supabase } from '@/lib/supabase'
+import { fetchProjectSettings, updateProjectSettings } from '@/services/settingsService'
+import { logger } from '@/utils/logger'
 
 const STORAGE_KEY = 'livenotes-settings'
 
@@ -38,7 +39,7 @@ export const useSettingsStore = defineStore('settings', () => {
         showArtistsInLists.value = settings.showArtistsInLists ?? defaultSettings.showArtistsInLists
       }
     } catch (error) {
-      console.error('Failed to load settings from localStorage:', error)
+      logger.error('Failed to load settings from localStorage', error)
     }
   }
 
@@ -52,7 +53,7 @@ export const useSettingsStore = defineStore('settings', () => {
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     } catch (error) {
-      console.error('Failed to save settings to localStorage:', error)
+      logger.error('Failed to save settings to localStorage', error)
     }
   }
 
@@ -79,21 +80,13 @@ export const useSettingsStore = defineStore('settings', () => {
   async function loadProjectSettings(projectId: string) {
     isLoadingProjectSettings.value = true
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('notes_field_label, notes_field_enabled')
-        .eq('id', projectId)
-        .single()
-
-      if (error) throw error
-
+      const data = await fetchProjectSettings(projectId)
       if (data) {
         notesFieldLabel.value = data.notes_field_label || 'Notes'
         notesFieldEnabled.value = data.notes_field_enabled ?? true
       }
     } catch (error) {
-      console.error('Failed to load project settings:', error)
-      // Use defaults on error
+      logger.error('Failed to load project settings', error)
       notesFieldLabel.value = 'Notes'
       notesFieldEnabled.value = true
     } finally {
@@ -103,46 +96,32 @@ export const useSettingsStore = defineStore('settings', () => {
 
   async function updateNotesFieldLabel(projectId: string, label: string) {
     try {
-      // Validate length
       const trimmedLabel = label.trim()
       if (trimmedLabel.length === 0 || trimmedLabel.length > 30) {
         throw new Error('Label must be between 1 and 30 characters')
       }
-
-      const { error } = await supabase
-        .from('projects')
-        .update({ notes_field_label: trimmedLabel })
-        .eq('id', projectId)
-
-      if (error) throw error
-
+      await updateProjectSettings(projectId, { notes_field_label: trimmedLabel })
       notesFieldLabel.value = trimmedLabel
       return { success: true }
     } catch (error) {
-      console.error('Failed to update notes field label:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update label'
+      logger.error('Failed to update notes field label', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update label',
       }
     }
   }
 
   async function updateNotesFieldEnabled(projectId: string, enabled: boolean) {
     try {
-      const { error } = await supabase
-        .from('projects')
-        .update({ notes_field_enabled: enabled })
-        .eq('id', projectId)
-
-      if (error) throw error
-
+      await updateProjectSettings(projectId, { notes_field_enabled: enabled })
       notesFieldEnabled.value = enabled
       return { success: true }
     } catch (error) {
-      console.error('Failed to update notes field enabled:', error)
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update setting'
+      logger.error('Failed to update notes field enabled', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update setting',
       }
     }
   }
@@ -160,12 +139,12 @@ export const useSettingsStore = defineStore('settings', () => {
     showTagsInLists,
     showListsInLists,
     showArtistsInLists,
-    
+
     // Project Settings (database)
     notesFieldLabel,
     notesFieldEnabled,
     isLoadingProjectSettings,
-    
+
     // Display Actions
     toggleShowTagsInLists,
     toggleShowListsInLists,

@@ -1,9 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '@/lib/supabase'
 import type { LooperNoteData, Note, NoteType, SongcodeNoteData } from '@/types/database'
 import { generateLivenotesJson } from '@/utils/songcodeConverter'
 import { useUiStore } from './ui'
+import { useAuthStore } from './auth'
+import * as noteService from '@/services/noteService'
 
 /**
  * Notes Store (V2)
@@ -17,10 +18,6 @@ export const useNotesStore = defineStore('notes', () => {
   const error = ref<string | null>(null)
 
   // Getters
-  
-  /**
-   * Notes grouped by type
-   */
   const notesByType = computed(() => {
     const grouped: Record<NoteType, Note[]> = {
       songcode: [],
@@ -35,24 +32,15 @@ export const useNotesStore = defineStore('notes', () => {
       lyrics: [],
       chords: [],
     }
-    
     notes.value.forEach(note => {
-      if (grouped[note.type]) {
-        grouped[note.type].push(note)
-      }
+      if (grouped[note.type]) grouped[note.type].push(note)
     })
-    
-    // Sort each group by display_order
     Object.keys(grouped).forEach(type => {
       grouped[type as NoteType].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
     })
-    
     return grouped
   })
 
-  /**
-   * Get notes of a specific type
-   */
   function getNotesByType(type: NoteType): Note[] {
     return notesByType.value[type] || []
   }
@@ -60,24 +48,12 @@ export const useNotesStore = defineStore('notes', () => {
   const noteCount = computed(() => notes.value.length)
 
   // Actions
-  
-  /**
-   * Load all notes for a library song
-   */
+
   async function loadNotes(librarySongId: string) {
     isLoading.value = true
     error.value = null
-    
     try {
-      const { data, error: fetchError } = await supabase
-        .from('notes')
-        .select('id, library_song_id, type, title, content, data, display_order, created_at, updated_at, is_public, is_shareable, created_by, updated_by, share_token')
-        .eq('library_song_id', librarySongId)
-        .order('type')
-        .order('display_order')
-      
-      if (fetchError) throw fetchError
-      notes.value = (data || []) as unknown as Note[]
+      notes.value = await noteService.fetchNotes(librarySongId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load notes'
       throw err
@@ -86,9 +62,6 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  /**
-   * Create a new note
-   */
   async function createNote(
     librarySongId: string,
     type: NoteType,
@@ -98,10 +71,8 @@ export const useNotesStore = defineStore('notes', () => {
   ): Promise<Note> {
     isLoading.value = true
     error.value = null
-
     try {
-      // For songcode, auto-generate livenotes JSON before saving
-      let resolvedData = data ?? null
+      let resolvedData: SongcodeNoteData | LooperNoteData | null = data ?? null
       if (type === 'songcode' && content) {
         const conversionResult = await generateLivenotesJson(content)
         if (!conversionResult.success) throw new Error(conversionResult.error)
@@ -112,34 +83,27 @@ export const useNotesStore = defineStore('notes', () => {
         } satisfies SongcodeNoteData
       }
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
+      const authStore = useAuthStore()
+      if (!authStore.userId) throw new Error('User not authenticated')
 
-      // Calculate display_order (max + 1 for the type)
       const existingOfType = notes.value.filter(n => n.type === type)
       const maxOrder = existingOfType.length > 0
         ? Math.max(...existingOfType.map(n => n.display_order ?? -1))
         : -1
 
-      const { data: created, error: createError } = await supabase
-        .from('notes')
-        .insert({
-          library_song_id: librarySongId,
-          type,
-          content: content ?? null,
-          data: resolvedData as Record<string, any>,
-          title: title || null,
-          created_by: user.id,
-          updated_by: user.id,
-          display_order: maxOrder + 1,
-        })
-        .select()
-        .single()
-
-      if (createError) throw createError
+      const created = await noteService.insertNote({
+        library_song_id: librarySongId,
+        type,
+        content: content ?? null,
+        data: resolvedData,
+        title: title || null,
+        created_by: authStore.userId,
+        updated_by: authStore.userId,
+        display_order: maxOrder + 1,
+      })
 
       await loadNotes(librarySongId)
-      return created as unknown as Note
+      return created
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create note'
       throw err
@@ -148,9 +112,6 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  /**
-   * Update a note
-   */
   async function updateNote(
     noteId: string,
     updates: {
@@ -164,9 +125,7 @@ export const useNotesStore = defineStore('notes', () => {
   ) {
     isLoading.value = true
     error.value = null
-
     try {
-      // For songcode, auto-generate livenotes JSON when content is being updated
       const resolvedUpdates = { ...updates }
       if (noteType === 'songcode' && updates.content !== undefined && updates.content) {
         const conversionResult = await generateLivenotesJson(updates.content)
@@ -177,21 +136,10 @@ export const useNotesStore = defineStore('notes', () => {
         } satisfies SongcodeNoteData
       }
 
-      const { data: { user: updateUser } } = await supabase.auth.getUser()
-      if (!updateUser) throw new Error('User not authenticated')
+      const authStore = useAuthStore()
+      if (!authStore.userId) throw new Error('User not authenticated')
 
-      const { error: updateError } = await supabase
-        .from('notes')
-        .update({
-          ...resolvedUpdates,
-          data: resolvedUpdates.data as Record<string, any> | null,
-          updated_by: updateUser.id,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', noteId)
-
-      if (updateError) throw updateError
-
+      await noteService.updateNote(noteId, resolvedUpdates, authStore.userId)
       await loadNotes(librarySongId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update note'
@@ -201,9 +149,6 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  /**
-   * Generate livenotes JSON from a songcode note's content and store it in note.data
-   */
   async function generateSongcodeJson(noteId: string, librarySongId: string): Promise<{ success: boolean; error?: string }> {
     const uiStore = useUiStore()
     const note = notes.value.find(n => n.id === noteId)
@@ -212,26 +157,19 @@ export const useNotesStore = defineStore('notes', () => {
 
     isLoading.value = true
     error.value = null
-
     try {
       const conversionResult = await generateLivenotesJson(note.content)
       if (!conversionResult.success) throw new Error(conversionResult.error)
 
-      const { data: { user: genUser } } = await supabase.auth.getUser()
-      if (!genUser) throw new Error('User not authenticated')
+      const authStore = useAuthStore()
+      if (!authStore.userId) throw new Error('User not authenticated')
 
       const newData: SongcodeNoteData = {
         livenotes_json: conversionResult.json,
         livenotes_json_updated_at: new Date().toISOString(),
       }
 
-      const { error: updateError } = await supabase
-        .from('notes')
-        .update({ data: newData as Record<string, any>, updated_by: genUser.id, updated_at: new Date().toISOString() })
-        .eq('id', noteId)
-
-      if (updateError) throw updateError
-
+      await noteService.updateNote(noteId, { data: newData }, authStore.userId)
       await loadNotes(librarySongId)
       uiStore.showToast('Livenotes JSON generated', 'success')
       return { success: true }
@@ -245,21 +183,11 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  /**
-   * Delete a note
-   */
   async function deleteNote(noteId: string, librarySongId: string) {
     isLoading.value = true
     error.value = null
-    
     try {
-      const { error: deleteError } = await supabase
-        .from('notes')
-        .delete()
-        .eq('id', noteId)
-      
-      if (deleteError) throw deleteError
-      
+      await noteService.deleteNote(noteId)
       await loadNotes(librarySongId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete note'
@@ -269,31 +197,14 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  /**
-   * Reorder notes of the same type
-   */
   async function reorderNotes(noteIds: string[], _type: NoteType) {
     isLoading.value = true
     error.value = null
-    
     try {
-      // Update display_order for each note
-      const updates = noteIds.map((id, index) => ({
-        id,
-        display_order: index,
-      }))
-      
-      for (const update of updates) {
-        await supabase
-          .from('notes')
-          .update({ display_order: update.display_order })
-          .eq('id', update.id)
-      }
-      
-      // Update local state
+      await noteService.reorderNotes(noteIds)
       notes.value = notes.value.map(note => {
-        const newOrder = updates.find(u => u.id === note.id)
-        return newOrder ? { ...note, display_order: newOrder.display_order } : note
+        const newOrder = noteIds.indexOf(note.id)
+        return newOrder !== -1 ? { ...note, display_order: newOrder } : note
       })
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to reorder notes'
@@ -303,49 +214,32 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  /**
-   * Get a single note by ID
-   */
   async function getNoteById(noteId: string): Promise<Note | null> {
     try {
-      const { data, error: fetchError } = await supabase
-        .from('notes')
-        .select('id, library_song_id, type, title, content, data, display_order, created_at, updated_at, is_public, is_shareable, created_by, updated_by, share_token')
-        .eq('id', noteId)
-        .single()
-      
-      if (fetchError) throw fetchError
-      return data as unknown as Note
+      return await noteService.getNoteById(noteId)
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch note'
       return null
     }
   }
 
-  /** Set current note */
   function setCurrentNote(note: Note | null) {
     currentNote.value = note
   }
 
-  /** Clear all notes (when navigating away) */
   function clearNotes() {
     notes.value = []
     currentNote.value = null
   }
 
   return {
-    // State
     notes,
     currentNote,
     isLoading,
     error,
-    
-    // Getters
     notesByType,
     getNotesByType,
     noteCount,
-    
-    // Actions
     loadNotes,
     createNote,
     updateNote,
