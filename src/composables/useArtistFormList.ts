@@ -1,30 +1,32 @@
 import type { Ref } from 'vue'
 
-export function useArtistFormList(artistIds: Ref<(string | null)[]>) {
+export type ArtistSlot = { id: string; artistId: string | null }
+
+export function useArtistFormList(slots: Ref<ArtistSlot[]>) {
   function handleAddArtist() {
-    artistIds.value.push(null)
+    slots.value.push({ id: crypto.randomUUID(), artistId: null })
   }
 
   function handleRemoveArtist(index: number) {
-    artistIds.value.splice(index, 1)
-    if (artistIds.value.length === 0) {
-      artistIds.value.push(null)
+    slots.value.splice(index, 1)
+    if (slots.value.length === 0) {
+      slots.value.push({ id: crypto.randomUUID(), artistId: null })
     }
   }
 
   function handleMoveArtistUp(index: number) {
     if (index > 0) {
-      const temp = artistIds.value[index]
-      artistIds.value[index] = artistIds.value[index - 1]
-      artistIds.value[index - 1] = temp
+      const temp = slots.value[index]
+      slots.value[index] = slots.value[index - 1]
+      slots.value[index - 1] = temp
     }
   }
 
   function handleMoveArtistDown(index: number) {
-    if (index < artistIds.value.length - 1) {
-      const temp = artistIds.value[index]
-      artistIds.value[index] = artistIds.value[index + 1]
-      artistIds.value[index + 1] = temp
+    if (index < slots.value.length - 1) {
+      const temp = slots.value[index]
+      slots.value[index] = slots.value[index + 1]
+      slots.value[index + 1] = temp
     }
   }
 

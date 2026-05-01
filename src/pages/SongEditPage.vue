@@ -51,8 +51,8 @@
             <!-- Artist Inputs -->
             <div class="space-y-3">
               <div
-                v-for="(_, index) in form.artistIds"
-                :key="index"
+                v-for="(slot, index) in form.artistIds"
+                :key="slot.id"
                 class="flex items-start gap-2"
               >
                 <div class="flex-1">
@@ -84,7 +84,7 @@
                     </button>
                   </div>
                   <ArtistInput
-                    v-model="form.artistIds[index]"
+                    v-model="form.artistIds[index].artistId"
                     :placeholder="'Enter artist name'"
                   />
                 </div>
@@ -209,7 +209,7 @@ import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, normalizeText } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
 import { usePageLoad } from '@/composables/usePageLoad'
-import { useArtistFormList } from '@/composables/useArtistFormList'
+import { useArtistFormList, type ArtistSlot } from '@/composables/useArtistFormList'
 import type { SongWithTags } from '@/types/database'
 
 const router = useRouter()
@@ -228,14 +228,14 @@ const song = ref<SongWithTags | null>(null)
 // Form state
 const form = ref({
   title: '',
-  artistIds: [null] as (string | null)[],
+  artistIds: [{ id: crypto.randomUUID(), artistId: null }] as ArtistSlot[],
   notes: '',
 })
 
 // Original form values (for change detection)
 const originalForm = ref({
   title: '',
-  artistIds: [] as (string | null)[],
+  artistIds: [] as ArtistSlot[],
   notes: '',
 })
 
@@ -256,7 +256,7 @@ function openSongcodeDrawer() {
 const hasChanges = computed(() => {
   return form.value.title !== originalForm.value.title ||
          form.value.notes !== originalForm.value.notes ||
-         JSON.stringify(form.value.artistIds) !== JSON.stringify(originalForm.value.artistIds)
+         JSON.stringify(form.value.artistIds.map(s => s.artistId)) !== JSON.stringify(originalForm.value.artistIds.map(s => s.artistId))
 })
 
 const { handleAddArtist, handleRemoveArtist, handleMoveArtistUp, handleMoveArtistDown } =
@@ -310,15 +310,15 @@ onMounted(() => {
     
     // Populate artists (sorted by position)
     if (foundSong.artists && foundSong.artists.length > 0) {
-      form.value.artistIds = foundSong.artists.map(a => a.id)
+      form.value.artistIds = foundSong.artists.map(a => ({ id: crypto.randomUUID(), artistId: a.id }))
     } else {
-      form.value.artistIds = [null]
+      form.value.artistIds = [{ id: crypto.randomUUID(), artistId: null }]
     }
     
     // Store original values
     originalForm.value = {
       title: form.value.title,
-      artistIds: [...form.value.artistIds],
+      artistIds: form.value.artistIds.map(s => ({ ...s })),
       notes: form.value.notes,
     }
     
@@ -361,8 +361,7 @@ async function handleSave() {
     return
   }
   
-  // Filter out null artist IDs
-  const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
+  const artistIds = form.value.artistIds.map(s => s.artistId).filter((id): id is string => id !== null)
   
   await executeOperation(
     () => songsStore.updateSong(song.value!.id, {

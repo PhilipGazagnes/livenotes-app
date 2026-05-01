@@ -121,7 +121,7 @@ import { useGlobalSongsStore } from '@/stores/globalSongs'
 import { useLibraryStore } from '@/stores/library'
 import type { SongV2WithArtists } from '@/types/database'
 import { MESSAGES } from '@/constants/messages'
-import { useToast } from '@/composables/useToast'
+import { useUiStore } from '@/stores/ui'
 import ArtistSelector from './ArtistSelector.vue'
 import LoadingSpinner from './LoadingSpinner.vue'
 
@@ -139,7 +139,7 @@ const emit = defineEmits<Emits>()
 
 const globalSongsStore = useGlobalSongsStore()
 const libraryStore = useLibraryStore()
-const { showToast } = useToast()
+const uiStore = useUiStore()
 
 const searchQuery = ref('')
 const searchResults = ref<SongV2WithArtists[]>([])
@@ -217,7 +217,7 @@ async function addExistingSong(song: SongV2WithArtists) {
 
   try {
     await libraryStore.addToLibrary(song.id)
-    showToast(MESSAGES.SUCCESS.SONG_ADDED_TO_LIBRARY, 'success')
+    uiStore.showToast(MESSAGES.SUCCESS.SONG_ADDED_TO_LIBRARY, 'success')
     emit('songAdded')
     emit('close')
   } catch (err: any) {
@@ -250,7 +250,7 @@ async function createAndAddNewSong() {
     // 2. Add to library
     await libraryStore.addToLibrary(newSong.id)
     
-    showToast(MESSAGES.SUCCESS.SONG_CREATED, 'success')
+    uiStore.showToast(MESSAGES.SUCCESS.SONG_CREATED, 'success')
     emit('songAdded')
     emit('close')
   } catch (err) {

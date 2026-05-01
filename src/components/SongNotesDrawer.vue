@@ -135,7 +135,7 @@
 
 <script setup lang="ts">
 import { computed, h, ref, watch } from 'vue'
-import type { LibrarySongWithDetails, Note, SongcodeNoteData } from '@/types/database'
+import type { LibrarySongWithDetails, LivenotesJson, Note, SongcodeNoteData } from '@/types/database'
 import SongcodeLyricsDrawer from './SongcodeLyricsDrawer.vue'
 
 interface Props {
@@ -153,7 +153,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const lyricsDrawerOpen = ref(false)
-const currentLyricsJson = ref<any | null>(null)
+const currentLyricsJson = ref<LivenotesJson | null>(null)
 
 watch(() => props.isOpen, (isOpen) => {
   if (!isOpen) lyricsDrawerOpen.value = false
@@ -164,7 +164,7 @@ function getSongcodeData(note: Note): SongcodeNoteData | null {
   return note.data as SongcodeNoteData
 }
 
-function getLivenotesJson(note: Note): any | null {
+function getLivenotesJson(note: Note): LivenotesJson | null {
   return getSongcodeData(note)?.livenotes_json ?? null
 }
 
@@ -184,16 +184,6 @@ function openLyricsDrawer(note: Note) {
   lyricsDrawerOpen.value = true
 }
 
-// Debug log when librarySong changes
-watch(() => props.librarySong, (newLibrarySong) => {
-  console.log('🎸 SongNotesDrawer: librarySong prop changed:', {
-    id: newLibrarySong?.id,
-    song_id: newLibrarySong?.song_id,
-    title: newLibrarySong?.custom_title || newLibrarySong?.song?.title,
-    notes_count: newLibrarySong?.notes?.length || 0,
-    notes: newLibrarySong?.notes
-  })
-}, { immediate: true })
 
 const sortedNotes = computed(() => {
   if (!props.librarySong?.notes) return []

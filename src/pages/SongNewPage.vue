@@ -40,8 +40,8 @@
         <!-- Artist Inputs -->
         <div class="space-y-3">
           <div
-            v-for="(_, index) in form.artistIds"
-            :key="index"
+            v-for="(slot, index) in form.artistIds"
+            :key="slot.id"
             class="flex items-start gap-2"
           >
             <div class="flex-1">
@@ -73,7 +73,7 @@
                 </button>
               </div>
               <ArtistInput
-                v-model="form.artistIds[index]"
+                v-model="form.artistIds[index].artistId"
                 :placeholder="'Enter artist name'"
               />
             </div>
@@ -189,7 +189,7 @@ import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
 import { usePageLoad } from '@/composables/usePageLoad'
-import { useArtistFormList } from '@/composables/useArtistFormList'
+import { useArtistFormList, type ArtistSlot } from '@/composables/useArtistFormList'
 
 const router = useRouter()
 const songsStore = useSongsStore()
@@ -216,7 +216,7 @@ onMounted(() => {
 // Form state
 const form = ref({
   title: '',
-  artistIds: [null] as (string | null)[],
+  artistIds: [{ id: crypto.randomUUID(), artistId: null }] as ArtistSlot[],
   notes: '',
   pocId: '',
 })
@@ -231,7 +231,7 @@ const errors = ref({
 // Check if form has any changes
 const hasChanges = computed(() => {
   return form.value.title.trim() !== '' ||
-         form.value.artistIds.some(id => id !== null) ||
+         form.value.artistIds.some(s => s.artistId !== null) ||
          form.value.notes.trim() !== '' ||
          form.value.pocId.trim() !== ''
 })
@@ -275,9 +275,8 @@ async function handleSave() {
     return
   }
   
-  // Filter out null artist IDs
-  const artistIds = form.value.artistIds.filter(id => id !== null) as string[]
-  
+  const artistIds = form.value.artistIds.map(s => s.artistId).filter((id): id is string => id !== null)
+
   await executeOperation(
     () => songsStore.createSong({
       project_id: personalProjectId,

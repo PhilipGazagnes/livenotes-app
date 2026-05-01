@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
-import type { Note, NoteType, SongcodeNoteData } from '@/types/database'
+import type { LooperNoteData, Note, NoteType, SongcodeNoteData } from '@/types/database'
 import { generateLivenotesJson } from '@/utils/songcodeConverter'
 import { useUiStore } from './ui'
 
@@ -71,7 +71,7 @@ export const useNotesStore = defineStore('notes', () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('notes')
-        .select('*')
+        .select('id, library_song_id, type, title, content, data, display_order, created_at, updated_at, is_public, is_shareable, created_by, updated_by, share_token')
         .eq('library_song_id', librarySongId)
         .order('type')
         .order('display_order')
@@ -94,7 +94,7 @@ export const useNotesStore = defineStore('notes', () => {
     type: NoteType,
     content: string | null,
     title?: string,
-    data?: Record<string, any> | null
+    data?: SongcodeNoteData | LooperNoteData | null
   ): Promise<Note> {
     isLoading.value = true
     error.value = null
@@ -157,7 +157,7 @@ export const useNotesStore = defineStore('notes', () => {
       title?: string
       content?: string | null
       display_order?: number
-      data?: Record<string, any> | null
+      data?: SongcodeNoteData | LooperNoteData | null
     },
     librarySongId: string,
     noteType?: NoteType
@@ -310,7 +310,7 @@ export const useNotesStore = defineStore('notes', () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('notes')
-        .select('*')
+        .select('id, library_song_id, type, title, content, data, display_order, created_at, updated_at, is_public, is_shareable, created_by, updated_by, share_token')
         .eq('id', noteId)
         .single()
       

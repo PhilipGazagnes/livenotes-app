@@ -185,8 +185,6 @@ export const useUiStore = defineStore('ui', () => {
   
   // Notes drawer actions
   function openSongNotesDrawer(librarySong: LibrarySongWithDetails) {
-    console.log('🎼 UI Store: Opening SongNotesDrawer with library_song_id:', librarySong.id)
-    console.log('🎼 UI Store: Notes attached:', librarySong.notes)
     selectedLibrarySong.value = librarySong
     songNotesDrawerOpen.value = true
   }
@@ -202,13 +200,6 @@ export const useUiStore = defineStore('ui', () => {
   }
   
   function openNoteContentDrawer(note: Note) {
-    console.log('📝 UI Store: Opening NoteContentDrawer with note:', {
-      id: note.id,
-      type: note.type,
-      title: note.title,
-      content_length: note.content?.length || 0,
-      content_preview: note.content?.substring(0, 50)
-    })
     selectedNote.value = note
     noteContentDrawerOpen.value = true
   }
@@ -223,7 +214,6 @@ export const useUiStore = defineStore('ui', () => {
   }
   
   function openNoteCreationDrawer() {
-    console.log('✏️ UI Store: Opening NoteCreationDrawer')
     noteCreationDrawerOpen.value = true
   }
   

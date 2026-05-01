@@ -32,7 +32,7 @@ export const useSongcodeStore = defineStore('songcode', () => {
         throw fetchError
       }
       
-      currentSongcode.value = data
+      currentSongcode.value = data as unknown as SongCode | null
       return { success: true, data }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch songcode'
@@ -71,7 +71,7 @@ export const useSongcodeStore = defineStore('songcode', () => {
       
       if (upsertError) throw upsertError
       
-      currentSongcode.value = data
+      currentSongcode.value = data as unknown as SongCode
       return { success: true, data }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update songcode'
@@ -125,7 +125,7 @@ export const useSongcodeStore = defineStore('songcode', () => {
       
       if (updateError) throw updateError
       
-      currentSongcode.value = data
+      currentSongcode.value = data as unknown as SongCode
       uiStore.showToast('Livenotes JSON generated successfully', 'success')
       return { success: true, data }
     } catch (err) {

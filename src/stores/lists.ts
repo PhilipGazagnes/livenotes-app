@@ -25,7 +25,7 @@ export const useListsStore = defineStore('lists', () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('lists')
-        .select('*')
+        .select('id, project_id, name, description, created_at, updated_at, created_by')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
       
@@ -45,7 +45,7 @@ export const useListsStore = defineStore('lists', () => {
     try {
       const { data: listData, error: listError } = await supabase
         .from('lists')
-        .select('*')
+        .select('id, project_id, name, description, created_at, updated_at, created_by')
         .eq('id', listId)
         .single()
       

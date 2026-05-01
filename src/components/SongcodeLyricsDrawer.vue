@@ -85,21 +85,13 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import type { LivenotesJson } from '@/types/database'
 
-interface LyricLine {
-  text: string
-  measures: number | null
-  style: string
-}
-
-interface Section {
-  name: string
-  lyrics: LyricLine[]
-}
+type Section = LivenotesJson['sections'][number]
 
 const props = defineProps<{
   isOpen: boolean
-  livenotesJson: any | null
+  livenotesJson: LivenotesJson | null
 }>()
 
 const emit = defineEmits<{ (e: 'close'): void }>()
@@ -118,7 +110,7 @@ function zoomOut() {
 
 const sections = computed((): Section[] => {
   if (!props.livenotesJson?.sections) return []
-  return (props.livenotesJson.sections as Section[]).filter(s => s.lyrics?.length > 0)
+  return props.livenotesJson.sections.filter(s => s.lyrics?.length > 0)
 })
 
 type VocalType = 'normal' | 'male' | 'female'

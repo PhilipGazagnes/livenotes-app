@@ -89,7 +89,7 @@ export interface SongCode {
   songcode: string | null
   songcode_updated_at: string | null
   songcode_updated_by: string | null
-  livenotes_json: any | null
+  livenotes_json: LivenotesJson | null
   livenotes_json_updated_at: string | null
   livenotes_json_updated_by: string | null
   created_at: string | null
@@ -167,7 +167,7 @@ export interface ArtistV2 {
   verified_at: string | null
   bio: string | null
   image_url: string | null
-  external_links: any | null
+  external_links: unknown | null
   created_by: string
   created_at: string | null
   updated_at: string | null
@@ -195,9 +195,21 @@ export interface LibrarySong {
   custom_notes: string | null
 }
 
+// Shape of the livenotes JSON blob stored in songcode notes
+export interface LivenotesJson {
+  sections: Array<{
+    name: string
+    lyrics: Array<{
+      text: string
+      measures: number | null
+      style: string
+    }>
+  }>
+}
+
 // Note type-specific data structures (stored in notes.data JSONB)
 export interface SongcodeNoteData {
-  livenotes_json: any | null
+  livenotes_json: LivenotesJson | null
   livenotes_json_updated_at: string | null
 }
 
@@ -217,7 +229,7 @@ export interface Note {
   type: NoteType
   title: string | null
   content: string | null
-  data: Record<string, any> | null
+  data: SongcodeNoteData | LooperNoteData | null
   created_by: string
   created_at: string | null
   updated_by: string

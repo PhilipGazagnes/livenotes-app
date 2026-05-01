@@ -140,12 +140,6 @@ function handleCardClick() {
   if (uiStore.selectionMode) {
     uiStore.toggleSelection(props.librarySong.id)
   } else {
-    // Open notes drawer
-    console.log('🎵 LibrarySongCard: Opening notes drawer for:', {
-      id: props.librarySong.id,
-      title: props.librarySong.custom_title || props.librarySong.song?.title,
-      notes: props.librarySong.notes
-    })
     uiStore.openSongNotesDrawer(props.librarySong)
   }
 }
