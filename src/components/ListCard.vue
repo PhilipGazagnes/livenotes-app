@@ -94,7 +94,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { List } from '@/types/database'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'

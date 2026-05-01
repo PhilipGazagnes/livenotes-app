@@ -77,7 +77,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Tag } from '@/types/database'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import { I18N } from '@/constants/i18n'
 import { ROUTES } from '@/constants/routes'
 

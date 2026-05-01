@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import type { SongV2, SongV2WithArtists, ArtistV2 } from '@/types/database'
 
 /**

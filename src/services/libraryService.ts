@@ -1,4 +1,4 @@
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import type { LibrarySongWithDetails, Note } from '@/types/database'
 
 export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySongWithDetails> {

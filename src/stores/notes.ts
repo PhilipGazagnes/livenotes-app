@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Note, NoteType, SongcodeNoteData } from '@/types/database'
 import { generateLivenotesJson } from '@/utils/songcodeConverter'
 import { useUiStore } from './ui'

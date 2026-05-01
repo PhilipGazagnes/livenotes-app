@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Artist, ArtistWithCount } from '@/types/database'
 
 export const useArtistsStore = defineStore('artists', () => {

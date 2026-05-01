@@ -263,21 +263,6 @@ const renameListName = ref('')
 const renameError = ref('')
 const isRenaming = ref(false)
 
-onMounted(async () => {
-  try {
-    const personalProjectId = await authStore.getPersonalProjectId()
-    if (personalProjectId) {
-      await listsStore.fetchLists(personalProjectId)
-    }
-  } catch (error) {
-    console.error('Error loading lists:', error)
-    uiStore.showToast('Failed to load lists', 'error')
-  } finally {
-    // Always hide overlay
-    uiStore.hideOperationOverlay()
-  }
-})
-
 function handleCreateClick() {
   isPageMenuOpen.value = false
   showCreateModal.value = true

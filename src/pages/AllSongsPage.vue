@@ -220,7 +220,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import AppHeader from '@/components/AppHeader.vue'
 import SongCard from '@/components/SongCard.vue'
 // Lazy load modals for better performance

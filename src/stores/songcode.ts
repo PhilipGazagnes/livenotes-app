@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import type { SongCode } from '@/types/database'
 import { useAuthStore } from './auth'
 import { generateLivenotesJson } from '@/utils/songcodeConverter'

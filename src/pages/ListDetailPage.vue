@@ -242,6 +242,7 @@ import { useListsStore } from '@/stores/lists'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useNotesDrawer } from '@/composables/useNotesDrawer'
 import { fetchLibrarySongWithDetails } from '@/services/libraryService'
 import { updateListItemTitle, createListItemTitle, deleteListItem } from '@/services/listItemService'
 import { MESSAGES } from '@/constants/messages'
@@ -257,7 +258,7 @@ import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import NoteContentDrawer from '@/components/NoteContentDrawer.vue'
 import NoteCreationDrawer from '@/components/NoteCreationDrawer.vue'
 import NoteEditor from '@/components/NoteEditor.vue'
-import type { Note, ListItem, SongWithTags } from '@/types/database'
+import type { ListItem, SongWithTags } from '@/types/database'
 
 const route = useRoute()
 const router = useRouter()
@@ -267,9 +268,18 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 const isPageMenuOpen = ref(false)
-const editingNote = ref<Note | null>(null)
-const noteEditorOpen = ref(false)
 const searchQuery = ref('')
+
+const {
+  editingNote,
+  noteEditorOpen,
+  handleNoteClick,
+  handleAddNote,
+  handleNoteSaved,
+  handleEditNote,
+  closeNoteEditor,
+  handleDeleteNote,
+} = useNotesDrawer()
 const selectedTagIds = ref<string[]>([])
 const showTitleModal = ref(false)
 const editingTitle = ref<any>(null)
@@ -521,7 +531,6 @@ function handleSongsDeleted(deletedIds: string[]) {
   }
 }
 
-// Notes drawer handlers
 async function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
   // Fetch full library song details including notes
   const librarySongId = (item as any).library_song_id
@@ -539,48 +548,6 @@ async function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
   }
 }
 
-function handleNoteClick(note: Note) {
-  uiStore.openNoteContentDrawer(note)
-}
-
-function handleAddNote() {
-  uiStore.openNoteCreationDrawer()
-}
-
-async function handleNoteSaved() {
-  if (uiStore.selectedLibrarySong) {
-    try {
-      uiStore.selectedLibrarySong = await fetchLibrarySongWithDetails(uiStore.selectedLibrarySong.id)
-    } catch (err) {
-      console.error('Failed to refresh library song:', err)
-    }
-  }
-}
-
-function handleEditNote(note: Note) {
-  editingNote.value = note
-  noteEditorOpen.value = true
-}
-
-function closeNoteEditor() {
-  noteEditorOpen.value = false
-  setTimeout(() => { editingNote.value = null }, 300)
-}
-
-async function handleDeleteNote(note: Note) {
-  const confirmed = await uiStore.showConfirm(
-    'Delete Note',
-    `Are you sure you want to delete this ${note.title || 'note'}?`,
-    'Delete',
-    'Cancel'
-  )
-  
-  if (!confirmed) return
-  
-  uiStore.closeNoteContentDrawer()
-  uiStore.showToast('Delete note functionality coming soon', 'success')
-  console.log('Delete note:', note)
-}
 </script>
 
 <style scoped>

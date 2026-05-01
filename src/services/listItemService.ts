@@ -1,4 +1,4 @@
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 
 export async function updateListItemTitle(id: string, title: string): Promise<void> {
   const { error } = await supabase

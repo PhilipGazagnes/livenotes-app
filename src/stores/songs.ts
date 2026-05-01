@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { supabase } from '@/utils/supabase'
+import { supabase } from '@/lib/supabase'
 import type { Song, SongWithTags } from '@/types/database'
 import type { Tag } from '@/types/database'
 import { useAuthStore } from './auth'

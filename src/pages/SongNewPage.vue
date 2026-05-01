@@ -172,7 +172,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -189,6 +189,7 @@ import { I18N } from '@/constants/i18n'
 import { validateSongTitle, validateSongNotes, validatePocId, normalizeText } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
 import { usePageLoad } from '@/composables/usePageLoad'
+import { useArtistFormList } from '@/composables/useArtistFormList'
 
 const router = useRouter()
 const songsStore = useSongsStore()
@@ -235,34 +236,8 @@ const hasChanges = computed(() => {
          form.value.pocId.trim() !== ''
 })
 
-// Artist management functions
-function handleAddArtist() {
-  form.value.artistIds.push(null)
-}
-
-function handleRemoveArtist(index: number) {
-  form.value.artistIds.splice(index, 1)
-  // Ensure at least one artist input
-  if (form.value.artistIds.length === 0) {
-    form.value.artistIds.push(null)
-  }
-}
-
-function handleMoveArtistUp(index: number) {
-  if (index > 0) {
-    const temp = form.value.artistIds[index]
-    form.value.artistIds[index] = form.value.artistIds[index - 1]
-    form.value.artistIds[index - 1] = temp
-  }
-}
-
-function handleMoveArtistDown(index: number) {
-  if (index < form.value.artistIds.length - 1) {
-    const temp = form.value.artistIds[index]
-    form.value.artistIds[index] = form.value.artistIds[index + 1]
-    form.value.artistIds[index + 1] = temp
-  }
-}
+const { handleAddArtist, handleRemoveArtist, handleMoveArtistUp, handleMoveArtistDown } =
+  useArtistFormList(toRef(form.value, 'artistIds'))
 
 // Validate a single field
 function validateField(field: 'title' | 'notes' | 'pocId') {
