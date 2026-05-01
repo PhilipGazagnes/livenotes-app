@@ -6,6 +6,7 @@ import HamburgerMenu from '@/components/HamburgerMenu.vue'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import OperationOverlay from '@/components/OperationOverlay.vue'
+import DrawerManager from '@/components/DrawerManager.vue'
 
 // Supabase's internal auto-refresh timer can get stuck when the browser tab
 // is backgrounded mid-refresh, causing all subsequent API calls to queue
@@ -37,6 +38,7 @@ onUnmounted(() => {
     <ToastNotification />
     <ConfirmDialog />
     <OperationOverlay />
+    <DrawerManager />
   </ion-app>
 </template>
 

@@ -195,40 +195,6 @@
         </div>
       </div>
 
-      <!-- Song Notes Drawer -->
-      <SongNotesDrawer
-        :isOpen="uiStore.songNotesDrawerOpen"
-        :librarySong="uiStore.selectedLibrarySong"
-        @close="uiStore.closeSongNotesDrawer"
-        @noteClick="handleNoteClick"
-        @addNote="handleAddNote"
-      />
-
-      <!-- Note Content Drawer -->
-      <NoteContentDrawer
-        :isOpen="uiStore.noteContentDrawerOpen"
-        :note="uiStore.selectedNote"
-        @close="uiStore.closeNoteContentDrawer"
-        @edit="handleEditNote"
-        @delete="handleDeleteNote"
-      />
-
-      <!-- Note Creation Drawer -->
-      <NoteCreationDrawer
-        :isOpen="uiStore.noteCreationDrawerOpen"
-        :librarySongId="uiStore.selectedLibrarySong?.id || ''"
-        @close="uiStore.closeNoteCreationDrawer"
-        @saved="handleNoteSaved"
-      />
-
-      <!-- Note Editor (edit existing note) -->
-      <NoteEditor
-        :isOpen="noteEditorOpen"
-        :note="editingNote"
-        :librarySongId="uiStore.selectedLibrarySong?.id || ''"
-        @close="closeNoteEditor"
-        @saved="closeNoteEditor(); handleNoteSaved()"
-      />
     </ion-content>
   </ion-page>
 </template>
@@ -242,8 +208,7 @@ import { useListsStore } from '@/stores/lists'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { useNotesDrawer } from '@/composables/useNotesDrawer'
-import { fetchLibrarySongWithDetails } from '@/services/libraryService'
+import { useDrawerStore } from '@/stores/drawer'
 import { updateListItemTitle, createListItemTitle, deleteListItem } from '@/services/listItemService'
 import { MESSAGES } from '@/constants/messages'
 import { ROUTES } from '@/constants/routes'
@@ -255,9 +220,6 @@ import ListTitleCard from '@/components/ListTitleCard.vue'
 import ListBulkActions from '@/components/ListBulkActions.vue'
 import ListFilterBar from '@/components/ListFilterBar.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
-import NoteContentDrawer from '@/components/NoteContentDrawer.vue'
-import NoteCreationDrawer from '@/components/NoteCreationDrawer.vue'
-import NoteEditor from '@/components/NoteEditor.vue'
 import type { ListItem, SongWithTags } from '@/types/database'
 
 const route = useRoute()
@@ -266,20 +228,10 @@ const listsStore = useListsStore()
 const tagsStore = useTagsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const drawerStore = useDrawerStore()
 
 const isPageMenuOpen = ref(false)
 const searchQuery = ref('')
-
-const {
-  editingNote,
-  noteEditorOpen,
-  handleNoteClick,
-  handleAddNote,
-  handleNoteSaved,
-  handleEditNote,
-  closeNoteEditor,
-  handleDeleteNote,
-} = useNotesDrawer()
 const selectedTagIds = ref<string[]>([])
 const showTitleModal = ref(false)
 const editingTitle = ref<ListItem | null>(null)
@@ -531,21 +483,13 @@ function handleSongsDeleted(deletedIds: string[]) {
   }
 }
 
-async function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
-  // Fetch full library song details including notes
+function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
   const librarySongId = item.library_song_id
   if (!librarySongId) {
     uiStore.showToast('Cannot open notes for this song', 'error')
     return
   }
-  
-  try {
-    const librarySong = await fetchLibrarySongWithDetails(librarySongId)
-    uiStore.openSongNotesDrawer(librarySong)
-  } catch (err) {
-    console.error('Failed to load song notes:', err)
-    uiStore.showToast('Failed to load song notes', 'error')
-  }
+  drawerStore.push(SongNotesDrawer, { librarySongId })
 }
 
 </script>

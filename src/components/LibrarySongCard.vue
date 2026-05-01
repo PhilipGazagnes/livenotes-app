@@ -116,6 +116,8 @@
 import { ref, computed } from 'vue'
 import type { LibrarySongWithDetails } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
+import { useDrawerStore } from '@/stores/drawer'
+import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 
 const props = defineProps<{
   librarySong: LibrarySongWithDetails
@@ -128,6 +130,7 @@ const emit = defineEmits<{
 }>()
 
 const uiStore = useUiStore()
+const drawerStore = useDrawerStore()
 const isDropdownOpen = ref(false)
 
 const isSelected = computed(() => uiStore.isSelected(props.librarySong.id))
@@ -140,7 +143,7 @@ function handleCardClick() {
   if (uiStore.selectionMode) {
     uiStore.toggleSelection(props.librarySong.id)
   } else {
-    uiStore.openSongNotesDrawer(props.librarySong)
+    drawerStore.push(SongNotesDrawer, { librarySongId: props.librarySong.id })
   }
 }
 

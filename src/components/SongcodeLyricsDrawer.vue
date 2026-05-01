@@ -1,65 +1,52 @@
 <template>
-  <!-- Backdrop (above SongNotesDrawer z-50) -->
-  <div
-    v-if="isOpen"
-    class="fixed inset-0 bg-black/60 z-[55] transition-opacity"
-    @click="emit('close')"
-  />
-
-  <!-- Drawer (above backdrop) -->
-  <div
-    class="fixed top-0 right-0 h-full w-full md:w-[500px] bg-gray-900 shadow-2xl z-[60] transform transition-transform duration-300 flex flex-col"
-    :class="isOpen ? 'translate-x-0' : 'translate-x-full'"
-  >
-    <!-- Header -->
-    <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-          </svg>
-          <h2 class="text-xl font-semibold text-white">Lyrics</h2>
-        </div>
-        <button
-          @click="emit('close')"
-          class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
+  <!-- Header -->
+  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <svg class="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+        </svg>
+        <h2 class="text-xl font-semibold text-white">Lyrics</h2>
       </div>
+      <button
+        @click="drawerStore.pop()"
+        class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
+  </div>
 
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-5 pb-16">
-      <div v-if="sections.length === 0" class="text-center py-12">
-        <p class="text-gray-400 text-sm">No lyrics found</p>
-      </div>
-      <div v-else class="space-y-7">
-        <div v-for="(section, index) in sections" :key="index">
-          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800">
-            {{ section.name }}
-          </h3>
-          <div class="space-y-1">
-            <p
-              v-for="(lyric, lineIndex) in section.lyrics"
-              :key="lineIndex"
-              :class="lyricClass(lyric.style)"
-              :style="{ fontSize: `${fontSize}rem`, lineHeight: '1.7' }"
-            >
-              <span
-                v-for="(segment, segIndex) in parseVocalSegments(lyric.text)"
-                :key="segIndex"
-                :class="vocalClass(segment.vocal)"
-              >{{ segment.text }}</span>
-            </p>
-          </div>
+  <!-- Content -->
+  <div class="flex-1 overflow-y-auto p-5 pb-16 relative">
+    <div v-if="sections.length === 0" class="text-center py-12">
+      <p class="text-gray-400 text-sm">No lyrics found</p>
+    </div>
+    <div v-else class="space-y-7">
+      <div v-for="(section, index) in sections" :key="index">
+        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800">
+          {{ section.name }}
+        </h3>
+        <div class="space-y-1">
+          <p
+            v-for="(lyric, lineIndex) in section.lyrics"
+            :key="lineIndex"
+            :class="lyricClass(lyric.style)"
+            :style="{ fontSize: `${fontSize}rem`, lineHeight: '1.7' }"
+          >
+            <span
+              v-for="(segment, segIndex) in parseVocalSegments(lyric.text)"
+              :key="segIndex"
+              :class="vocalClass(segment.vocal)"
+            >{{ segment.text }}</span>
+          </p>
         </div>
       </div>
     </div>
 
-    <!-- Zoom controls (sticky bottom-right, floats over content) -->
+    <!-- Zoom controls -->
     <div class="absolute bottom-4 right-4 flex items-center gap-1">
       <button
         @click="zoomOut"
@@ -85,16 +72,16 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useDrawerStore } from '@/stores/drawer'
 import type { LivenotesJson } from '@/types/database'
 
 type Section = LivenotesJson['sections'][number]
 
 const props = defineProps<{
-  isOpen: boolean
   livenotesJson: LivenotesJson | null
 }>()
 
-const emit = defineEmits<{ (e: 'close'): void }>()
+const drawerStore = useDrawerStore()
 
 const FONT_MIN = 0.75
 const FONT_MAX = 1.75
@@ -114,11 +101,7 @@ const sections = computed((): Section[] => {
 })
 
 type VocalType = 'normal' | 'male' | 'female'
-
-interface Segment {
-  text: string
-  vocal: VocalType
-}
+interface Segment { text: string; vocal: VocalType }
 
 function parseVocalSegments(text: string): Segment[] {
   const segments: Segment[] = []
@@ -153,13 +136,10 @@ function vocalClass(vocal: VocalType): string {
 
 function lyricClass(style: string): string {
   switch (style) {
-    case 'info':
-      return 'text-gray-400 italic'
+    case 'info': return 'text-gray-400 italic'
     case 'musician':
-    case 'musicianInfo':
-      return 'text-amber-400'
-    default:
-      return 'text-white'
+    case 'musicianInfo': return 'text-amber-400'
+    default: return 'text-white'
   }
 }
 </script>

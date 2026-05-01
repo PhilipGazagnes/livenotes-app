@@ -252,40 +252,6 @@
         @apply="handleBulkAddToListsApply"
       />
 
-      <!-- Song Notes Drawer -->
-      <SongNotesDrawer
-        :isOpen="uiStore.songNotesDrawerOpen"
-        :librarySong="uiStore.selectedLibrarySong"
-        @close="uiStore.closeSongNotesDrawer"
-        @noteClick="handleNoteClick"
-        @addNote="handleAddNote"
-      />
-
-      <!-- Note Content Drawer -->
-      <NoteContentDrawer
-        :isOpen="uiStore.noteContentDrawerOpen"
-        :note="uiStore.selectedNote"
-        @close="uiStore.closeNoteContentDrawer"
-        @edit="handleEditNote"
-        @delete="handleDeleteNote"
-      />
-
-      <!-- Note Creation Drawer -->
-      <NoteCreationDrawer
-        :isOpen="uiStore.noteCreationDrawerOpen"
-        :librarySongId="uiStore.selectedLibrarySong?.id || ''"
-        @close="uiStore.closeNoteCreationDrawer"
-        @saved="handleNoteSaved"
-      />
-
-      <!-- Note Editor (edit existing note) -->
-      <NoteEditor
-        :isOpen="noteEditorOpen"
-        :note="editingNote"
-        :librarySongId="uiStore.selectedLibrarySong?.id || ''"
-        @close="closeNoteEditor"
-        @saved="closeNoteEditor(); handleNoteSaved()"
-      />
     </ion-content>
   </ion-page>
 </template>
@@ -299,16 +265,11 @@ import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { useNotesDrawer } from '@/composables/useNotesDrawer'
 import type { LibrarySongWithDetails } from '@/types/database'
 import { MESSAGES } from '@/constants/messages'
 import AppHeader from '@/components/AppHeader.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import LibrarySongCard from '@/components/LibrarySongCard.vue'
-import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
-import NoteContentDrawer from '@/components/NoteContentDrawer.vue'
-import NoteCreationDrawer from '@/components/NoteCreationDrawer.vue'
-import NoteEditor from '@/components/NoteEditor.vue'
 
 const route = useRoute()
 
@@ -339,17 +300,6 @@ const showBulkAddToListsModal = ref(false)
 const selectedLibrarySong = ref<LibrarySongWithDetails | null>(null)
 const loadTimedOut = ref(false)
 let loadTimeoutId: ReturnType<typeof setTimeout> | null = null
-
-const {
-  editingNote,
-  noteEditorOpen,
-  handleNoteClick,
-  handleAddNote,
-  handleNoteSaved,
-  handleEditNote,
-  closeNoteEditor,
-  handleDeleteNote,
-} = useNotesDrawer()
 
 // Computed
 const searchQuery = computed({
