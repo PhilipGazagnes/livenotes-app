@@ -407,10 +407,10 @@ onMounted(async () => {
 })
 
 async function handleRemove(item: ListItem) {
-  if (!currentList.value) return
-  
+  if (!currentList.value || !item.song_id) return
+
   await executeOperation(
-    () => listsStore.removeSongFromList(currentList.value!.id, item.song_id),
+    () => listsStore.removeSongFromList(currentList.value!.id, item.song_id!),
     {
       loadingMessage: 'Removing song from list...',
       successMessage: I18N.TOAST.REMOVED_FROM_LIST(currentList.value!.name),
