@@ -50,7 +50,7 @@
       </AppHeader>
 
       <!-- Loading State -->
-      <div v-if="libraryStore.isLoading" class="flex items-center justify-center py-24">
+      <div v-if="libraryStore.isLoading && !loadTimedOut" class="flex items-center justify-center py-24">
         <LoadingSpinner />
       </div>
 
@@ -291,7 +291,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import { useLibraryStore } from '@/stores/library'
@@ -337,6 +337,8 @@ const showBulkAssignTagsModal = ref(false)
 const showBulkRemoveTagsModal = ref(false)
 const showBulkAddToListsModal = ref(false)
 const selectedLibrarySong = ref<LibrarySongWithDetails | null>(null)
+const loadTimedOut = ref(false)
+let loadTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 const {
   editingNote,
@@ -387,17 +389,30 @@ const pageTitle = computed(() => {
 
 // Lifecycle
 onMounted(async () => {
-  const projectId = authStore.personalProjectId
-  if (!projectId) return
-  
-  await Promise.all([
-    libraryStore.loadLibrary(),
-    tagsStore.fetchTags(projectId),
-    listsStore.fetchLists(projectId)
-  ])
-  
-  // Apply initial filter from query params
-  applyQueryFilters()
+  loadTimedOut.value = false
+  loadTimeoutId = setTimeout(() => { loadTimedOut.value = true }, 12000)
+
+  try {
+    const projectId = await authStore.getPersonalProjectId()
+    if (!projectId) return
+
+    await Promise.all([
+      libraryStore.loadLibrary(),
+      tagsStore.fetchTags(projectId),
+      listsStore.fetchLists(projectId)
+    ])
+
+    applyQueryFilters()
+  } finally {
+    if (loadTimeoutId) {
+      clearTimeout(loadTimeoutId)
+      loadTimeoutId = null
+    }
+  }
+})
+
+onUnmounted(() => {
+  if (loadTimeoutId) clearTimeout(loadTimeoutId)
 })
 
 // Watch for query parameter changes
