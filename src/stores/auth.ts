@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+import * as authService from '@/services/authService'
+import {
+  createPersonalProject,
+  fetchPersonalProjects,
+  countProjectSongs,
+} from '@/services/projectService'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -16,69 +21,37 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value)
   const userId = computed(() => user.value?.id ?? null)
 
-  // Helper function to create personal project
-  async function createPersonalProject() {
+  async function _createPersonalProject() {
     if (!user.value) return
-    
     try {
-      const { data, error: projectError } = await supabase
-        .from('projects')
-        .insert({
-          name: 'My Songs',
-          type: 'personal',
-          owner_id: user.value.id,
-        })
-        .select('id')
-        .single()
-      
-      if (projectError) throw projectError
-      
-      if (data) {
-        personalProjectId.value = data.id
-      }
+      personalProjectId.value = await createPersonalProject(user.value.id)
     } catch (err) {
       console.error('Failed to create personal project:', err)
     }
   }
 
-  // Helper function to load personal project
-  async function loadPersonalProject() {
-    if (!user.value) {
-      return
-    }
-    
+  async function _loadPersonalProject() {
+    if (!user.value) return
+
     try {
-      // Get all personal projects for this user with song counts
-      const { data: projects, error: projectError } = await supabase
-        .from('projects')
-        .select('id, created_at')
-        .eq('owner_id', user.value.id)
-        .eq('type', 'personal')
-        .order('created_at', { ascending: true })
-      
-      if (projectError) throw projectError
-      
+      const projects = await fetchPersonalProjects(user.value.id)
+
       if (!projects || projects.length === 0) {
-        await createPersonalProject()
+        await _createPersonalProject()
         return
       }
-      
-      // For each project, count how many songs it has
+
       let projectWithMostSongs = projects[0]
       let maxSongCount = 0
-      
-      for (const project of projects.slice(0, 10)) { // Check first 10 projects
-        const { count } = await supabase
-          .from('library_songs')
-          .select('*', { count: 'exact', head: true })
-          .eq('project_id', project.id)
-        
-        if (count && count > maxSongCount) {
+
+      for (const project of projects.slice(0, 10)) {
+        const count = await countProjectSongs(project.id)
+        if (count > maxSongCount) {
           maxSongCount = count
           projectWithMostSongs = project
         }
       }
-      
+
       personalProjectId.value = projectWithMostSongs.id
     } catch (err) {
       console.error('Failed to load personal project:', err)
@@ -87,39 +60,33 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Actions
   async function initialize() {
-    // Return existing promise if already initializing
     if (initPromise) return initPromise
-    
-    // Return immediately if already initialized
     if (isInitialized.value) return
-    
+
     isLoading.value = true
-    
+
     initPromise = (async () => {
       try {
-        // Check for existing session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await authService.getSession()
         if (sessionError) throw sessionError
-        
+
         if (session?.user) {
           user.value = session.user
         }
 
-        // Listen to auth state changes
-        supabase.auth.onAuthStateChange(async (_event, session) => {
+        authService.subscribeToAuthChanges(async (_event, session) => {
           user.value = session?.user ?? null
           if (session?.user) {
-            await loadPersonalProject()
+            await _loadPersonalProject()
           } else {
             personalProjectId.value = null
           }
         })
-        
-        // Load personal project if user is logged in
+
         if (session?.user) {
-          await loadPersonalProject()
+          await _loadPersonalProject()
         }
-        
+
         isInitialized.value = true
       } catch (err) {
         error.value = err instanceof Error ? err.message : 'Failed to initialize auth'
@@ -127,7 +94,7 @@ export const useAuthStore = defineStore('auth', () => {
         isLoading.value = false
       }
     })()
-    
+
     await initPromise
     return initPromise
   }
@@ -135,22 +102,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function signup(email: string, password: string) {
     isLoading.value = true
     error.value = null
-    
+
     try {
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-      })
-      
+      const { data, error: signupError } = await authService.signUp(email, password)
       if (signupError) throw signupError
-      
+
       user.value = data.user
-      
-      // Create personal project automatically after signup
+
       if (user.value) {
-        await createPersonalProject()
+        await _createPersonalProject()
       }
-      
+
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Signup failed'
@@ -163,22 +125,17 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(email: string, password: string) {
     isLoading.value = true
     error.value = null
-    
+
     try {
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      
+      const { data, error: loginError } = await authService.signInWithPassword(email, password)
       if (loginError) throw loginError
-      
+
       user.value = data.user
-      
-      // Load personal project after login
+
       if (user.value) {
-        await loadPersonalProject()
+        await _loadPersonalProject()
       }
-      
+
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
@@ -191,14 +148,11 @@ export const useAuthStore = defineStore('auth', () => {
   async function loginWithOAuth(provider: 'google' | 'facebook') {
     isLoading.value = true
     error.value = null
-    
+
     try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider,
-      })
-      
+      const { error: oauthError } = await authService.signInWithOAuth(provider)
       if (oauthError) throw oauthError
-      
+
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'OAuth login failed'
@@ -211,14 +165,14 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout() {
     isLoading.value = true
     error.value = null
-    
+
     try {
-      const { error: logoutError } = await supabase.auth.signOut()
+      const { error: logoutError } = await authService.signOut()
       if (logoutError) throw logoutError
-      
+
       user.value = null
       personalProjectId.value = null
-      
+
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Logout failed'
@@ -229,16 +183,15 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function getPersonalProjectId(): Promise<string | null> {
-    // Ensure auth is initialized
     if (!isInitialized.value) {
       await initialize()
     }
-    
+
     if (personalProjectId.value) {
       return personalProjectId.value
     }
-    
-    await loadPersonalProject()
+
+    await _loadPersonalProject()
     return personalProjectId.value
   }
 

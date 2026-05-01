@@ -674,6 +674,10 @@ export type Database = {
     }
     Functions: {
       immutable_unaccent: { Args: { "": string }; Returns: string }
+      increment_song_popularity: {
+        Args: { song_id: string }
+        Returns: undefined
+      }
       unaccent: { Args: { "": string }; Returns: string }
       update_list_item_positions: {
         Args: { item_positions: Json }

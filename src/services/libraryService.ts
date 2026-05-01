@@ -111,7 +111,8 @@ export async function addToLibrary(
     .select()
     .single()
   if (error) throw error
-  await (supabase as any).rpc('increment_song_popularity', { song_id: songId })
+  const { error: rpcError } = await supabase.rpc('increment_song_popularity', { song_id: songId })
+  if (rpcError) throw rpcError
   return data
 }
 
