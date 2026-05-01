@@ -226,7 +226,7 @@
       <FilterByTagsModal
         v-if="showFilterByTagsModal"
         :isOpen="true"
-        :selectedTagIds="selectedTagIds"
+        :initialTagIds="selectedTagIds"
         @close="showFilterByTagsModal = false"
         @apply="handleFilterByTags"
       />

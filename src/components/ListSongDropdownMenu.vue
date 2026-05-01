@@ -83,7 +83,7 @@
     <!-- Manage Lists Modal -->
     <ManageListsModal
       :isOpen="showManageListsModal"
-      :songId="props.song.id"
+      :librarySongId="props.song.id"
       :songTitle="props.song.title"
       :initialListIds="props.song.lists?.map(l => l.id) || []"
       @close="() => { showManageListsModal = false; handleClose(); }"

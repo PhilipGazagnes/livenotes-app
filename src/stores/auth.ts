@@ -69,7 +69,7 @@ export const useAuthStore = defineStore('auth', () => {
       
       for (const project of projects.slice(0, 10)) { // Check first 10 projects
         const { count } = await supabase
-          .from('songs')
+          .from('library_songs')
           .select('*', { count: 'exact', head: true })
           .eq('project_id', project.id)
         

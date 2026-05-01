@@ -197,7 +197,7 @@ export const useNotesStore = defineStore('notes', () => {
   /**
    * Reorder notes of the same type
    */
-  async function reorderNotes(noteIds: string[], type: NoteType) {
+  async function reorderNotes(noteIds: string[], _type: NoteType) {
     isLoading.value = true
     error.value = null
     

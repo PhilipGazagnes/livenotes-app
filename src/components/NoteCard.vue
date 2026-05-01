@@ -87,7 +87,7 @@ defineEmits<{
 
 // Computed
 const isUrlType = computed(() => {
-  return ['youtube', 'image', 'video', 'audio'].includes(props.note.note_type)
+  return ['youtube', 'image', 'video', 'audio'].includes(props.note.type)
 })
 
 const contentPreview = computed(() => {

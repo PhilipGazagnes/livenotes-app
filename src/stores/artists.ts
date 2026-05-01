@@ -98,7 +98,7 @@ export const useArtistsStore = defineStore('artists', () => {
     }
   }
 
-  async function createArtist(projectId: string, name: string) {
+  async function createArtist(_projectId: string, name: string) {
     isLoading.value = true
     error.value = null
     

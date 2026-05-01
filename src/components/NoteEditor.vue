@@ -1,12 +1,17 @@
 <template>
-  <CRUDModal
-    :isOpen="true"
-    :title="isEditing ? 'Edit Note' : `New ${noteTypeLabel} Note`"
-    :primaryAction="isEditing ? 'Save' : 'Create'"
-    :isPrimaryDisabled="!isValid"
-    @close="$emit('close')"
-    @primary="handleSave"
-  >
+  <Teleport to="body">
+    <div class="fixed inset-0 z-[60] bg-black/50" @mousedown.self="$emit('close')"></div>
+    <div class="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
+      <div class="bg-gray-800 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col pointer-events-auto">
+        <div class="flex items-center justify-between p-6 border-b border-gray-700">
+          <h2 class="text-xl font-semibold text-white">{{ isEditing ? 'Edit Note' : `New ${noteTypeLabel} Note` }}</h2>
+          <button @click="$emit('close')" class="p-1 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6">
     <form @submit.prevent="handleSave" class="space-y-4">
       <!-- Title -->
       <div>
@@ -158,7 +163,20 @@
         </p>
       </div>
     </form>
-  </CRUDModal>
+        </div>
+        <div class="flex justify-end gap-3 p-6 border-t border-gray-700">
+          <button @click="$emit('close')" class="px-6 py-2 text-gray-400 hover:text-white transition-colors">Cancel</button>
+          <button
+            @click="handleSave"
+            :disabled="!isValid"
+            class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {{ isEditing ? 'Save' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -168,8 +186,6 @@ import { useUiStore } from '@/stores/ui'
 import type { Note, NoteType, LooperContent } from '@/types/database'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
-import CRUDModal from './CRUDModal.vue'
-
 interface Props {
   note?: Note | null
   librarySongId: string
@@ -268,7 +284,7 @@ const isValid = computed(() => {
 // Methods
 onMounted(() => {
   if (props.note) {
-    formData.value.title = props.note.title
+    formData.value.title = props.note.title ?? ''
     formData.value.content = props.note.content
     
     // Parse looper data if it's a looper note
