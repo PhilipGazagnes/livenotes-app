@@ -9,7 +9,7 @@
   <!-- Drawer -->
   <div
     class="fixed top-0 right-0 h-full w-full md:w-[500px] bg-gray-900 shadow-2xl z-[70] transform transition-transform duration-300 flex flex-col"
-    :class="isOpen ? 'translate-x-0' : 'translate-x-full'"
+    :class="isOpen ? 'translate-x-0' : 'translate-x-full pointer-events-none'"
   >
     <!-- Header -->
     <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
