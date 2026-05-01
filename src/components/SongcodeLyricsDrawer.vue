@@ -32,7 +32,7 @@
     </div>
 
     <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-5">
+    <div class="flex-1 overflow-y-auto p-5 pb-16">
       <div v-if="sections.length === 0" class="text-center py-12">
         <p class="text-gray-400 text-sm">No lyrics found</p>
       </div>
@@ -46,6 +46,7 @@
               v-for="(lyric, lineIndex) in section.lyrics"
               :key="lineIndex"
               :class="lyricClass(lyric.style)"
+              :style="{ fontSize: `${fontSize}rem`, lineHeight: '1.7' }"
             >
               <span
                 v-for="(segment, segIndex) in parseVocalSegments(lyric.text)"
@@ -57,11 +58,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Zoom controls (sticky bottom-right, floats over content) -->
+    <div class="absolute bottom-4 right-4 flex items-center gap-1">
+      <button
+        @click="zoomOut"
+        :disabled="fontSize <= FONT_MIN"
+        class="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        title="Zoom out"
+      >
+        <span class="text-base font-semibold leading-none" style="font-size: 0.8rem">A</span>
+        <span class="text-xs leading-none ml-0.5">−</span>
+      </button>
+      <button
+        @click="zoomIn"
+        :disabled="fontSize >= FONT_MAX"
+        class="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        title="Zoom in"
+      >
+        <span class="text-lg font-semibold leading-none" style="font-size: 1.1rem">A</span>
+        <span class="text-xs leading-none ml-0.5">+</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 interface LyricLine {
   text: string
@@ -80,6 +103,18 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ (e: 'close'): void }>()
+
+const FONT_MIN = 0.75
+const FONT_MAX = 1.75
+const FONT_STEP = 0.125
+const fontSize = ref(1)
+
+function zoomIn() {
+  if (fontSize.value < FONT_MAX) fontSize.value = Math.round((fontSize.value + FONT_STEP) * 1000) / 1000
+}
+function zoomOut() {
+  if (fontSize.value > FONT_MIN) fontSize.value = Math.round((fontSize.value - FONT_STEP) * 1000) / 1000
+}
 
 const sections = computed((): Section[] => {
   if (!props.livenotesJson?.sections) return []
@@ -127,12 +162,12 @@ function vocalClass(vocal: VocalType): string {
 function lyricClass(style: string): string {
   switch (style) {
     case 'info':
-      return 'text-gray-400 italic text-sm leading-relaxed'
+      return 'text-gray-400 italic'
     case 'musician':
     case 'musicianInfo':
-      return 'text-amber-400 text-sm leading-relaxed'
+      return 'text-amber-400'
     default:
-      return 'text-white text-base leading-relaxed'
+      return 'text-white'
   }
 }
 </script>
