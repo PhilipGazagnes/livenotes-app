@@ -214,7 +214,7 @@ export interface SongcodeNoteData {
 }
 
 export interface LooperNoteData {
-  bpm: number
+  bpm: string
   pattern1: string
   pattern1_var: string
   pattern2: string
@@ -242,7 +242,7 @@ export interface Note {
 
 // Kept as alias for backward compatibility with existing component references
 export interface LooperContent {
-  bpm: number
+  bpm: string
   pattern1: string
   pattern1_var: string
   pattern2: string

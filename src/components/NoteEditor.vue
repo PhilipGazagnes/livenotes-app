@@ -70,7 +70,7 @@
       <div v-else class="space-y-4 flex-shrink-0">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">BPM</label>
-          <input v-model.number="looperData.bpm" type="number" min="1" max="300" placeholder="120"
+          <input v-model="looperData.bpm" type="text" placeholder="120"
             class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
@@ -145,7 +145,7 @@ const isSaving = ref(false)
 const formData = ref({ title: '', content: '' })
 
 const looperData = ref<LooperContent>({
-  bpm: 120, pattern1: '', pattern1_var: '', pattern2: '', pattern2_var: '', comment: ''
+  bpm: '', pattern1: '', pattern1_var: '', pattern2: '', pattern2_var: '', comment: ''
 })
 
 onMounted(() => {
@@ -154,7 +154,7 @@ onMounted(() => {
   if (props.note?.type === 'looper' && props.note.data) {
     looperData.value = props.note.data as LooperContent
   } else {
-    looperData.value = { bpm: 120, pattern1: '', pattern1_var: '', pattern2: '', pattern2_var: '', comment: '' }
+    looperData.value = { bpm: '', pattern1: '', pattern1_var: '', pattern2: '', pattern2_var: '', comment: '' }
   }
 })
 
