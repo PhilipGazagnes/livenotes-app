@@ -62,6 +62,20 @@
         </a>
       </div>
 
+      <!-- Looper: structured display -->
+      <div v-else-if="note.type === 'looper' && looperData" class="space-y-1">
+        <div class="text-cyan-400 font-bold text-base">{{ looperData.bpm }} BPM</div>
+        <div class="flex flex-wrap items-baseline gap-x-2">
+          <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-sm">{{ looperData.pattern1 }}</span>
+          <span v-if="looperData.pattern1_var" class="text-white text-sm">{{ looperData.pattern1_var }}</span>
+          <template v-if="looperData.pattern2">
+            <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-sm">{{ looperData.pattern2 }}</span>
+            <span v-if="looperData.pattern2_var" class="text-white text-sm">{{ looperData.pattern2_var }}</span>
+          </template>
+        </div>
+        <p v-if="looperData.comment" class="text-gray-400 text-xs pt-1 line-clamp-2">{{ looperData.comment }}</p>
+      </div>
+
       <!-- Text-based content: show preview -->
       <p v-else class="line-clamp-3">
         {{ contentPreview }}
@@ -72,7 +86,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Note } from '@/types/database'
+import type { Note, LooperContent } from '@/types/database'
 
 interface Props {
   note: Note
@@ -86,6 +100,11 @@ defineEmits<{
 }>()
 
 // Computed
+const looperData = computed<LooperContent | null>(() => {
+  if (props.note.type !== 'looper' || !props.note.data) return null
+  return props.note.data as LooperContent
+})
+
 const isUrlType = computed(() => {
   return ['youtube', 'image', 'video', 'audio'].includes(props.note.type)
 })

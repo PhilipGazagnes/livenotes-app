@@ -57,7 +57,22 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
           </div>
-          <p class="text-sm text-gray-400 line-clamp-2">{{ getContentPreview(note) }}</p>
+          <!-- Looper preview -->
+          <template v-if="note.type === 'looper' && note.data">
+            <div class="space-y-1">
+              <div class="text-cyan-400 font-bold text-sm">{{ getLooperData(note)!.bpm }} BPM</div>
+              <div class="flex flex-wrap items-baseline gap-x-2">
+                <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-xs">{{ getLooperData(note)!.pattern1 }}</span>
+                <span v-if="getLooperData(note)!.pattern1_var" class="text-white text-xs">{{ getLooperData(note)!.pattern1_var }}</span>
+                <template v-if="getLooperData(note)!.pattern2">
+                  <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-xs">{{ getLooperData(note)!.pattern2 }}</span>
+                  <span v-if="getLooperData(note)!.pattern2_var" class="text-white text-xs">{{ getLooperData(note)!.pattern2_var }}</span>
+                </template>
+              </div>
+              <p v-if="getLooperData(note)!.comment" class="text-gray-400 text-xs pt-1 line-clamp-2">{{ getLooperData(note)!.comment }}</p>
+            </div>
+          </template>
+          <p v-else class="text-sm text-gray-400 line-clamp-2">{{ getContentPreview(note) }}</p>
           <div class="flex items-center gap-3 mt-3 text-xs text-gray-500">
             <span>{{ formatDate(note.updated_at ?? '') }}</span>
             <span v-if="note.is_public" class="flex items-center gap-1">
@@ -110,7 +125,7 @@
 import { computed, h, onMounted, ref } from 'vue'
 import { useDrawerStore } from '@/stores/drawer'
 import { fetchLibrarySongWithDetails } from '@/services/libraryService'
-import type { LibrarySongWithDetails, LivenotesJson, Note, SongcodeNoteData } from '@/types/database'
+import type { LibrarySongWithDetails, LivenotesJson, Note, SongcodeNoteData, LooperContent } from '@/types/database'
 import NoteContentDrawer from './NoteContentDrawer.vue'
 import NoteCreationDrawer from './NoteCreationDrawer.vue'
 import SongcodeLyricsDrawer from './SongcodeLyricsDrawer.vue'
@@ -160,6 +175,11 @@ function openNoteCreation() {
 function openLyrics(note: Note) {
   const livenotesJson = getLivenotesJson(note)
   drawerStore.push(SongcodeLyricsDrawer, { livenotesJson })
+}
+
+function getLooperData(note: Note): LooperContent | null {
+  if (note.type !== 'looper' || !note.data) return null
+  return note.data as LooperContent
 }
 
 function getSongcodeData(note: Note): SongcodeNoteData | null {
