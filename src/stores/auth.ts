@@ -8,6 +8,8 @@ import {
   countProjectSongs,
 } from '@/services/projectService'
 
+const PERSONAL_PROJECT_KEY = 'livenotes-project-id'
+
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<SupabaseUser | null>(null)
@@ -33,6 +35,22 @@ export const useAuthStore = defineStore('auth', () => {
   async function _loadPersonalProject() {
     if (!user.value) return
 
+    // Use cached project ID immediately so offline startup never hangs waiting
+    // for a network call. Then refresh the value in the background while online.
+    const cached = localStorage.getItem(PERSONAL_PROJECT_KEY)
+    if (cached) {
+      personalProjectId.value = cached
+      _refreshPersonalProject().catch(() => {})
+      return
+    }
+
+    // No cached value yet — first time, must be online.
+    await _refreshPersonalProject()
+  }
+
+  async function _refreshPersonalProject() {
+    if (!user.value) return
+
     try {
       const projects = await fetchPersonalProjects(user.value.id)
 
@@ -53,8 +71,9 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       personalProjectId.value = projectWithMostSongs.id
+      localStorage.setItem(PERSONAL_PROJECT_KEY, personalProjectId.value)
     } catch (err) {
-      console.error('Failed to load personal project:', err)
+      console.error('Failed to refresh personal project:', err)
     }
   }
 
@@ -172,6 +191,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       user.value = null
       personalProjectId.value = null
+      localStorage.removeItem(PERSONAL_PROJECT_KEY)
 
       return { success: true }
     } catch (err) {

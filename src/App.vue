@@ -32,7 +32,7 @@ onUnmounted(() => {
 <template>
   <ion-app>
     <router-view />
-    
+
     <!-- Global Components -->
     <HamburgerMenu />
     <ToastNotification />

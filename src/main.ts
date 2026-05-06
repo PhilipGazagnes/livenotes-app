@@ -1,3 +1,4 @@
+import { registerSW } from 'virtual:pwa-register'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { IonicVue } from '@ionic/vue'
@@ -13,6 +14,8 @@ import '@ionic/vue/css/typography.css'
 
 // Import Tailwind CSS LAST so it can override Ionic defaults
 import './style.css'
+
+registerSW({ immediate: true })
 
 const app = createApp(App)
 const pinia = createPinia()

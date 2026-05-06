@@ -150,6 +150,56 @@
           </div>
         </section>
 
+        <!-- Offline Section -->
+        <section>
+          <h2 class="text-lg font-semibold text-white mb-4">Offline</h2>
+
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 space-y-4">
+            <div>
+              <h3 class="text-white font-medium mb-1">Sync for offline use</h3>
+              <p class="text-sm text-gray-400 mb-3">
+                Downloads all your songs, setlists, and notes so the app works without an internet connection.
+              </p>
+
+              <!-- Progress bar -->
+              <div v-if="isSyncing && progress" class="mb-3">
+                <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
+                  <span>{{ progress.step }}</span>
+                  <span v-if="progress.total > 1">{{ progress.current }} / {{ progress.total }}</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-1.5">
+                  <div
+                    class="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
+                    :style="{ width: progress.total > 1 ? `${(progress.current / progress.total) * 100}%` : '100%' }"
+                  />
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <p v-if="lastSyncedAt" class="text-xs text-gray-500">
+                  Last synced: {{ formatSyncDate(lastSyncedAt) }}
+                </p>
+                <p v-else class="text-xs text-gray-500">Never synced</p>
+
+                <button
+                  @click="handleWarmUp"
+                  :disabled="isSyncing || !isOnline"
+                  class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                >
+                  <svg v-if="isSyncing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                  </svg>
+                  <span>{{ isSyncing ? 'Syncing...' : 'Sync now' }}</span>
+                </button>
+              </div>
+
+              <p v-if="!isOnline" class="text-xs text-orange-400 mt-2">
+                You must be online to sync data.
+              </p>
+            </div>
+          </div>
+        </section>
+
         <!-- Reset Section -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">Reset</h2>
@@ -189,15 +239,39 @@ import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { usePageLoad } from '@/composables/usePageLoad'
+import { useOnlineStatus } from '@/composables/useOnlineStatus'
+import { useOfflineSync } from '@/composables/useOfflineSync'
 
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const { isOnline } = useOnlineStatus()
+const { isSyncing, progress, lastSyncedAt, warmUp } = useOfflineSync()
 
 const notesFieldLabelInput = ref('')
 const isUpdatingSettings = ref(false)
 
 const { execute } = usePageLoad()
+
+function formatSyncDate(date: Date): string {
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  if (diffMins < 1) return 'just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  return date.toLocaleDateString()
+}
+
+async function handleWarmUp() {
+  try {
+    await warmUp()
+    uiStore.showToast('All data synced for offline use', 'success')
+  } catch {
+    uiStore.showToast('Sync failed. Please try again.', 'error')
+  }
+}
 
 onMounted(() => {
   execute(async () => {

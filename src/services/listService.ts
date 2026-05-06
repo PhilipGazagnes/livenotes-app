@@ -187,6 +187,15 @@ export async function deleteSongFromList(listId: string, songId: string): Promis
   if (error) throw error
 }
 
+export async function fetchListItemCount(listId: string): Promise<number> {
+  const { data } = await supabase
+    .from('list_items')
+    .select('id')
+    .eq('list_id', listId)
+    .eq('type', 'song')
+  return data?.length ?? 0
+}
+
 export async function reorderListItems(itemPositions: { id: string; position: number }[]): Promise<void> {
   const { error } = await supabase.rpc('update_list_item_positions', {
     item_positions: itemPositions,

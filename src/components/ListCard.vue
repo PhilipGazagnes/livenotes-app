@@ -94,7 +94,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import type { List } from '@/types/database'
-import { supabase } from '@/lib/supabase'
+import { fetchListItemCount } from '@/services/listService'
 import { useUiStore } from '@/stores/ui'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
@@ -117,16 +117,7 @@ const songCount = ref(0)
 const isSelected = computed(() => uiStore.isSelected(props.list.id))
 
 onMounted(async () => {
-  // Load song count for this list (only count songs, not titles)
-  const { count, error } = await supabase
-    .from('list_items')
-    .select('*', { count: 'exact', head: true })
-    .eq('list_id', props.list.id)
-    .eq('type', 'song')
-  
-  if (!error && count !== null) {
-    songCount.value = count
-  }
+  songCount.value = await fetchListItemCount(props.list.id)
 })
 
 function toggleDropdown() {
