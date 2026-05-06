@@ -11,11 +11,12 @@ declare let self: ServiceWorkerGlobalScope
 self.skipWaiting()
 clientsClaim()
 
-precacheAndRoute(self.__WB_MANIFEST)
+const manifest = self.__WB_MANIFEST
+precacheAndRoute(manifest)
 cleanupOutdatedCaches()
 
 // In dev mode index.html is not injected into the precache manifest, so guard before registering
-const hasIndexHtml = (self.__WB_MANIFEST as Array<string | { url: string }>).some(
+const hasIndexHtml = (manifest as Array<string | { url: string }>).some(
   e => (typeof e === 'string' ? e : e.url) === 'index.html'
 )
 if (hasIndexHtml) {
