@@ -23,7 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value)
   const userId = computed(() => user.value?.id ?? null)
 
-  async function _createPersonalProject() {
+  async function _createPersonalProject(): Promise<void> {
     if (!user.value) return
     try {
       personalProjectId.value = await createPersonalProject(user.value.id)
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function _loadPersonalProject() {
+  async function _loadPersonalProject(): Promise<void> {
     if (!user.value) return
 
     // Use cached project ID immediately so offline startup never hangs waiting
@@ -48,7 +48,7 @@ export const useAuthStore = defineStore('auth', () => {
     await _refreshPersonalProject()
   }
 
-  async function _refreshPersonalProject() {
+  async function _refreshPersonalProject(): Promise<void> {
     if (!user.value) return
 
     try {
@@ -78,7 +78,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   // Actions
-  async function initialize() {
+  async function initialize(): Promise<void> {
     if (initPromise) return initPromise
     if (isInitialized.value) return
 
@@ -118,7 +118,7 @@ export const useAuthStore = defineStore('auth', () => {
     return initPromise
   }
 
-  async function signup(email: string, password: string) {
+  async function signup(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     isLoading.value = true
     error.value = null
 
@@ -141,7 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
     isLoading.value = true
     error.value = null
 
@@ -164,7 +164,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function loginWithOAuth(provider: 'google' | 'facebook') {
+  async function loginWithOAuth(provider: 'google' | 'facebook'): Promise<{ success: boolean; error?: string }> {
     isLoading.value = true
     error.value = null
 
@@ -181,7 +181,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function logout() {
+  async function logout(): Promise<{ success: boolean; error?: string }> {
     isLoading.value = true
     error.value = null
 

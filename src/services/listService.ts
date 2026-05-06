@@ -188,11 +188,12 @@ export async function deleteSongFromList(listId: string, songId: string): Promis
 }
 
 export async function fetchListItemCount(listId: string): Promise<number> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('list_items')
     .select('id')
     .eq('list_id', listId)
     .eq('type', 'song')
+  if (error) throw error
   return data?.length ?? 0
 }
 

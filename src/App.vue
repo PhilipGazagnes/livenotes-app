@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { IonApp } from '@ionic/vue'
-import { supabase } from '@/lib/supabase'
+import * as authService from '@/services/authService'
 import HamburgerMenu from '@/components/HamburgerMenu.vue'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -14,9 +14,9 @@ import DrawerManager from '@/components/DrawerManager.vue'
 // resets that state.
 function handleVisibilityChange() {
   if (document.visibilityState === 'visible') {
-    supabase.auth.startAutoRefresh()
+    authService.startAutoRefresh()
   } else {
-    supabase.auth.stopAutoRefresh()
+    authService.stopAutoRefresh()
   }
 }
 

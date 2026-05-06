@@ -240,7 +240,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { usePageLoad } from '@/composables/usePageLoad'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
-import { useOfflineSync } from '@/composables/useOfflineSync'
+import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
 
 const settingsStore = useSettingsStore()
 const authStore = useAuthStore()
@@ -252,17 +252,6 @@ const notesFieldLabelInput = ref('')
 const isUpdatingSettings = ref(false)
 
 const { execute } = usePageLoad()
-
-function formatSyncDate(date: Date): string {
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  const diffHours = Math.floor(diffMins / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
-  return date.toLocaleDateString()
-}
 
 async function handleWarmUp() {
   try {

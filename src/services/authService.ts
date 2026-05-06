@@ -26,3 +26,11 @@ export async function signInWithOAuth(provider: 'google' | 'facebook') {
 export async function signOut() {
   return supabase.auth.signOut()
 }
+
+export function startAutoRefresh(): void {
+  supabase.auth.startAutoRefresh()
+}
+
+export function stopAutoRefresh(): void {
+  supabase.auth.stopAutoRefresh()
+}

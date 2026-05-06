@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { fetchSongs } from '@/services/songService'
 import { fetchLists, fetchListWithItems, fetchListItemCount } from '@/services/listService'
@@ -15,13 +15,28 @@ export interface SyncProgress {
   total: number
 }
 
+export function formatSyncDate(date: Date): string {
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  if (diffMins < 1) return 'just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  return date.toLocaleDateString()
+}
+
 export function useOfflineSync() {
   const isSyncing = ref(false)
   const progress = ref<SyncProgress | null>(null)
   const lastSyncedAt = ref<Date | null>(null)
 
-  const stored = localStorage.getItem(STORAGE_KEY)
-  if (stored) lastSyncedAt.value = new Date(stored)
+  function loadPersistedSyncDate(): void {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) lastSyncedAt.value = new Date(stored)
+  }
+
+  onMounted(loadPersistedSyncDate)
 
   async function warmUp() {
     if (isSyncing.value) return
