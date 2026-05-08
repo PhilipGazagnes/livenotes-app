@@ -86,6 +86,7 @@
             v-for="librarySong in displayedSongs"
             :key="librarySong.id"
             :librarySong="librarySong"
+            :matches="libraryStore.matchMap.get(librarySong.id)"
             @manageTags="handleManageTags"
             @manageLists="handleManageLists"
             @removeFromLibrary="handleRemoveFromLibrary"

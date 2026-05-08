@@ -23,7 +23,13 @@
       <div class="flex-1 min-w-0">
         <!-- Title -->
         <h3 class="text-lg font-semibold text-white mb-1 truncate">
-          {{ librarySong.custom_title || librarySong.song?.title }}
+          <template v-if="titleSegments.length > 1">
+            <template v-for="seg in titleSegments" :key="seg.text + seg.highlighted">
+              <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>
+              <span v-else>{{ seg.text }}</span>
+            </template>
+          </template>
+          <template v-else>{{ librarySong.custom_title || librarySong.song?.title }}</template>
         </h3>
 
         <!-- Artists -->
@@ -31,7 +37,16 @@
           <svg class="w-3 h-3 inline mr-1 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
           </svg>
-          {{ librarySong.song.artists.map(a => a.name).join(', ') }}
+          <template v-for="(artist, i) in librarySong.song.artists" :key="artist.id">
+            <template v-if="i > 0">, </template>
+            <template v-if="getArtistSegments(artist.name).length > 1">
+              <template v-for="seg in getArtistSegments(artist.name)" :key="seg.text + seg.highlighted">
+                <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>
+                <span v-else>{{ seg.text }}</span>
+              </template>
+            </template>
+            <template v-else>{{ artist.name }}</template>
+          </template>
         </p>
         
         <!-- Tags -->
@@ -114,13 +129,16 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import type { FuseResultMatch } from 'fuse.js'
 import type { LibrarySongWithDetails } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
 import { useDrawerStore } from '@/stores/drawer'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
+import { getSegments } from '@/utils/highlight'
 
 const props = defineProps<{
   librarySong: LibrarySongWithDetails
+  matches?: FuseResultMatch[]
 }>()
 
 const emit = defineEmits<{
@@ -134,6 +152,18 @@ const drawerStore = useDrawerStore()
 const isDropdownOpen = ref(false)
 
 const isSelected = computed(() => uiStore.isSelected(props.librarySong.id))
+
+const titleSegments = computed(() => {
+  const displayTitle = props.librarySong.custom_title || props.librarySong.song?.title || ''
+  const titleKey = props.librarySong.custom_title ? 'custom_title' : 'song.title'
+  const match = props.matches?.find(m => m.key === titleKey)
+  return match ? getSegments(displayTitle, match.indices) : []
+})
+
+function getArtistSegments(artistName: string) {
+  const match = props.matches?.find(m => m.key === 'song.artists.name' && m.value === artistName)
+  return match ? getSegments(artistName, match.indices) : []
+}
 
 function toggleDropdown() {
   isDropdownOpen.value = !isDropdownOpen.value

@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import Fuse from 'fuse.js'
+import type { FuseResultMatch } from 'fuse.js'
 import type { LibrarySong, LibrarySongWithDetails, Tag } from '@/types/database'
 import { useAuthStore } from './auth'
 import {
@@ -9,6 +11,18 @@ import {
   removeFromLibrary as serviceRemoveFromLibrary,
   updateLibrarySong as serviceUpdateLibrarySong,
 } from '@/services/libraryService'
+
+const FUSE_OPTIONS = {
+  keys: [
+    { name: 'custom_title', weight: 2 },
+    { name: 'song.title', weight: 2 },
+    { name: 'song.artists.name', weight: 1 },
+  ],
+  includeMatches: true,
+  threshold: 0.3,
+  minMatchCharLength: 2,
+  ignoreLocation: true,
+}
 
 /**
  * Library Store (V2)
@@ -28,23 +42,23 @@ export const useLibraryStore = defineStore('library', () => {
   // Getters
   const currentProjectId = computed(() => authStore.personalProjectId || '')
 
-  const filteredLibrarySongs = computed(() => {
-    let result = librarySongs.value
+  const fuseInstance = computed(() => new Fuse(librarySongs.value, FUSE_OPTIONS))
 
-    if (searchQuery.value.trim()) {
-      const query = searchQuery.value.toLowerCase()
-      result = result.filter(ls => {
-        const artistNames = ls.song.artists?.map(a => a.name.toLowerCase()).join(' ') ?? ''
-        const customTitle = ls.custom_title?.toLowerCase() ?? ''
-        const customNotes = ls.custom_notes?.toLowerCase() ?? ''
-        return (
-          ls.song.title.toLowerCase().includes(query) ||
-          customTitle.includes(query) ||
-          customNotes.includes(query) ||
-          artistNames.includes(query)
-        )
-      })
-    }
+  const searchResult = computed(() => {
+    if (!searchQuery.value.trim()) return { songs: librarySongs.value, matchMap: new Map<string, FuseResultMatch[]>() }
+    const results = fuseInstance.value.search(searchQuery.value)
+    const matchMap = new Map<string, FuseResultMatch[]>()
+    const songs = results.map(r => {
+      matchMap.set(r.item.id, (r.matches as FuseResultMatch[]) ?? [])
+      return r.item
+    })
+    return { songs, matchMap }
+  })
+
+  const matchMap = computed(() => searchResult.value.matchMap)
+
+  const filteredLibrarySongs = computed(() => {
+    let result = searchResult.value.songs
 
     if (selectedTagIds.value.length > 0) {
       result = result.filter(ls => {
@@ -53,7 +67,11 @@ export const useLibraryStore = defineStore('library', () => {
       })
     }
 
-    return result
+    return [...result].sort((a, b) => {
+      const titleA = (a.custom_title || a.song.title).toLowerCase()
+      const titleB = (b.custom_title || b.song.title).toLowerCase()
+      return titleA.localeCompare(titleB)
+    })
   })
 
   const librarySongCount = computed(() => librarySongs.value.length)
@@ -150,6 +168,7 @@ export const useLibraryStore = defineStore('library', () => {
     searchQuery,
     selectedTagIds,
     currentProjectId,
+    matchMap,
     filteredLibrarySongs,
     librarySongCount,
     filteredSongCount,

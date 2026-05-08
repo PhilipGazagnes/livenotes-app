@@ -37,7 +37,7 @@ export const useSongsStore = defineStore('songs', () => {
       })
     }
 
-    return result
+    return [...result].sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()))
   })
 
   const songCount = computed(() => songs.value.length)
