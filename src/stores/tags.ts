@@ -17,6 +17,7 @@ export const useTagsStore = defineStore('tags', () => {
 
   // Actions
   async function fetchTags(projectId: string) {
+    if (tags.value.length > 0) return
     isLoading.value = true
     error.value = null
     try {

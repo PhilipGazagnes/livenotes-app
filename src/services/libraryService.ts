@@ -64,29 +64,27 @@ export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySo
 const LIBRARY_SONG_SELECT = `
   *,
   song:songs_v2!library_songs_song_id_fkey(
-    *,
+    id,
+    title,
     artists:song_artists_v2(
       position,
-      artist:artists_v2(*)
+      artist:artists_v2(
+        id,
+        name
+      )
     )
   ),
   tags:library_song_tags(
-    tag:tags(*)
-  ),
-  notes:notes(
-    id,
-    type,
-    title,
-    content,
-    data,
-    created_at,
-    updated_at,
-    display_order,
-    is_public,
-    is_shareable
+    tag:tags(
+      id,
+      name
+    )
   ),
   lists:list_items(
-    list:lists(*)
+    list:lists(
+      id,
+      name
+    )
   )
 `
 

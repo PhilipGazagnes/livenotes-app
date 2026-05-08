@@ -18,7 +18,8 @@ export const useListsStore = defineStore('lists', () => {
   })
 
   // Actions
-  async function fetchLists(projectId: string) {
+  async function fetchLists(projectId: string, { force = false } = {}) {
+    if (!force && lists.value.length > 0) return
     isLoading.value = true
     error.value = null
     try {
@@ -105,7 +106,7 @@ export const useListsStore = defineStore('lists', () => {
     error.value = null
     try {
       await listService.bulkDeleteLists(listIds)
-      await fetchLists(projectId)
+      await fetchLists(projectId, { force: true })
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete lists'

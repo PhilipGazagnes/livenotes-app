@@ -61,8 +61,9 @@ export const useLibraryStore = defineStore('library', () => {
 
   // Actions
 
-  async function loadLibrary() {
+  async function loadLibrary({ force = false } = {}) {
     if (!currentProjectId.value) return
+    if (!force && librarySongs.value.length > 0) return
     isLoading.value = true
     error.value = null
     try {
@@ -82,7 +83,7 @@ export const useLibraryStore = defineStore('library', () => {
     error.value = null
     try {
       const data = await serviceAddToLibrary(currentProjectId.value, songId, authStore.userId)
-      await loadLibrary()
+      await loadLibrary({ force: true })
       return data
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to add to library'
@@ -97,7 +98,7 @@ export const useLibraryStore = defineStore('library', () => {
     error.value = null
     try {
       await serviceRemoveFromLibrary(librarySongId)
-      await loadLibrary()
+      await loadLibrary({ force: true })
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to remove from library'
       throw err
@@ -114,7 +115,7 @@ export const useLibraryStore = defineStore('library', () => {
     error.value = null
     try {
       await serviceUpdateLibrarySong(librarySongId, updates)
-      await loadLibrary()
+      await loadLibrary({ force: true })
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update library song'
       throw err

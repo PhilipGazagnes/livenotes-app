@@ -18,6 +18,7 @@ export const useArtistsStore = defineStore('artists', () => {
 
   // Actions
   async function fetchArtists(projectId: string) {
+    if (artists.value.length > 0) return
     isLoading.value = true
     error.value = null
     try {
