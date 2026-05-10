@@ -5,16 +5,20 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/',
+      redirect: ROUTES.LIBRARY,
+    },
+    {
       path: ROUTES.LOGIN,
       name: 'Login',
       component: () => import('@/pages/LoginPage.vue'),
-      meta: { public: true }
+      meta: { public: true, authRedirect: true }
     },
     {
       path: ROUTES.SIGNUP,
       name: 'Signup',
       component: () => import('@/pages/SignupPage.vue'),
-      meta: { public: true }
+      meta: { public: true, authRedirect: true }
     },
     {
       path: ROUTES.LIBRARY,
@@ -27,7 +31,7 @@ const router = createRouter({
       component: () => import('@/pages/SongNewPage.vue'),
     },
     {
-      path: '/song/:id/edit',
+      path: '/project/song/:id/edit',
       name: 'SongEdit',
       component: () => import('@/pages/SongEditPage.vue'),
     },
@@ -37,7 +41,7 @@ const router = createRouter({
       component: () => import('@/pages/ListsPage.vue'),
     },
     {
-      path: '/lists/:id',
+      path: '/project/lists/:id',
       name: 'ListDetail',
       component: () => import('@/pages/ListDetailPage.vue'),
     },
@@ -55,6 +59,18 @@ const router = createRouter({
       path: ROUTES.SETTINGS,
       name: 'Settings',
       component: () => import('@/pages/SettingsPage.vue'),
+    },
+    {
+      path: ROUTES.PUBLIC_LIBRARIES,
+      name: 'PublicLibraries',
+      component: () => import('@/pages/PublicLibrariesPage.vue'),
+    },
+    // Public route — must be last to avoid shadowing /project/* paths
+    {
+      path: '/:projectSlug/:librarySlug',
+      name: 'PublicLibrary',
+      component: () => import('@/pages/PublicLibraryPage.vue'),
+      meta: { public: true }
     },
   ],
 })
@@ -87,7 +103,7 @@ router.beforeEach(async (to, _from, next) => {
   if (!isPublic && !isAuthenticated) {
     uiStore.hideOperationOverlay()
     next(ROUTES.LOGIN)
-  } else if (isPublic && isAuthenticated) {
+  } else if (to.meta.authRedirect && isAuthenticated) {
     uiStore.hideOperationOverlay()
     next(ROUTES.LIBRARY)
   } else {

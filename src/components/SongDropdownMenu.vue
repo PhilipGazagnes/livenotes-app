@@ -110,6 +110,7 @@
 <script setup lang="ts">
 import { ref, onMounted, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
+import { ROUTES } from '@/constants/routes'
 import type { SongWithTags } from '@/types/database'
 import { useSongsStore } from '@/stores/songs'
 import { useAuthStore } from '@/stores/auth'
@@ -184,7 +185,7 @@ function handleEdit() {
   
   // Show overlay immediately for better UX during navigation
   uiStore.showOperationOverlay('Loading song...')
-  router.push(`/song/${props.song.id}/edit`)
+  router.push(ROUTES.SONG_EDIT(props.song.id))
   handleClose()
 }
 

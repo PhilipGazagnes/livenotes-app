@@ -10,12 +10,32 @@ export interface User {
 export interface Project {
   id: string
   name: string
+  slug: string | null
   type: 'personal' | 'shared'
   owner_id: string
   created_at: string
   updated_at: string
   notes_field_label: string
   notes_field_enabled: boolean
+}
+
+export interface PublicLibrary {
+  id: string
+  project_id: string
+  name: string
+  slug: string
+  is_active: boolean
+  created_at: string
+  created_by: string
+}
+
+export interface PublicLibraryWithTags extends PublicLibrary {
+  tags: Tag[]
+}
+
+export interface PublicLibraryTag {
+  public_library_id: string
+  tag_id: string
 }
 
 export interface Song {

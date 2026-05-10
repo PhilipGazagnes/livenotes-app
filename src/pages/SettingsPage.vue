@@ -150,6 +150,36 @@
           </div>
         </section>
 
+        <!-- Public Libraries Section -->
+        <section>
+          <h2 class="text-lg font-semibold text-white mb-4">Public Libraries</h2>
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <label for="projectSlug" class="block text-white font-medium mb-2">Project URL slug</label>
+            <p class="text-sm text-gray-400 mb-3">
+              Used to build your public library URLs: <span class="text-gray-300">yourapp.com/<strong>slug</strong>/library-name</span>
+            </p>
+            <div class="flex gap-2">
+              <input
+                id="projectSlug"
+                v-model="projectSlugInput"
+                type="text"
+                maxlength="40"
+                class="flex-1 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition lowercase"
+                placeholder="my-band-name"
+                @keyup.enter="handleSaveProjectSlug"
+              />
+              <button
+                @click="handleSaveProjectSlug"
+                :disabled="isUpdatingSettings || !projectSlugInput.trim()"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Save
+              </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers and hyphens only. Cannot be "project".</p>
+          </div>
+        </section>
+
         <!-- Offline Section -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">Offline</h2>
@@ -249,6 +279,7 @@ const { isOnline } = useOnlineStatus()
 const { isSyncing, progress, lastSyncedAt, warmUp } = useOfflineSync()
 
 const notesFieldLabelInput = ref('')
+const projectSlugInput = ref('')
 const isUpdatingSettings = ref(false)
 
 const { execute } = usePageLoad()
@@ -269,6 +300,7 @@ onMounted(() => {
     if (projectId) {
       await settingsStore.loadProjectSettings(projectId)
       notesFieldLabelInput.value = settingsStore.notesFieldLabel
+      projectSlugInput.value = settingsStore.projectSlug ?? ''
     }
   }, {
     errorMessage: 'Failed to load settings'
@@ -329,6 +361,21 @@ async function handleSaveNotesFieldLabel() {
     } else {
       uiStore.showToast(result.error || 'Failed to update label', 'error')
     }
+  } finally {
+    isUpdatingSettings.value = false
+  }
+}
+
+async function handleSaveProjectSlug() {
+  const projectId = await authStore.getPersonalProjectId()
+  if (!projectId) return
+  const slug = projectSlugInput.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '')
+  projectSlugInput.value = slug
+  isUpdatingSettings.value = true
+  try {
+    const result = await settingsStore.updateProjectSlug(projectId, slug)
+    if (result.success) uiStore.showToast('Slug saved', 'success')
+    else uiStore.showToast(result.error || 'Failed to save slug', 'error')
   } finally {
     isUpdatingSettings.value = false
   }

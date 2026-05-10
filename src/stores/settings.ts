@@ -26,6 +26,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // Project Settings (database)
   const notesFieldLabel = ref('Notes')
   const notesFieldEnabled = ref(true)
+  const projectSlug = ref<string | null>(null)
   const isLoadingProjectSettings = ref(false)
 
   // Load settings from localStorage
@@ -84,6 +85,7 @@ export const useSettingsStore = defineStore('settings', () => {
       if (data) {
         notesFieldLabel.value = data.notes_field_label || 'Notes'
         notesFieldEnabled.value = data.notes_field_enabled ?? true
+        projectSlug.value = data.slug ?? null
       }
     } catch (error) {
       logger.error('Failed to load project settings', error)
@@ -108,6 +110,21 @@ export const useSettingsStore = defineStore('settings', () => {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update label',
+      }
+    }
+  }
+
+  async function updateProjectSlug(projectId: string, slug: string) {
+    try {
+      const trimmed = slug.trim()
+      if (trimmed === 'project') throw new Error('"project" is a reserved word and cannot be used as a slug')
+      await updateProjectSettings(projectId, { slug: trimmed || undefined })
+      projectSlug.value = trimmed || null
+      return { success: true }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update project slug',
       }
     }
   }
@@ -143,6 +160,7 @@ export const useSettingsStore = defineStore('settings', () => {
     // Project Settings (database)
     notesFieldLabel,
     notesFieldEnabled,
+    projectSlug,
     isLoadingProjectSettings,
 
     // Display Actions
@@ -155,5 +173,6 @@ export const useSettingsStore = defineStore('settings', () => {
     loadProjectSettings,
     updateNotesFieldLabel,
     updateNotesFieldEnabled,
+    updateProjectSlug,
   }
 })
