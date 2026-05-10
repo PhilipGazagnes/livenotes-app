@@ -162,7 +162,7 @@ export async function fetchFirstLyricsNote(librarySongId: string): Promise<Note 
     .from('notes')
     .select('id, type, title, content, data, display_order')
     .eq('library_song_id', librarySongId)
-    .in('type', ['lyrics', 'songcode', 'plain_text', 'chords'])
+    .in('type', ['songcode', 'lyrics'])
     .order('display_order', { ascending: true })
     .limit(1)
     .single()
