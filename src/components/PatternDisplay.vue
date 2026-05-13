@@ -1,7 +1,7 @@
 <template>
   <div class="sticky top-0 z-10 py-1.5 bg-gray-900">
     <div v-if="beforeSegs.length" class="flex flex-wrap font-mono text-[11px] leading-snug mb-0.5">
-      <span v-for="(seg, i) in beforeSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-gray-700' : 'text-gray-500'">{{ seg.t }}</span>
+      <span v-for="(seg, i) in beforeSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-yellow-400' : 'text-gray-500'">{{ seg.t }}</span>
     </div>
 
     <div class="flex items-center font-mono text-[13px] leading-snug flex-wrap">
@@ -10,7 +10,7 @@
         v-if="cutStartVal !== null"
         class="inline-block bg-black text-yellow-400 text-[10px] font-bold leading-none px-1 py-0.5 rounded mr-1"
       >{{ cutStartVal }}</span>
-      <span v-for="(seg, i) in mainSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-gray-600' : 'text-gray-300'">{{ seg.t }}</span>
+      <span v-for="(seg, i) in mainSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-yellow-400' : 'text-gray-300'">{{ seg.t }}</span>
       <span
         v-if="cutEndVal !== null"
         class="inline-block bg-black text-yellow-400 text-[10px] font-bold leading-none px-1 py-0.5 rounded ml-1"
@@ -19,7 +19,7 @@
     </div>
 
     <div v-if="afterSegs.length" class="flex flex-wrap font-mono text-[11px] leading-snug mt-0.5">
-      <span v-for="(seg, i) in afterSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-gray-700' : 'text-gray-500'">{{ seg.t }}</span>
+      <span v-for="(seg, i) in afterSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-yellow-400' : 'text-gray-500'">{{ seg.t }}</span>
     </div>
   </div>
 </template>
