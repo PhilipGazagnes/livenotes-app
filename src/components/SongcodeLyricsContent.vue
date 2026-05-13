@@ -1,16 +1,17 @@
 <template>
   <!-- Content wrapper: fills remaining height, zoom buttons float over it -->
   <div class="flex-1 relative overflow-hidden">
-    <div class="h-full overflow-y-auto p-5 pb-16">
+    <div class="h-full overflow-y-auto px-5 pb-16">
       <div v-if="sections.length === 0" class="text-center py-12">
         <p class="text-gray-400 text-sm">No lyrics found</p>
       </div>
-      <div v-else class="space-y-7">
-        <div v-for="(section, index) in sections" :key="index">
+      <div v-else class="space-y-7 pt-5">
+        <div v-for="({ section, pattern }, index) in sections" :key="index">
           <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800">
             {{ section.name }}
           </h3>
-          <div class="space-y-1">
+          <PatternDisplay v-if="showPattern && pattern" v-bind="pattern" />
+          <div :class="['space-y-1', showPattern && pattern ? 'mt-2' : '']">
             <p
               v-for="(lyric, lineIndex) in section.lyrics"
               :key="lineIndex"
@@ -55,8 +56,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { LivenotesJson } from '@/types/database'
+import PatternDisplay from './PatternDisplay.vue'
 
-const props = defineProps<{ livenotesJson: LivenotesJson | null }>()
+const props = withDefaults(defineProps<{
+  livenotesJson: LivenotesJson | null
+  showPattern?: boolean
+}>(), { showPattern: true })
 
 const FONT_MIN = 0.75
 const FONT_MAX = 1.75
@@ -72,7 +77,25 @@ function zoomOut() {
 
 const sections = computed(() => {
   if (!props.livenotesJson?.sections) return []
-  return props.livenotesJson.sections.filter(s => s.lyrics?.length > 0)
+  const lj = props.livenotesJson as any
+  return props.livenotesJson.sections
+    .filter(s => s.lyrics?.length > 0)
+    .map(section => {
+      const ref = (section as any).pattern
+      if (!ref?.id || !lj?.patterns?.[ref.id]?.json) return { section, pattern: null }
+      const def = lj.patterns[ref.id]
+      return {
+        section,
+        pattern: {
+          mainJson: def.json,
+          beforeJson: ref.before?.json ?? null,
+          afterJson: ref.after?.json ?? null,
+          repeat: ref.repeat ?? 1,
+          cutStart: ref.cutStart ?? null,
+          cutEnd: ref.cutEnd ?? null,
+        },
+      }
+    })
 })
 
 type VocalType = 'normal' | 'male' | 'female'

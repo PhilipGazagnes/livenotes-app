@@ -35,7 +35,7 @@
   </div>
 
   <!-- Structured lyrics (songcode with livenotes_json) — direct flex child so flex-1 and absolute zoom buttons work -->
-  <SongcodeLyricsContent v-else-if="lyricsNote.type === 'songcode' && livenotesJson" :livenotesJson="livenotesJson" />
+  <SongcodeLyricsContent v-else-if="lyricsNote.type === 'songcode' && livenotesJson" :livenotesJson="livenotesJson" :show-pattern="false" />
 
   <!-- Fallback: raw text (plain_text, lyrics, chords, or songcode without JSON) -->
   <div v-else class="flex-1 overflow-y-auto p-4">
