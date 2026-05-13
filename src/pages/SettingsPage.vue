@@ -230,6 +230,28 @@
           </div>
         </section>
 
+        <!-- Control Section -->
+        <section>
+          <h2 class="text-lg font-semibold text-white mb-4">Control</h2>
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+            <label for="scrollDownChar" class="block text-white font-medium mb-2">
+              Move down when this character is triggered
+            </label>
+            <p class="text-sm text-gray-400 mb-3">
+              Enter a single character (e.g. "e"). When received from a Bluetooth controller, the lyrics view will scroll down.
+            </p>
+            <input
+              id="scrollDownChar"
+              :value="settingsStore.scrollDownChar"
+              @input="settingsStore.scrollDownChar = ($event.target as HTMLInputElement).value.slice(-1)"
+              type="text"
+              maxlength="1"
+              class="w-20 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-center font-mono text-lg"
+              placeholder="—"
+            />
+          </div>
+        </section>
+
         <!-- Reset Section -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">Reset</h2>

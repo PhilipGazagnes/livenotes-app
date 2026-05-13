@@ -1,7 +1,7 @@
 <template>
   <!-- Content wrapper: fills remaining height, zoom buttons float over it -->
   <div class="flex-1 relative overflow-hidden">
-    <div class="h-full overflow-y-auto px-5 pb-16">
+    <div ref="scrollEl" class="h-full overflow-y-auto px-5 pb-16">
       <div v-if="sections.length === 0" class="text-center py-12">
         <p class="text-gray-400 text-sm">No lyrics found</p>
       </div>
@@ -54,9 +54,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { LivenotesJson } from '@/types/database'
 import PatternDisplay from './PatternDisplay.vue'
+import { useSettingsStore } from '@/stores/settings'
+
+const settingsStore = useSettingsStore()
+const scrollEl = ref<HTMLElement | null>(null)
+
+const SCROLL_STEP = 120
+
+function onKeyDown(e: KeyboardEvent) {
+  const char = settingsStore.scrollDownChar
+  if (char && e.key === char && scrollEl.value) {
+    scrollEl.value.scrollBy({ top: SCROLL_STEP, behavior: 'smooth' })
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeyDown))
+onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 
 const props = withDefaults(defineProps<{
   livenotesJson: LivenotesJson | null

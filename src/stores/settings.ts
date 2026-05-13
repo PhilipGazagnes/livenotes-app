@@ -9,12 +9,14 @@ interface Settings {
   showTagsInLists: boolean
   showListsInLists: boolean
   showArtistsInLists: boolean
+  scrollDownChar: string
 }
 
 const defaultSettings: Settings = {
   showTagsInLists: true,
   showListsInLists: true,
   showArtistsInLists: true,
+  scrollDownChar: '',
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -22,6 +24,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const showTagsInLists = ref(defaultSettings.showTagsInLists)
   const showListsInLists = ref(defaultSettings.showListsInLists)
   const showArtistsInLists = ref(defaultSettings.showArtistsInLists)
+  const scrollDownChar = ref(defaultSettings.scrollDownChar)
 
   // Project Settings (database)
   const notesFieldLabel = ref('Notes')
@@ -38,6 +41,7 @@ export const useSettingsStore = defineStore('settings', () => {
         showTagsInLists.value = settings.showTagsInLists ?? defaultSettings.showTagsInLists
         showListsInLists.value = settings.showListsInLists ?? defaultSettings.showListsInLists
         showArtistsInLists.value = settings.showArtistsInLists ?? defaultSettings.showArtistsInLists
+        scrollDownChar.value = settings.scrollDownChar ?? defaultSettings.scrollDownChar
       }
     } catch (error) {
       logger.error('Failed to load settings from localStorage', error)
@@ -51,6 +55,7 @@ export const useSettingsStore = defineStore('settings', () => {
         showTagsInLists: showTagsInLists.value,
         showListsInLists: showListsInLists.value,
         showArtistsInLists: showArtistsInLists.value,
+        scrollDownChar: scrollDownChar.value,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     } catch (error) {
@@ -75,6 +80,7 @@ export const useSettingsStore = defineStore('settings', () => {
     showTagsInLists.value = defaultSettings.showTagsInLists
     showListsInLists.value = defaultSettings.showListsInLists
     showArtistsInLists.value = defaultSettings.showArtistsInLists
+    scrollDownChar.value = defaultSettings.scrollDownChar
   }
 
   // Project Settings Actions
@@ -144,7 +150,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // Watch for changes and auto-save (localStorage only)
-  watch([showTagsInLists, showListsInLists, showArtistsInLists], () => {
+  watch([showTagsInLists, showListsInLists, showArtistsInLists, scrollDownChar], () => {
     saveSettings()
   })
 
@@ -156,6 +162,7 @@ export const useSettingsStore = defineStore('settings', () => {
     showTagsInLists,
     showListsInLists,
     showArtistsInLists,
+    scrollDownChar,
 
     // Project Settings (database)
     notesFieldLabel,
