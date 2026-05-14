@@ -1,31 +1,36 @@
 <template>
   <div class="sticky top-0 z-10 py-1.5 bg-gray-900">
-    <div v-if="beforeSegs.length" class="flex flex-wrap font-mono text-[11px] leading-snug mb-0.5">
-      <span v-for="(seg, i) in beforeSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-yellow-400' : 'text-gray-500'">{{ seg.t }}</span>
+    <div v-if="beforeSegs.length" :class="['flex flex-wrap mb-0.5', TEXT_BEFORE_AFTER_CLASS]">
+      <span v-for="(seg, i) in beforeSegs" :key="i" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-500'">{{ seg.t }}</span>
     </div>
 
-    <div class="flex items-center font-mono text-[13px] leading-snug flex-wrap">
-      <span v-if="repeat > 1" class="text-violet-500 font-bold mr-0.5">[</span>
+    <div :class="['flex items-center flex-wrap', TEXT_MAIN_CLASS]">
+      <span v-if="repeat > 1" :class="REPEAT_CLASS + ' mr-0.5'">[</span>
       <span
         v-if="cutStartVal !== null"
-        class="inline-block bg-black text-yellow-400 text-[10px] font-bold leading-none px-1 py-0.5 rounded mr-1"
+        :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded mr-1' + SEPARATOR_CLASS"
       >{{ cutStartVal }}</span>
-      <span v-for="(seg, i) in mainSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-yellow-400' : 'text-gray-300'">{{ seg.t }}</span>
+      <span v-for="(seg, i) in mainSegs" :key="i" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-300'">{{ seg.t }}</span>
       <span
         v-if="cutEndVal !== null"
-        class="inline-block bg-black text-yellow-400 text-[10px] font-bold leading-none px-1 py-0.5 rounded ml-1"
+        :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded ml-1' + SEPARATOR_CLASS"
       >{{ cutEndVal }}</span>
-      <span v-if="repeat > 1" class="text-violet-500 font-bold ml-0.5">]{{ repeat }}</span>
+      <span v-if="repeat > 1" :class="REPEAT_CLASS + ' ml-0.5'">]{{ repeat }}</span>
     </div>
 
-    <div v-if="afterSegs.length" class="flex flex-wrap font-mono text-[11px] leading-snug mt-0.5">
-      <span v-for="(seg, i) in afterSegs" :key="i" :class="seg.hi ? 'text-violet-500 font-bold' : seg.sep ? 'text-yellow-400' : 'text-gray-500'">{{ seg.t }}</span>
+    <div v-if="afterSegs.length" :class="['flex flex-wrap mt-0.5', TEXT_BEFORE_AFTER_CLASS]">
+      <span v-for="(seg, i) in afterSegs" :key="i" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-500'">{{ seg.t }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+const TEXT_BEFORE_AFTER_CLASS = 'font-mono text-xl leading-snug'
+const TEXT_MAIN_CLASS = 'font-mono text-xl leading-snug'
+const REPEAT_CLASS = 'text-violet-500 font-bold'
+const SEPARATOR_CLASS = 'text-yellow-400 px-1'
 
 type Chord = [string, string]
 type PatternToken = Chord[] | (Chord | string)[] | string
