@@ -83,6 +83,32 @@
                 </button>
               </div>
             </div>
+            <!-- Lyrics Default Font Size -->
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <h3 class="text-white font-medium mb-1">Lyrics default text size</h3>
+                  <p class="text-sm text-gray-400">Starting zoom level when opening the lyrics drawer</p>
+                </div>
+                <div class="flex items-center gap-2 ml-4">
+                  <button
+                    @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.max(0.75, settingsStore.lyricsDefaultFontSize - 0.125)) * 1000) / 1000"
+                    :disabled="settingsStore.lyricsDefaultFontSize <= 0.75"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-700 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span class="text-sm font-bold leading-none">A</span><span class="text-xs leading-none">−</span>
+                  </button>
+                  <span class="w-10 text-center text-white text-sm font-mono">{{ Math.round(settingsStore.lyricsDefaultFontSize * 100) }}%</span>
+                  <button
+                    @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.min(1.75, settingsStore.lyricsDefaultFontSize + 0.125)) * 1000) / 1000"
+                    :disabled="settingsStore.lyricsDefaultFontSize >= 1.75"
+                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-700 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <span class="text-sm font-bold leading-none">A</span><span class="text-xs leading-none">+</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -233,22 +259,58 @@
         <!-- Control Section -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">Control</h2>
-          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <label for="scrollDownChar" class="block text-white font-medium mb-2">
-              Move down when this character is triggered
-            </label>
-            <p class="text-sm text-gray-400 mb-3">
-              Enter a single character (e.g. "e"). When received from a Bluetooth controller, the lyrics view will scroll down.
-            </p>
-            <input
-              id="scrollDownChar"
-              :value="settingsStore.scrollDownChar"
-              @input="settingsStore.scrollDownChar = ($event.target as HTMLInputElement).value.slice(-1)"
-              type="text"
-              maxlength="1"
-              class="w-20 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-center font-mono text-lg"
-              placeholder="—"
-            />
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 space-y-4">
+            <div>
+              <label for="scrollDownChar" class="block text-white font-medium mb-2">
+                Move down when this character is triggered
+              </label>
+              <p class="text-sm text-gray-400 mb-3">
+                Enter a single character (e.g. "e"). When received from a Bluetooth controller, the lyrics view will scroll down.
+              </p>
+              <input
+                id="scrollDownChar"
+                :value="localScrollChar"
+                @input="localScrollChar = ($event.target as HTMLInputElement).value.slice(-1)"
+                type="text"
+                maxlength="1"
+                class="w-20 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition text-center font-mono text-lg"
+                placeholder="—"
+              />
+            </div>
+            <div class="flex gap-4">
+              <div class="flex-1">
+                <label for="scrollDownAmount" class="block text-white font-medium mb-2">
+                  Scroll amount (px)
+                </label>
+                <input
+                  id="scrollDownAmount"
+                  v-model.number="localScrollAmount"
+                  type="number"
+                  min="10"
+                  max="2000"
+                  class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                />
+              </div>
+              <div class="flex-1">
+                <label for="scrollDownDuration" class="block text-white font-medium mb-2">
+                  Animation duration (ms)
+                </label>
+                <input
+                  id="scrollDownDuration"
+                  v-model.number="localScrollDuration"
+                  type="number"
+                  min="0"
+                  max="2000"
+                  class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                />
+              </div>
+            </div>
+            <button
+              @click="handleSaveScrollSettings"
+              class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
+            >
+              Save
+            </button>
           </div>
         </section>
 
@@ -302,6 +364,9 @@ const { isSyncing, progress, lastSyncedAt, warmUp } = useOfflineSync()
 
 const notesFieldLabelInput = ref('')
 const projectSlugInput = ref('')
+const localScrollChar = ref(settingsStore.scrollDownChar)
+const localScrollAmount = ref(settingsStore.scrollDownAmount)
+const localScrollDuration = ref(settingsStore.scrollDownDuration)
 const isUpdatingSettings = ref(false)
 
 const { execute } = usePageLoad()
@@ -403,6 +468,15 @@ async function handleSaveProjectSlug() {
   }
 }
 
+function handleSaveScrollSettings() {
+  settingsStore.saveScrollControlSettings(
+    localScrollChar.value,
+    localScrollAmount.value,
+    localScrollDuration.value
+  )
+  uiStore.showToast('Scroll settings saved', 'success')
+}
+
 async function handleReset() {
   const confirmed = await uiStore.showConfirm(
     'Reset Settings',
@@ -410,9 +484,12 @@ async function handleReset() {
     'Reset',
     'Cancel'
   )
-  
+
   if (confirmed) {
     settingsStore.resetToDefaults()
+    localScrollChar.value = settingsStore.scrollDownChar
+    localScrollAmount.value = settingsStore.scrollDownAmount
+    localScrollDuration.value = settingsStore.scrollDownDuration
     uiStore.showToast('Settings reset to defaults', 'success')
   }
 }

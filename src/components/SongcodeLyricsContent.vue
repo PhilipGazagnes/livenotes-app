@@ -62,13 +62,25 @@ import { useSettingsStore } from '@/stores/settings'
 const settingsStore = useSettingsStore()
 const scrollEl = ref<HTMLElement | null>(null)
 
-const SCROLL_STEP = 120
-
 function onKeyDown(e: KeyboardEvent) {
   const char = settingsStore.scrollDownChar
-  if (char && e.key === char && scrollEl.value) {
-    scrollEl.value.scrollBy({ top: SCROLL_STEP, behavior: 'smooth' })
+  if (!char || e.key !== char || !scrollEl.value) return
+  const el = scrollEl.value
+  const amount = settingsStore.scrollDownAmount
+  const duration = settingsStore.scrollDownDuration
+  if (duration === 0) {
+    el.scrollTop += amount
+    return
   }
+  const start = el.scrollTop
+  const startTime = performance.now()
+  function step(now: number) {
+    const elapsed = now - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    el.scrollTop = start + amount * progress
+    if (progress < 1) requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
 }
 
 onMounted(() => window.addEventListener('keydown', onKeyDown))
@@ -77,12 +89,13 @@ onUnmounted(() => window.removeEventListener('keydown', onKeyDown))
 const props = withDefaults(defineProps<{
   livenotesJson: LivenotesJson | null
   showPattern?: boolean
-}>(), { showPattern: true })
+  defaultFontSize?: number
+}>(), { showPattern: true, defaultFontSize: 1 })
 
 const FONT_MIN = 0.75
 const FONT_MAX = 1.75
 const FONT_STEP = 0.125
-const fontSize = ref(1)
+const fontSize = ref(Math.min(FONT_MAX, Math.max(FONT_MIN, props.defaultFontSize)))
 
 function zoomIn() {
   if (fontSize.value < FONT_MAX) fontSize.value = Math.round((fontSize.value + FONT_STEP) * 1000) / 1000

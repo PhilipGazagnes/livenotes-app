@@ -19,15 +19,17 @@
     </div>
   </div>
 
-  <SongcodeLyricsContent :livenotesJson="livenotesJson" />
+  <SongcodeLyricsContent :livenotesJson="livenotesJson" :default-font-size="settingsStore.lyricsDefaultFontSize" />
 </template>
 
 <script setup lang="ts">
 import { useDrawerStore } from '@/stores/drawer'
+import { useSettingsStore } from '@/stores/settings'
 import type { LivenotesJson } from '@/types/database'
 import SongcodeLyricsContent from './SongcodeLyricsContent.vue'
 
 defineProps<{ livenotesJson: LivenotesJson | null }>()
 
 const drawerStore = useDrawerStore()
+const settingsStore = useSettingsStore()
 </script>

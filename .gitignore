@@ -60,3 +60,6 @@ ios/
 
 # MCP
 .mcp.json
+
+# Local Netlify folder
+.netlify
