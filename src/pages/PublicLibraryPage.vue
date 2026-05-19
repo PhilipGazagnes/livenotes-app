@@ -11,8 +11,29 @@
       </div>
 
       <template v-else>
-        <!-- Header: centered title, matching AppHeader layout -->
-        <header class="sticky top-0 z-50 bg-gray-900 border-b border-gray-800">
+        <!-- Mobile header image -->
+        <img
+          v-if="library?.header_image_mobile"
+          :src="library.header_image_mobile"
+          :alt="library.name"
+          class="block md:hidden w-full"
+        />
+        <!-- Desktop header image -->
+        <img
+          v-if="library?.header_image_desktop"
+          :src="library.header_image_desktop"
+          :alt="library.name"
+          class="hidden md:block w-full"
+        />
+        <!-- Text header: shown on mobile when no mobile image, on desktop when no desktop image -->
+        <header
+          v-if="!library?.header_image_mobile || !library?.header_image_desktop"
+          class="sticky top-0 z-50 bg-gray-900 border-b border-gray-800"
+          :class="{
+            'block md:hidden': !library?.header_image_mobile && !!library?.header_image_desktop,
+            'hidden md:block': !!library?.header_image_mobile && !library?.header_image_desktop,
+          }"
+        >
           <div class="flex items-center justify-between px-4 py-3">
             <div class="w-10"></div>
             <h1 class="text-xl font-bold text-white truncate">{{ library?.name ?? ' ' }}</h1>

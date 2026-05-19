@@ -30,11 +30,12 @@ export async function createPublicLibrary(
   projectId: string,
   name: string,
   slug: string,
-  userId: string
+  userId: string,
+  extra: { header_image_mobile?: string | null; header_image_desktop?: string | null } = {}
 ): Promise<PublicLibrary> {
   const { data, error } = await db
     .from('public_libraries')
-    .insert({ project_id: projectId, name, slug, created_by: userId })
+    .insert({ project_id: projectId, name, slug, created_by: userId, ...extra })
     .select()
     .single()
   if (error) throw error
@@ -43,7 +44,7 @@ export async function createPublicLibrary(
 
 export async function updatePublicLibrary(
   id: string,
-  updates: { name?: string; slug?: string; is_active?: boolean }
+  updates: { name?: string; slug?: string; is_active?: boolean; header_image_mobile?: string | null; header_image_desktop?: string | null }
 ): Promise<void> {
   const { error } = await db.from('public_libraries').update(updates).eq('id', id)
   if (error) throw error

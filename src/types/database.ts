@@ -25,6 +25,8 @@ export interface PublicLibrary {
   name: string
   slug: string
   is_active: boolean
+  header_image_mobile: string | null
+  header_image_desktop: string | null
   created_at: string
   created_by: string
 }

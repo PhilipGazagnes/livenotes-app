@@ -138,6 +138,26 @@
             </div>
           </div>
 
+          <!-- Header images -->
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Header image — mobile URL <span class="text-gray-600">(shown below 768 px instead of title)</span></label>
+            <input
+              v-model="form.headerImageMobile"
+              type="url"
+              class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="https://..."
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Header image — desktop URL <span class="text-gray-600">(shown from 768 px instead of title)</span></label>
+            <input
+              v-model="form.headerImageDesktop"
+              type="url"
+              class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              placeholder="https://..."
+            />
+          </div>
+
           <!-- Active toggle (edit only) -->
           <div v-if="editingId" class="flex items-center justify-between">
             <span class="text-sm text-gray-300">Active</span>
@@ -192,7 +212,7 @@ const uiStore = useUiStore()
 
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
-const form = ref({ name: '', slug: '', tagIds: [] as string[], isActive: true })
+const form = ref({ name: '', slug: '', tagIds: [] as string[], isActive: true, headerImageMobile: '', headerImageDesktop: '' })
 
 onMounted(async () => {
   const projectId = await authStore.getPersonalProjectId()
@@ -216,13 +236,20 @@ function toggleTag(tagId: string) {
 
 function openCreate() {
   editingId.value = null
-  form.value = { name: '', slug: '', tagIds: [], isActive: true }
+  form.value = { name: '', slug: '', tagIds: [], isActive: true, headerImageMobile: '', headerImageDesktop: '' }
   showForm.value = true
 }
 
 function openEdit(lib: PublicLibraryWithTags) {
   editingId.value = lib.id
-  form.value = { name: lib.name, slug: lib.slug, tagIds: lib.tags.map(t => t.id), isActive: lib.is_active }
+  form.value = {
+    name: lib.name,
+    slug: lib.slug,
+    tagIds: lib.tags.map(t => t.id),
+    isActive: lib.is_active,
+    headerImageMobile: lib.header_image_mobile ?? '',
+    headerImageDesktop: lib.header_image_desktop ?? '',
+  }
   showForm.value = true
 }
 
@@ -230,11 +257,16 @@ async function handleSubmit() {
   const slug = form.value.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '')
   if (!slug) { uiStore.showToast('Invalid slug', 'error'); return }
 
+  const headerImages = {
+    header_image_mobile: form.value.headerImageMobile.trim() || null,
+    header_image_desktop: form.value.headerImageDesktop.trim() || null,
+  }
+
   let result
   if (editingId.value) {
-    result = await store.updateLibrary(editingId.value, { name: form.value.name, slug, is_active: form.value.isActive }, form.value.tagIds)
+    result = await store.updateLibrary(editingId.value, { name: form.value.name, slug, is_active: form.value.isActive, ...headerImages }, form.value.tagIds)
   } else {
-    result = await store.createLibrary(form.value.name, slug, form.value.tagIds)
+    result = await store.createLibrary(form.value.name, slug, form.value.tagIds, headerImages)
   }
 
   if (result.success) {

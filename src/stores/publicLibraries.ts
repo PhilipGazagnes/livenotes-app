@@ -32,14 +32,19 @@ export const usePublicLibrariesStore = defineStore('publicLibraries', () => {
     }
   }
 
-  async function createLibrary(name: string, slug: string, tagIds: string[]) {
+  async function createLibrary(
+    name: string,
+    slug: string,
+    tagIds: string[],
+    extra: { header_image_mobile?: string | null; header_image_desktop?: string | null } = {}
+  ) {
     const projectId = authStore.personalProjectId
     const userId = authStore.userId
     if (!projectId || !userId) throw new Error('Not authenticated')
     isLoading.value = true
     error.value = null
     try {
-      const created = await serviceCreate(projectId, name, slug, userId)
+      const created = await serviceCreate(projectId, name, slug, userId, extra)
       if (tagIds.length > 0) await setPublicLibraryTags(created.id, tagIds)
       await loadLibraries({ force: true })
       return { success: true }
@@ -51,7 +56,11 @@ export const usePublicLibrariesStore = defineStore('publicLibraries', () => {
     }
   }
 
-  async function updateLibrary(id: string, updates: { name?: string; slug?: string; is_active?: boolean }, tagIds?: string[]) {
+  async function updateLibrary(
+    id: string,
+    updates: { name?: string; slug?: string; is_active?: boolean; header_image_mobile?: string | null; header_image_desktop?: string | null },
+    tagIds?: string[]
+  ) {
     isLoading.value = true
     error.value = null
     try {
