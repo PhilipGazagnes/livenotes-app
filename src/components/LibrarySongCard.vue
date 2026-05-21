@@ -134,6 +134,8 @@ import type { LibrarySongWithDetails } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
 import { useDrawerStore } from '@/stores/drawer'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
+import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
+import { useSettingsStore } from '@/stores/settings'
 import { getSegments } from '@/utils/highlight'
 
 const props = defineProps<{
@@ -149,6 +151,7 @@ const emit = defineEmits<{
 
 const uiStore = useUiStore()
 const drawerStore = useDrawerStore()
+const settingsStore = useSettingsStore()
 const isDropdownOpen = ref(false)
 
 const isSelected = computed(() => uiStore.isSelected(props.librarySong.id))
@@ -173,7 +176,8 @@ function handleCardClick() {
   if (uiStore.selectionMode) {
     uiStore.toggleSelection(props.librarySong.id)
   } else {
-    drawerStore.push(SongNotesDrawer, { librarySongId: props.librarySong.id })
+    const drawer = settingsStore.songClickShowsLyrics ? LiveLyricsDrawer : SongNotesDrawer
+    drawerStore.push(drawer, { librarySongId: props.librarySong.id })
   }
 }
 

@@ -13,6 +13,7 @@ interface Settings {
   scrollDownAmount: number
   scrollDownDuration: number
   lyricsDefaultFontSize: number
+  songClickShowsLyrics: boolean
 }
 
 const defaultSettings: Settings = {
@@ -23,6 +24,7 @@ const defaultSettings: Settings = {
   scrollDownAmount: 120,
   scrollDownDuration: 0,
   lyricsDefaultFontSize: 1,
+  songClickShowsLyrics: false,
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -34,6 +36,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const scrollDownAmount = ref(defaultSettings.scrollDownAmount)
   const scrollDownDuration = ref(defaultSettings.scrollDownDuration)
   const lyricsDefaultFontSize = ref(defaultSettings.lyricsDefaultFontSize)
+  const songClickShowsLyrics = ref(defaultSettings.songClickShowsLyrics)
 
   // Project Settings (database)
   const notesFieldLabel = ref('Notes')
@@ -54,6 +57,7 @@ export const useSettingsStore = defineStore('settings', () => {
         scrollDownAmount.value = settings.scrollDownAmount ?? defaultSettings.scrollDownAmount
         scrollDownDuration.value = settings.scrollDownDuration ?? defaultSettings.scrollDownDuration
         lyricsDefaultFontSize.value = settings.lyricsDefaultFontSize ?? defaultSettings.lyricsDefaultFontSize
+        songClickShowsLyrics.value = settings.songClickShowsLyrics ?? defaultSettings.songClickShowsLyrics
       }
     } catch (error) {
       logger.error('Failed to load settings from localStorage', error)
@@ -71,6 +75,7 @@ export const useSettingsStore = defineStore('settings', () => {
         scrollDownAmount: scrollDownAmount.value,
         scrollDownDuration: scrollDownDuration.value,
         lyricsDefaultFontSize: lyricsDefaultFontSize.value,
+        songClickShowsLyrics: songClickShowsLyrics.value,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     } catch (error) {
@@ -99,6 +104,7 @@ export const useSettingsStore = defineStore('settings', () => {
     scrollDownAmount.value = defaultSettings.scrollDownAmount
     scrollDownDuration.value = defaultSettings.scrollDownDuration
     lyricsDefaultFontSize.value = defaultSettings.lyricsDefaultFontSize
+    songClickShowsLyrics.value = defaultSettings.songClickShowsLyrics
   }
 
   // Project Settings Actions
@@ -175,7 +181,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // Watch for changes and auto-save (localStorage only)
-  watch([showTagsInLists, showListsInLists, showArtistsInLists, lyricsDefaultFontSize], () => {
+  watch([showTagsInLists, showListsInLists, showArtistsInLists, lyricsDefaultFontSize, songClickShowsLyrics], () => {
     saveSettings()
   })
 
@@ -191,6 +197,7 @@ export const useSettingsStore = defineStore('settings', () => {
     scrollDownAmount,
     scrollDownDuration,
     lyricsDefaultFontSize,
+    songClickShowsLyrics,
 
     // Project Settings (database)
     notesFieldLabel,

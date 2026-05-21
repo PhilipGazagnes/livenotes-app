@@ -220,6 +220,8 @@ import ListTitleCard from '@/components/ListTitleCard.vue'
 import ListBulkActions from '@/components/ListBulkActions.vue'
 import ListFilterBar from '@/components/ListFilterBar.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
+import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
+import { useSettingsStore } from '@/stores/settings'
 import type { ListItem, SongWithTags } from '@/types/database'
 
 const route = useRoute()
@@ -229,6 +231,7 @@ const tagsStore = useTagsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const drawerStore = useDrawerStore()
+const settingsStore = useSettingsStore()
 
 const isPageMenuOpen = ref(false)
 const searchQuery = ref('')
@@ -489,7 +492,8 @@ function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
     uiStore.showToast('Cannot open notes for this song', 'error')
     return
   }
-  drawerStore.push(SongNotesDrawer, { librarySongId })
+  const drawer = settingsStore.songClickShowsLyrics ? LiveLyricsDrawer : SongNotesDrawer
+  drawerStore.push(drawer, { librarySongId })
 }
 
 </script>

@@ -15,7 +15,7 @@
       <div
         v-for="(layer, index) in drawerStore.stack"
         :key="`panel-${layer.id}`"
-        class="fixed top-0 right-0 h-full w-full md:w-[500px] bg-gray-900 shadow-2xl flex flex-col overflow-hidden"
+        class="fixed top-0 right-0 h-full w-full lg:w-[1000px] bg-gray-900 shadow-2xl flex flex-col overflow-hidden"
         :style="{ zIndex: 201 + index * 10 }"
       >
         <component :is="layer.component" v-bind="layer.props" />
