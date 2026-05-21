@@ -93,7 +93,7 @@ const props = withDefaults(defineProps<{
 }>(), { showPattern: true, defaultFontSize: 1 })
 
 const FONT_MIN = 0.75
-const FONT_MAX = 1.75
+const FONT_MAX = 3.0
 const FONT_STEP = 0.125
 const fontSize = ref(Math.min(FONT_MAX, Math.max(FONT_MIN, props.defaultFontSize)))
 

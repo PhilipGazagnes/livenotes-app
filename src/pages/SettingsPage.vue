@@ -123,8 +123,8 @@
                   </button>
                   <span class="w-10 text-center text-white text-sm font-mono">{{ Math.round(settingsStore.lyricsDefaultFontSize * 100) }}%</span>
                   <button
-                    @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.min(1.75, settingsStore.lyricsDefaultFontSize + 0.125)) * 1000) / 1000"
-                    :disabled="settingsStore.lyricsDefaultFontSize >= 1.75"
+                    @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.min(3.0, settingsStore.lyricsDefaultFontSize + 0.125)) * 1000) / 1000"
+                    :disabled="settingsStore.lyricsDefaultFontSize >= 3.0"
                     class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-700 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     <span class="text-sm font-bold leading-none">A</span><span class="text-xs leading-none">+</span>
