@@ -17,6 +17,21 @@ import './style.css'
 
 registerSW({ immediate: true })
 
+// Notify the service worker of the persisted force-offline setting so it
+// skips network requests even before the Pinia store is ready.
+;(async () => {
+  try {
+    const stored = localStorage.getItem('livenotes-settings')
+    const forceOffline = stored ? (JSON.parse(stored).forceOfflineMode ?? false) : false
+    if (forceOffline) {
+      const reg = await navigator.serviceWorker?.ready
+      reg?.active?.postMessage({ type: 'SET_FORCE_OFFLINE', value: true })
+    }
+  } catch {
+    // non-critical — SW will default to online mode
+  }
+})()
+
 const app = createApp(App)
 const pinia = createPinia()
 

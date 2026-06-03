@@ -34,10 +34,18 @@ const networkFirst = new NetworkFirst({
   plugins: supabasePlugins,
 })
 
+let forceOffline = false
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SET_FORCE_OFFLINE') {
+    forceOffline = event.data.value
+  }
+})
+
 registerRoute(
   ({ url }) => url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/rest/v1'),
   async (context) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || forceOffline) {
       const cached = await caches.match(context.request)
       if (cached) return cached
       return new Response(JSON.stringify({ error: 'offline' }), {

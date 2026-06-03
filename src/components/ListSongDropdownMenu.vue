@@ -106,6 +106,7 @@ import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { executeConfirmedOperation } from '@/utils/operations'
 import { logger } from '@/utils/logger'
+import { useOnlineStatus } from '@/composables/useOnlineStatus'
 // Lazy load modals for better performance
 const ManageTagsModal = defineAsyncComponent(() => import('./ManageTagsModal.vue'))
 const ManageListsModal = defineAsyncComponent(() => import('./ManageListsModal.vue'))
@@ -128,6 +129,7 @@ const authStore = useAuthStore()
 const tagsStore = useTagsStore()
 const listsStore = useListsStore()
 const uiStore = useUiStore()
+const { isOnline } = useOnlineStatus()
 
 const isOpen = ref(true)
 const menuPosition = ref({ top: '0px', left: '0px' })
@@ -155,12 +157,12 @@ function handleRemoveFromList() {
 
 function handleEdit() {
   // Check if offline
-  if (!navigator.onLine) {
+  if (!isOnline.value) {
     uiStore.showToast(MESSAGES.ERROR.OFFLINE, 'error')
     handleClose()
     return
   }
-  
+
   // Show overlay immediately for better UX during navigation
   uiStore.showOperationOverlay('Loading song...')
   router.push(ROUTES.SONG_EDIT(props.song.id))

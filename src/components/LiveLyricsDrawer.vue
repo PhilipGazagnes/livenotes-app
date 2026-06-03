@@ -78,6 +78,8 @@ const livenotesJson = computed((): LivenotesJson | null => {
 onMounted(async () => {
   try {
     librarySong.value = await fetchLibrarySongWithDetails(props.librarySongId)
+  } catch {
+    // data unavailable (offline with no cache, or network error)
   } finally {
     isLoading.value = false
   }

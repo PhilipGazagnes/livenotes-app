@@ -14,6 +14,7 @@ interface Settings {
   scrollDownDuration: number
   lyricsDefaultFontSize: number
   songClickShowsLyrics: boolean
+  forceOfflineMode: boolean
 }
 
 const defaultSettings: Settings = {
@@ -25,6 +26,7 @@ const defaultSettings: Settings = {
   scrollDownDuration: 0,
   lyricsDefaultFontSize: 1,
   songClickShowsLyrics: false,
+  forceOfflineMode: false,
 }
 
 export const useSettingsStore = defineStore('settings', () => {
@@ -37,6 +39,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const scrollDownDuration = ref(defaultSettings.scrollDownDuration)
   const lyricsDefaultFontSize = ref(defaultSettings.lyricsDefaultFontSize)
   const songClickShowsLyrics = ref(defaultSettings.songClickShowsLyrics)
+  const forceOfflineMode = ref(defaultSettings.forceOfflineMode)
 
   // Project Settings (database)
   const notesFieldLabel = ref('Notes')
@@ -58,6 +61,7 @@ export const useSettingsStore = defineStore('settings', () => {
         scrollDownDuration.value = settings.scrollDownDuration ?? defaultSettings.scrollDownDuration
         lyricsDefaultFontSize.value = settings.lyricsDefaultFontSize ?? defaultSettings.lyricsDefaultFontSize
         songClickShowsLyrics.value = settings.songClickShowsLyrics ?? defaultSettings.songClickShowsLyrics
+        forceOfflineMode.value = settings.forceOfflineMode ?? defaultSettings.forceOfflineMode
       }
     } catch (error) {
       logger.error('Failed to load settings from localStorage', error)
@@ -76,6 +80,7 @@ export const useSettingsStore = defineStore('settings', () => {
         scrollDownDuration: scrollDownDuration.value,
         lyricsDefaultFontSize: lyricsDefaultFontSize.value,
         songClickShowsLyrics: songClickShowsLyrics.value,
+        forceOfflineMode: forceOfflineMode.value,
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
     } catch (error) {
@@ -105,6 +110,16 @@ export const useSettingsStore = defineStore('settings', () => {
     scrollDownDuration.value = defaultSettings.scrollDownDuration
     lyricsDefaultFontSize.value = defaultSettings.lyricsDefaultFontSize
     songClickShowsLyrics.value = defaultSettings.songClickShowsLyrics
+    forceOfflineMode.value = defaultSettings.forceOfflineMode
+  }
+
+  function notifySwForceOffline(value: boolean) {
+    navigator.serviceWorker?.controller?.postMessage({ type: 'SET_FORCE_OFFLINE', value })
+  }
+
+  function toggleForceOfflineMode() {
+    forceOfflineMode.value = !forceOfflineMode.value
+    notifySwForceOffline(forceOfflineMode.value)
   }
 
   // Project Settings Actions
@@ -181,7 +196,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // Watch for changes and auto-save (localStorage only)
-  watch([showTagsInLists, showListsInLists, showArtistsInLists, lyricsDefaultFontSize, songClickShowsLyrics], () => {
+  watch([showTagsInLists, showListsInLists, showArtistsInLists, lyricsDefaultFontSize, songClickShowsLyrics, forceOfflineMode], () => {
     saveSettings()
   })
 
@@ -206,9 +221,11 @@ export const useSettingsStore = defineStore('settings', () => {
     isLoadingProjectSettings,
 
     // Display Actions
+    forceOfflineMode,
     toggleShowTagsInLists,
     toggleShowListsInLists,
     toggleShowArtistsInLists,
+    toggleForceOfflineMode,
     resetToDefaults,
     saveScrollControlSettings,
 

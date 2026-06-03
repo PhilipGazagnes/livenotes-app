@@ -233,6 +233,30 @@
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">Offline</h2>
 
+          <!-- Force Offline Mode Toggle -->
+          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-4">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <h3 class="text-white font-medium mb-1">Force Offline Mode</h3>
+                <p class="text-sm text-gray-400">Use cached data only. Enable this when connected to a network without internet (e.g. a mixing console hotspot).</p>
+                <p v-if="settingsStore.forceOfflineMode" class="text-xs text-orange-400 mt-2">Offline mode forced on. Remote sync is disabled.</p>
+              </div>
+              <button
+                @click="settingsStore.toggleForceOfflineMode()"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 focus:ring-offset-gray-900 ml-4 shrink-0"
+                :class="settingsStore.forceOfflineMode ? 'bg-orange-500' : 'bg-gray-600'"
+                role="switch"
+                :aria-checked="settingsStore.forceOfflineMode"
+                aria-label="Toggle force offline mode"
+              >
+                <span
+                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+                  :class="settingsStore.forceOfflineMode ? 'translate-x-6' : 'translate-x-1'"
+                />
+              </button>
+            </div>
+          </div>
+
           <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 space-y-4">
             <div>
               <h3 class="text-white font-medium mb-1">Sync for offline use</h3>
