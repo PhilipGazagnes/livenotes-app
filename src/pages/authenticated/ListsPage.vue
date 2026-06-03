@@ -33,12 +33,14 @@
 
       <!-- Lists List -->
       <div v-else class="p-4 space-y-3 pb-24">
-        <ListCard
+        <Card
           v-for="list in listsStore.listsByName"
           :key="list.id"
-          :list="list"
-          @rename="handleRename"
-          @delete="handleDelete"
+          :title="list.name"
+          :text="getListText(list)"
+          :id="list.id"
+          :dropdown-items="getListDropdownItems(list)"
+          @click="handleListClick(list)"
         />
       </div>
 
@@ -192,25 +194,46 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
+import { ROUTES } from '@/constants/routes'
 import { normalizeText } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
 import { usePageLoad } from '@/composables/usePageLoad'
+import { supabase } from '@/lib/supabase'
 import AppHeader from '@/components/AppHeader.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
-import ListCard from '@/components/ListCard.vue'
+import Card from '@/components/Card.vue'
 import type { List } from '@/types/database'
 
+const router = useRouter()
 const listsStore = useListsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
+const listSongCounts = ref<Map<string, number>>(new Map())
 const showCreateModal = ref(false)
+
+function getListText(list: List): string {
+  return I18N.PLURALS.SONG_COUNT(listSongCounts.value.get(list.id) ?? 0)
+}
+
+function getListDropdownItems(list: List) {
+  return [
+    { label: I18N.DROPDOWN.RENAME, callback: () => handleRename(list) },
+    { label: I18N.DROPDOWN.DELETE, variant: 'danger' as const, callback: () => handleDelete(list) },
+  ]
+}
+
+function handleListClick(list: List) {
+  uiStore.showOperationOverlay('Loading list...')
+  router.push(`${ROUTES.LISTS}/${list.id}`)
+}
 const newListName = ref('')
 const createError = ref('')
 const isCreating = ref(false)
@@ -244,8 +267,22 @@ const { execute } = usePageLoad()
 onMounted(() => {
   execute(async () => {
     const personalProjectId = await authStore.getPersonalProjectId()
-    if (personalProjectId) {
-      await listsStore.fetchLists(personalProjectId)
+    if (!personalProjectId) return
+
+    await listsStore.fetchLists(personalProjectId)
+
+    const listIds = listsStore.lists.map(l => l.id)
+    if (listIds.length) {
+      const { data } = await supabase
+        .from('list_items')
+        .select('list_id')
+        .eq('type', 'song')
+        .in('list_id', listIds)
+      const counts = new Map(listIds.map(id => [id, 0]))
+      data?.forEach((row: { list_id: string }) => {
+        counts.set(row.list_id, (counts.get(row.list_id) ?? 0) + 1)
+      })
+      listSongCounts.value = counts
     }
   }, {
     errorMessage: 'Failed to load lists'

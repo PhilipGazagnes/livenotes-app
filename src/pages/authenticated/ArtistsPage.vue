@@ -25,12 +25,13 @@
       <!-- Artists List -->
       <div v-else-if="filteredArtists.length > 0" class="pb-24">
         <div class="p-4 space-y-3">
-          <ArtistCard
+          <Card
             v-for="artist in filteredArtists"
             :key="artist.id"
-            :artist="artist"
-            @rename="openRenameModal"
-            @delete="handleDelete"
+            :title="artist.name"
+            :text="getArtistText(artist)"
+            :dropdown-items="getArtistDropdownItems(artist)"
+            @click="navigateToArtist(artist)"
           />
         </div>
       </div>
@@ -108,19 +109,22 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
-import ArtistCard from '@/components/ArtistCard.vue'
+import Card from '@/components/Card.vue'
 import CRUDModal from '@/components/CRUDModal.vue'
 import CRUDEmptyState from '@/components/CRUDEmptyState.vue'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { ROUTES } from '@/constants/routes'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
 import type { ArtistWithCount } from '@/types/database'
 
+const router = useRouter()
 const artistsStore = useArtistsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -128,6 +132,22 @@ const uiStore = useUiStore()
 const headerMenuItems = [
   { label: 'Create Artist', callback: () => { showCreateModal.value = true } },
 ]
+
+function getArtistText(artist: ArtistWithCount): string {
+  const count = artist.song_count
+  return `${count} ${count === 1 ? 'song' : 'songs'}`
+}
+
+function getArtistDropdownItems(artist: ArtistWithCount) {
+  return [
+    { label: 'Rename', callback: () => openRenameModal(artist) },
+    { label: 'Delete', variant: 'danger' as const, callback: () => handleDelete(artist) },
+  ]
+}
+
+function navigateToArtist(artist: ArtistWithCount) {
+  router.push({ path: ROUTES.LIBRARY, query: { artist: artist.id, artistName: artist.name } })
+}
 
 const artistsWithCount = ref<ArtistWithCount[]>([])
 const searchQuery = ref('')

@@ -25,13 +25,13 @@
       <div class="py-1">
         <template v-for="(item, index) in items" :key="index">
           <div
-            v-if="index > 0 && item.variant === 'danger' && items[index - 1].variant !== 'danger'"
+            v-if="index > 0 && (item.variant ?? 'default') !== (items[index - 1].variant ?? 'default')"
             class="border-t border-gray-700 my-1"
           />
           <button
             @click="handleClick(item)"
             class="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors"
-            :class="item.variant === 'danger' ? 'text-red-400 hover:text-red-300' : 'text-gray-300 hover:text-white'"
+            :class="item.variant === 'danger' ? 'text-red-400 hover:text-red-300' : item.variant === 'warning' ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-300 hover:text-white'"
           >
             {{ item.label }}
           </button>
@@ -47,7 +47,7 @@ import { ref } from 'vue'
 export interface DropdownMenuItem {
   label: string
   callback: () => void
-  variant?: 'default' | 'danger'
+  variant?: 'default' | 'warning' | 'danger'
 }
 
 defineProps<{

@@ -24,12 +24,13 @@
 
       <!-- Tags List -->
       <div v-else class="p-4 space-y-3 pb-24">
-        <TagCard
+        <Card
           v-for="tag in tagsStore.tagsByName"
           :key="tag.id"
-          :tag="tag"
-          @rename="openRenameModal"
-          @delete="handleDelete"
+          :title="tag.name"
+          :text="getTagText(tag)"
+          :dropdown-items="getTagDropdownItems(tag)"
+          @click="navigateToTag(tag)"
         />
       </div>
 
@@ -71,11 +72,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
-import TagCard from '@/components/TagCard.vue'
+import Card from '@/components/Card.vue'
 import CRUDModal from '@/components/CRUDModal.vue'
 import CRUDEmptyState from '@/components/CRUDEmptyState.vue'
 import { useTagsStore } from '@/stores/tags'
@@ -83,17 +85,37 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
+import { ROUTES } from '@/constants/routes'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
+import { supabase } from '@/lib/supabase'
 import type { Tag } from '@/types/database'
 
+const router = useRouter()
 const tagsStore = useTagsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
+const tagSongCounts = ref<Map<string, number>>(new Map())
+
 const headerMenuItems = [
   { label: 'Create Tag', callback: () => { showCreateModal.value = true } },
 ]
+
+function getTagText(tag: Tag): string {
+  return I18N.PLURALS.SONG_COUNT(tagSongCounts.value.get(tag.id) ?? 0)
+}
+
+function getTagDropdownItems(tag: Tag) {
+  return [
+    { label: I18N.DROPDOWN.RENAME, callback: () => openRenameModal(tag) },
+    { label: I18N.DROPDOWN.DELETE, variant: 'danger' as const, callback: () => handleDelete(tag) },
+  ]
+}
+
+function navigateToTag(tag: Tag) {
+  router.push({ path: ROUTES.LIBRARY, query: { tag: tag.id, tagName: tag.name } })
+}
 
 const {
   showCreateModal,
@@ -150,9 +172,21 @@ const { execute } = usePageLoad()
 onMounted(() => {
   execute(async () => {
     const personalProjectId = await authStore.getPersonalProjectId()
-    
-    if (personalProjectId) {
-      await tagsStore.fetchTags(personalProjectId)
+    if (!personalProjectId) return
+
+    await tagsStore.fetchTags(personalProjectId)
+
+    const tagIds = tagsStore.tags.map(t => t.id)
+    if (tagIds.length) {
+      const { data } = await supabase
+        .from('library_song_tags')
+        .select('tag_id')
+        .in('tag_id', tagIds)
+      const counts = new Map(tagIds.map(id => [id, 0]))
+      data?.forEach((row: { tag_id: string }) => {
+        counts.set(row.tag_id, (counts.get(row.tag_id) ?? 0) + 1)
+      })
+      tagSongCounts.value = counts
     }
   }, {
     errorMessage: 'Failed to load tags'

@@ -41,14 +41,18 @@
           <p class="text-gray-400">No songs match your filters</p>
         </div>
         <div v-else class="p-4 space-y-4">
-          <LibrarySongCard
+          <Card
             v-for="librarySong in displayedSongs"
             :key="librarySong.id"
-            :librarySong="librarySong"
-            :matches="libraryStore.matchMap.get(librarySong.id)"
-            @manageTags="handleManageTags"
-            @manageLists="handleManageLists"
-            @removeFromLibrary="handleRemoveFromLibrary"
+            :title="librarySong.custom_title || librarySong.song?.title || ''"
+            :title-segments="getCardTitleSegments(librarySong)"
+            :text="getCardText(librarySong)"
+            :text-segments="getCardTextSegments(librarySong)"
+            :tags="librarySong.tags"
+            :lists="librarySong.lists"
+            :dropdown-items="getSongDropdownItems(librarySong)"
+            :id="librarySong.id"
+            @click="handleSongClick(librarySong)"
           />
         </div>
       </div>
@@ -235,12 +239,19 @@ import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useDrawerStore } from '@/stores/drawer'
+import { useSettingsStore } from '@/stores/settings'
 import type { LibrarySongWithDetails } from '@/types/database'
+import type { FuseResultMatch } from 'fuse.js'
 import { MESSAGES } from '@/constants/messages'
+import { getSegments } from '@/utils/highlight'
+import type { TextSegment } from '@/utils/highlight'
 import AppHeader from '@/components/AppHeader.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
+import Card from '@/components/Card.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import LibrarySongCard from '@/components/LibrarySongCard.vue'
+import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
+import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
 
 const route = useRoute()
 
@@ -258,6 +269,8 @@ const tagsStore = useTagsStore()
 const listsStore = useListsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const drawerStore = useDrawerStore()
+const settingsStore = useSettingsStore()
 
 // State
 const showAddSongModal = ref(false)
@@ -358,6 +371,52 @@ const headerMenuItems = [
   { label: 'Create New Song', callback: handleCreateNewSong },
   { label: 'Select Songs', callback: handleSelectSongs },
 ]
+
+function getCardTitleSegments(librarySong: LibrarySongWithDetails): TextSegment[] | undefined {
+  const displayTitle = librarySong.custom_title || librarySong.song?.title || ''
+  const titleKey = librarySong.custom_title ? 'custom_title' : 'song.title'
+  const matches = libraryStore.matchMap.get(librarySong.id)
+  const match = matches?.find((m: FuseResultMatch) => m.key === titleKey)
+  return match ? getSegments(displayTitle, match.indices as ReadonlyArray<[number, number]>) : undefined
+}
+
+function getCardText(librarySong: LibrarySongWithDetails): string | undefined {
+  const artists = librarySong.song?.artists
+  if (!artists?.length) return undefined
+  return artists.map(a => a.name).join(', ')
+}
+
+function getCardTextSegments(librarySong: LibrarySongWithDetails): TextSegment[] | undefined {
+  const artists = librarySong.song?.artists
+  if (!artists?.length) return undefined
+  const matches = libraryStore.matchMap.get(librarySong.id)
+  if (!matches) return undefined
+  const segments: TextSegment[] = []
+  for (let i = 0; i < artists.length; i++) {
+    const artist = artists[i]
+    const match = matches.find((m: FuseResultMatch) => m.key === 'song.artists.name' && m.value === artist.name)
+    if (match) {
+      segments.push(...getSegments(artist.name, match.indices as ReadonlyArray<[number, number]>))
+    } else {
+      segments.push({ text: artist.name, highlighted: false })
+    }
+    if (i < artists.length - 1) segments.push({ text: ', ', highlighted: false })
+  }
+  return segments
+}
+
+function getSongDropdownItems(librarySong: LibrarySongWithDetails) {
+  return [
+    { label: 'Manage Tags', callback: () => handleManageTags(librarySong) },
+    { label: 'Manage Lists', callback: () => handleManageLists(librarySong) },
+    { label: 'Remove from Library', variant: 'danger' as const, callback: () => handleRemoveFromLibrary(librarySong) },
+  ]
+}
+
+function handleSongClick(librarySong: LibrarySongWithDetails) {
+  const drawer = settingsStore.songClickShowsLyrics ? LiveLyricsDrawer : SongNotesDrawer
+  drawerStore.push(drawer, { librarySongId: librarySong.id })
+}
 
 function handleCreateNewSong() {
   showAddSongModal.value = true

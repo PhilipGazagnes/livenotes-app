@@ -66,15 +66,16 @@
               />
 
               <!-- Song Card -->
-              <ListSongCard
+              <Card
                 v-else
-                :item="item"
+                :title="item.song?.title || ''"
+                :text="getItemText(item as any)"
+                :tags="getItemTags(item as any)"
+                :lists="getItemLists(item as any)"
+                :dropdown-items="getItemDropdownItems(item as any)"
+                :id="item.id"
                 :draggable="true"
-                @remove="handleRemove(item)"
-                @songDeleted="handleSongDeleted"
-                @tagsUpdated="handleTagsUpdated"
-                @listsUpdated="handleListsUpdated"
-                @openNotes="handleOpenNotes"
+                @click="handleOpenNotes(item as any)"
               />
             </div>
           </template>
@@ -157,12 +158,34 @@
         </div>
       </div>
 
+      <!-- Song Manage Tags Modal -->
+      <ManageTagsModal
+        v-if="showSongManageTagsModal && selectedSongItem"
+        :isOpen="true"
+        :librarySongId="selectedSongItem.library_song_id ?? undefined"
+        :songTitle="selectedSongItem.song.title"
+        :initialTagIds="selectedSongItem.song.tags?.map((t: any) => t.id) || []"
+        @close="showSongManageTagsModal = false; selectedSongItem = null"
+        @saved="handleSongTagsSaved"
+      />
+
+      <!-- Song Manage Lists Modal -->
+      <ManageListsModal
+        v-if="showSongManageListsModal && selectedSongItem"
+        :isOpen="true"
+        :librarySongId="selectedSongItem.library_song_id || ''"
+        :songTitle="selectedSongItem.song.title"
+        :initialListIds="selectedSongItem.song.lists?.map((l: any) => l.id) || []"
+        @close="showSongManageListsModal = false; selectedSongItem = null"
+        @saved="handleSongListsSaved"
+      />
+
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import VueDraggable from 'vuedraggable'
@@ -178,14 +201,18 @@ import { I18N } from '@/constants/i18n'
 import { executeOperation } from '@/utils/operations'
 import AppHeader from '@/components/AppHeader.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
-import ListSongCard from '@/components/ListSongCard.vue'
+import Card from '@/components/Card.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
 import ListBulkActions from '@/components/ListBulkActions.vue'
 import ListFilterBar from '@/components/ListFilterBar.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
 import { useSettingsStore } from '@/stores/settings'
+import { useSongsStore } from '@/stores/songs'
 import type { ListItem, SongWithTags } from '@/types/database'
+
+const ManageTagsModal = defineAsyncComponent(() => import('@/components/ManageTagsModal.vue'))
+const ManageListsModal = defineAsyncComponent(() => import('@/components/ManageListsModal.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -195,6 +222,7 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 const drawerStore = useDrawerStore()
 const settingsStore = useSettingsStore()
+const songsStore = useSongsStore()
 
 const searchQuery = ref('')
 const selectedTagIds = ref<string[]>([])
@@ -218,6 +246,84 @@ const headerMenuItems = [
   { label: 'Add Title Section', callback: handleAddTitle },
   { label: I18N.DROPDOWN.SELECT_SONGS, callback: handleEnterSelectionMode },
 ]
+
+const selectedSongItem = ref<(ListItem & { song: SongWithTags }) | null>(null)
+const showSongManageTagsModal = ref(false)
+const showSongManageListsModal = ref(false)
+
+function getItemText(item: ListItem & { song: SongWithTags }): string | undefined {
+  if (!settingsStore.showArtistsInLists) return undefined
+  const song = item.song
+  if (song.artists?.length) return song.artists.map((a: any) => a.name).join(', ')
+  if (song.artist) return song.artist
+  return undefined
+}
+
+function getItemTags(item: ListItem & { song: SongWithTags }) {
+  return settingsStore.showTagsInLists ? item.song.tags : undefined
+}
+
+function getItemLists(item: ListItem & { song: SongWithTags }) {
+  return settingsStore.showListsInLists ? (item.song as any).lists : undefined
+}
+
+function getItemDropdownItems(item: ListItem & { song: SongWithTags }) {
+  return [
+    { label: I18N.DROPDOWN.REMOVE_FROM_LIST, variant: 'warning' as const, callback: () => handleRemove(item) },
+    { label: I18N.DROPDOWN.EDIT, callback: () => { uiStore.showOperationOverlay('Loading song...'); router.push(`/project/song/${item.song.id}/edit`) } },
+    { label: I18N.DROPDOWN.MANAGE_TAGS, callback: () => openSongManageTags(item) },
+    { label: I18N.DROPDOWN.MANAGE_LISTS, callback: () => openSongManageLists(item) },
+    { label: I18N.DROPDOWN.DELETE, variant: 'danger' as const, callback: () => handleDeleteSong(item) },
+  ]
+}
+
+async function openSongManageTags(item: ListItem & { song: SongWithTags }) {
+  const personalProjectId = await authStore.getPersonalProjectId()
+  if (personalProjectId) await tagsStore.fetchTags(personalProjectId)
+  if (!item.library_song_id) { uiStore.showToast('Cannot manage tags: missing library song ID', 'error'); return }
+  selectedSongItem.value = item
+  showSongManageTagsModal.value = true
+}
+
+async function openSongManageLists(item: ListItem & { song: SongWithTags }) {
+  const personalProjectId = await authStore.getPersonalProjectId()
+  if (personalProjectId) await listsStore.fetchLists(personalProjectId)
+  if (!item.library_song_id) { uiStore.showToast('Cannot manage lists: missing library song ID', 'error'); return }
+  selectedSongItem.value = item
+  showSongManageListsModal.value = true
+}
+
+async function handleSongTagsSaved() {
+  showSongManageTagsModal.value = false
+  if (selectedSongItem.value) await handleTagsUpdated(selectedSongItem.value.song.id)
+  selectedSongItem.value = null
+}
+
+async function handleSongListsSaved() {
+  showSongManageListsModal.value = false
+  if (selectedSongItem.value) await handleListsUpdated(selectedSongItem.value.song.id)
+  selectedSongItem.value = null
+}
+
+async function handleDeleteSong(item: ListItem & { song: SongWithTags }) {
+  const confirmed = await uiStore.showConfirm(
+    'Delete Song',
+    MESSAGES.CONFIRM_DELETE_SONG(item.song.title),
+    'Delete',
+    'Cancel'
+  )
+  if (!confirmed) return
+  const songId = item.song.id
+  await executeOperation(
+    () => songsStore.deleteSong(item.song.id, item.song.project_id),
+    {
+      loadingMessage: 'Deleting song...',
+      successMessage: MESSAGES.SUCCESS.SONG_DELETED,
+      errorContext: 'delete song',
+      onSuccess: () => handleSongDeleted(songId),
+    }
+  )
+}
 
 // Filtered and searched items (writable for VueDraggable)
 const displayedItems = computed({
