@@ -3,10 +3,8 @@
 export const ROUTES = {
   LOGIN: '/login',
   SIGNUP: '/signup',
-  ALL_SONGS: '/project/library', // Legacy - V1
   LIBRARY: '/project/library', // V2 - User's personal library
   SONG_NEW: '/project/song/new',
-  SONG_EDIT: (id: string) => `/project/song/${id}/edit`,
   LISTS: '/project/lists',
   LIST_DETAIL: (id: string) => `/project/lists/${id}`,
   TAGS: '/project/tags',

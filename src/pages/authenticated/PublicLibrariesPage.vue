@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content class="bg-gray-900">
+    <ion-content>
       <AppHeader title="Public Libraries" :show-back="true" :show-menu="true" />
 
       <div class="p-4 space-y-4 pb-24">

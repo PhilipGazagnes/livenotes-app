@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content class="bg-gray-900">
+    <ion-content>
       <!-- Header -->
       <AppHeader :title="pageTitle">
         <template #action>

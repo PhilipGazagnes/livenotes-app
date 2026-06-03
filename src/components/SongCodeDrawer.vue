@@ -15,7 +15,7 @@
         </ion-toolbar>
       </ion-header>
 
-      <ion-content class="bg-gray-900">
+      <ion-content>
         <!-- Loading State -->
         <div v-if="songcodeStore.isLoading" class="flex justify-center items-center h-full">
           <ion-spinner color="light" />

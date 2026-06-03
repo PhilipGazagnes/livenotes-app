@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content class="bg-gray-900">
+    <ion-content>
       <div class="flex items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-md">
           <!-- Header -->
@@ -136,7 +136,7 @@ async function handleLogin() {
   if (result.success) {
     uiStore.showToast(MESSAGES.SUCCESS.LOGIN, 'success')
     uiStore.showOperationOverlay('Loading songs...')
-    router.push(ROUTES.ALL_SONGS)
+    router.push(ROUTES.LIBRARY)
   } else {
     uiStore.showToast(result.error || MESSAGES.ERROR.LOGIN_FAILED, 'error')
   }

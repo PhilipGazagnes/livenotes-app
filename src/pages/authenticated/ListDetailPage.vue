@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content ref="ionContentRef" class="bg-gray-900">
+    <ion-content ref="ionContentRef">
       <!-- Header -->
       <AppHeader
         :title="currentList?.name || I18N.PAGE_TITLES.LIST_DETAIL"

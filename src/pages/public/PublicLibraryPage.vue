@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content class="bg-gray-900">
+    <ion-content>
       <!-- 404 -->
       <div v-if="notFound" class="flex flex-col items-center justify-center min-h-screen px-4 text-center">
         <svg class="w-24 h-24 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

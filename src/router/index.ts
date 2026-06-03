@@ -11,65 +11,55 @@ const router = createRouter({
     {
       path: ROUTES.LOGIN,
       name: 'Login',
-      component: () => import('@/pages/LoginPage.vue'),
+      component: () => import('@/pages/authentication/LoginPage.vue'),
       meta: { public: true, authRedirect: true }
     },
     {
       path: ROUTES.SIGNUP,
       name: 'Signup',
-      component: () => import('@/pages/SignupPage.vue'),
+      component: () => import('@/pages/authentication/SignupPage.vue'),
       meta: { public: true, authRedirect: true }
     },
     {
       path: ROUTES.LIBRARY,
       name: 'Library',
-      component: () => import('@/pages/LibraryPage.vue'),
-    },
-    {
-      path: ROUTES.SONG_NEW,
-      name: 'SongNew',
-      component: () => import('@/pages/SongNewPage.vue'),
-    },
-    {
-      path: '/project/song/:id/edit',
-      name: 'SongEdit',
-      component: () => import('@/pages/SongEditPage.vue'),
+      component: () => import('@/pages/authenticated/LibraryPage.vue'),
     },
     {
       path: ROUTES.LISTS,
       name: 'Lists',
-      component: () => import('@/pages/ListsPage.vue'),
+      component: () => import('@/pages/authenticated/ListsPage.vue'),
     },
     {
       path: '/project/lists/:id',
       name: 'ListDetail',
-      component: () => import('@/pages/ListDetailPage.vue'),
+      component: () => import('@/pages/authenticated/ListDetailPage.vue'),
     },
     {
       path: ROUTES.TAGS,
       name: 'Tags',
-      component: () => import('@/pages/TagsPage.vue'),
+      component: () => import('@/pages/authenticated/TagsPage.vue'),
     },
     {
       path: ROUTES.ARTISTS,
       name: 'Artists',
-      component: () => import('@/pages/ArtistsPage.vue'),
+      component: () => import('@/pages/authenticated/ArtistsPage.vue'),
     },
     {
       path: ROUTES.SETTINGS,
       name: 'Settings',
-      component: () => import('@/pages/SettingsPage.vue'),
+      component: () => import('@/pages/authenticated/SettingsPage.vue'),
     },
     {
       path: ROUTES.PUBLIC_LIBRARIES,
       name: 'PublicLibraries',
-      component: () => import('@/pages/PublicLibrariesPage.vue'),
+      component: () => import('@/pages/authenticated/PublicLibrariesPage.vue'),
     },
     // Public route — must be last to avoid shadowing /project/* paths
     {
       path: '/:projectSlug/:librarySlug',
       name: 'PublicLibrary',
-      component: () => import('@/pages/PublicLibraryPage.vue'),
+      component: () => import('@/pages/public/PublicLibraryPage.vue'),
       meta: { public: true }
     },
   ],

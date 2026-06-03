@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <ion-content class="bg-gray-900">
+    <ion-content>
       <!-- Header -->
       <AppHeader
         :title="I18N.PAGE_TITLES.TAGS"
