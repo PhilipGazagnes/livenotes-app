@@ -8,49 +8,7 @@
         :show-menu="true"
       >
         <template #action>
-          <div v-if="!uiStore.selectionMode" class="relative">
-            <!-- Dropdown Button -->
-            <button
-              @click="isPageMenuOpen = !isPageMenuOpen"
-              class="p-2 text-white hover:text-gray-300 transition-colors"
-              :aria-label="'Page menu'"
-            >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-              </svg>
-            </button>
-
-            <!-- Dropdown Menu -->
-            <div
-              v-if="isPageMenuOpen"
-              @click="isPageMenuOpen = false"
-              class="fixed inset-0 z-40"
-            />
-            <div
-              v-if="isPageMenuOpen"
-              class="absolute right-0 top-12 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden"
-            >
-              <button
-                @click="handleCreateClick"
-                class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                {{ I18N.DROPDOWN.CREATE_NEW_LIST }}
-              </button>
-              <button
-                v-if="listsStore.listCount > 0"
-                @click="handleEnterSelectionMode"
-                class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                </svg>
-                {{ I18N.DROPDOWN.SELECT_LISTS }}
-              </button>
-            </div>
-          </div>
+          <DropdownMenu v-if="!uiStore.selectionMode" :items="headerMenuItems" />
         </template>
       </AppHeader>
 
@@ -233,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
@@ -244,6 +202,7 @@ import { normalizeText } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
 import { usePageLoad } from '@/composables/usePageLoad'
 import AppHeader from '@/components/AppHeader.vue'
+import DropdownMenu from '@/components/DropdownMenu.vue'
 import ListCard from '@/components/ListCard.vue'
 import type { List } from '@/types/database'
 
@@ -251,7 +210,6 @@ const listsStore = useListsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 
-const isPageMenuOpen = ref(false)
 const showCreateModal = ref(false)
 const newListName = ref('')
 const createError = ref('')
@@ -263,13 +221,16 @@ const renameListName = ref('')
 const renameError = ref('')
 const isRenaming = ref(false)
 
+const headerMenuItems = computed(() => [
+  { label: I18N.DROPDOWN.CREATE_NEW_LIST, callback: handleCreateClick },
+  ...(listsStore.listCount > 0 ? [{ label: I18N.DROPDOWN.SELECT_LISTS, callback: handleEnterSelectionMode }] : []),
+])
+
 function handleCreateClick() {
-  isPageMenuOpen.value = false
   showCreateModal.value = true
 }
 
 function handleEnterSelectionMode() {
-  isPageMenuOpen.value = false
   uiStore.enterSelectionMode()
 }
 

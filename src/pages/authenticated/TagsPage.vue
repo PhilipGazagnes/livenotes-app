@@ -8,14 +8,7 @@
         :show-menu="true"
       >
         <template #action>
-          <button
-            @click="showCreateModal = true"
-            class="p-2 text-white hover:text-gray-300 transition-colors"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-          </button>
+          <DropdownMenu :items="headerMenuItems" />
         </template>
       </AppHeader>
 
@@ -81,6 +74,7 @@
 import { onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
+import DropdownMenu from '@/components/DropdownMenu.vue'
 import TagCard from '@/components/TagCard.vue'
 import CRUDModal from '@/components/CRUDModal.vue'
 import CRUDEmptyState from '@/components/CRUDEmptyState.vue'
@@ -96,6 +90,10 @@ import type { Tag } from '@/types/database'
 const tagsStore = useTagsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+
+const headerMenuItems = [
+  { label: 'Create Tag', callback: () => { showCreateModal.value = true } },
+]
 
 const {
   showCreateModal,

@@ -8,48 +8,10 @@
         :show-menu="true"
       >
         <template #action>
-          <div v-if="!uiStore.selectionMode && listItems.length > 0" class="relative">
-            <!-- Dropdown Button -->
-            <button
-              @click="isPageMenuOpen = !isPageMenuOpen"
-              class="p-2 text-white hover:text-gray-300 transition-colors"
-              :aria-label="'Page menu'"
-            >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-              </svg>
-            </button>
-
-            <!-- Dropdown Menu -->
-            <div
-              v-if="isPageMenuOpen"
-              @click="isPageMenuOpen = false"
-              class="fixed inset-0 z-40 bg-black bg-opacity-20"
-            />
-            <div
-              v-if="isPageMenuOpen"
-              class="absolute right-0 top-12 w-56 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden"
-            >
-              <button
-                @click="handleAddTitleFromMenu"
-                class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
-                </svg>
-                <span>Add Title Section</span>
-              </button>
-              <button
-                @click="handleEnterSelectionMode"
-                class="w-full flex items-center gap-3 px-4 py-3 text-white hover:bg-gray-700 transition-colors"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                </svg>
-                {{ I18N.DROPDOWN.SELECT_SONGS }}
-              </button>
-            </div>
-          </div>
+          <DropdownMenu
+            v-if="!uiStore.selectionMode && listItems.length > 0"
+            :items="headerMenuItems"
+          />
         </template>
       </AppHeader>
 
@@ -215,6 +177,7 @@ import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { executeOperation } from '@/utils/operations'
 import AppHeader from '@/components/AppHeader.vue'
+import DropdownMenu from '@/components/DropdownMenu.vue'
 import ListSongCard from '@/components/ListSongCard.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
 import ListBulkActions from '@/components/ListBulkActions.vue'
@@ -233,7 +196,6 @@ const uiStore = useUiStore()
 const drawerStore = useDrawerStore()
 const settingsStore = useSettingsStore()
 
-const isPageMenuOpen = ref(false)
 const searchQuery = ref('')
 const selectedTagIds = ref<string[]>([])
 const showTitleModal = ref(false)
@@ -251,6 +213,11 @@ const scrollElement = ref<HTMLElement | null>(null)
 const listId = computed(() => route.params.id as string)
 const currentList = computed(() => listsStore.currentList)
 const listItems = computed(() => currentList.value?.items || [])
+
+const headerMenuItems = [
+  { label: 'Add Title Section', callback: handleAddTitle },
+  { label: I18N.DROPDOWN.SELECT_SONGS, callback: handleEnterSelectionMode },
+]
 
 // Filtered and searched items (writable for VueDraggable)
 const displayedItems = computed({
@@ -400,11 +367,6 @@ function handleAddTitle() {
   showTitleModal.value = true
 }
 
-function handleAddTitleFromMenu() {
-  isPageMenuOpen.value = false
-  handleAddTitle()
-}
-
 function handleEditTitle(item: ListItem) {
   editingTitle.value = item
   titleInput.value = item.title || ''
@@ -466,7 +428,6 @@ async function handleRefresh() {
 }
 
 function handleEnterSelectionMode() {
-  isPageMenuOpen.value = false
   uiStore.enterSelectionMode()
 }
 

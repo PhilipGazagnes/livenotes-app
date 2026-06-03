@@ -4,48 +4,7 @@
       <!-- Header -->
       <AppHeader :title="pageTitle">
         <template #action>
-          <div v-if="!uiStore.selectionMode" class="relative">
-            <button
-              @click.stop="showHeaderMenu = !showHeaderMenu"
-              class="p-2 text-white hover:bg-gray-700 rounded-lg transition-colors"
-            >
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-              </svg>
-            </button>
-            
-            <!-- Backdrop -->
-            <div
-              v-if="showHeaderMenu"
-              class="fixed inset-0 z-40"
-              @click="showHeaderMenu = false"
-            ></div>
-            
-            <!-- Dropdown Menu -->
-            <div
-              v-if="showHeaderMenu"
-              class="absolute right-0 mt-2 w-56 bg-gray-800 rounded-lg shadow-lg border border-gray-700 py-2 z-50"
-            >
-              <button
-                @click="handleCreateNewSong"
-                class="w-full px-4 py-3 text-left text-white hover:bg-gray-700 flex items-center gap-3"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Create New Song
-              </button>
-              <button
-                @click="handleSelectSongs"
-                class="w-full px-4 py-3 text-left text-white hover:bg-gray-700 flex items-center gap-3"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-                Select Songs
-              </button>
-            </div>
-          </div>
+          <DropdownMenu v-if="!uiStore.selectionMode" :items="headerMenuItems" />
         </template>
       </AppHeader>
 
@@ -279,6 +238,7 @@ import { useUiStore } from '@/stores/ui'
 import type { LibrarySongWithDetails } from '@/types/database'
 import { MESSAGES } from '@/constants/messages'
 import AppHeader from '@/components/AppHeader.vue'
+import DropdownMenu from '@/components/DropdownMenu.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import LibrarySongCard from '@/components/LibrarySongCard.vue'
 
@@ -300,7 +260,6 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 
 // State
-const showHeaderMenu = ref(false)
 const showAddSongModal = ref(false)
 const showManageTagsModal = ref(false)
 const showManageListsModal = ref(false)
@@ -395,14 +354,16 @@ function applyQueryFilters() {
   }
 }
 
-// Methods
+const headerMenuItems = [
+  { label: 'Create New Song', callback: handleCreateNewSong },
+  { label: 'Select Songs', callback: handleSelectSongs },
+]
+
 function handleCreateNewSong() {
-  showHeaderMenu.value = false
   showAddSongModal.value = true
 }
 
 function handleSelectSongs() {
-  showHeaderMenu.value = false
   uiStore.enterSelectionMode()
 }
 

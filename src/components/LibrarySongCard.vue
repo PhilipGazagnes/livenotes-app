@@ -78,57 +78,13 @@
         </div>
       </div>
 
-      <!-- Dropdown Menu Button -->
-      <div v-if="!uiStore.selectionMode" class="flex-shrink-0">
-        <button
-          @click.stop.prevent="toggleDropdown"
-          @mousedown.stop
-          @touchstart.stop
-          @pointerdown.stop
-          class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Dropdown Menu -->
-    <div v-if="isDropdownOpen">
-      <!-- Backdrop -->
-      <div
-        @click="isDropdownOpen = false"
-        class="fixed inset-0 z-10"
-      />
-      
-      <!-- Menu -->
-      <div class="absolute right-0 top-10 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
-        <button
-          @click="handleManageTags"
-          class="w-full text-left px-4 py-2 text-white hover:bg-gray-800 transition-colors"
-        >
-          Manage Tags
-        </button>
-        <button
-          @click="handleManageLists"
-          class="w-full text-left px-4 py-2 text-white hover:bg-gray-800 transition-colors"
-        >
-          Manage Lists
-        </button>
-        <button
-          @click="handleRemoveFromLibrary"
-          class="w-full text-left px-4 py-2 text-red-400 hover:bg-gray-800 transition-colors"
-        >
-          Remove from Library
-        </button>
-      </div>
+      <DropdownMenu v-if="!uiStore.selectionMode" :items="dropdownItems" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import type { FuseResultMatch } from 'fuse.js'
 import type { LibrarySongWithDetails } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
@@ -137,6 +93,7 @@ import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { getSegments } from '@/utils/highlight'
+import DropdownMenu from '@/components/DropdownMenu.vue'
 
 const props = defineProps<{
   librarySong: LibrarySongWithDetails
@@ -152,9 +109,14 @@ const emit = defineEmits<{
 const uiStore = useUiStore()
 const drawerStore = useDrawerStore()
 const settingsStore = useSettingsStore()
-const isDropdownOpen = ref(false)
 
 const isSelected = computed(() => uiStore.isSelected(props.librarySong.id))
+
+const dropdownItems = [
+  { label: 'Manage Tags', callback: () => emit('manageTags', props.librarySong) },
+  { label: 'Manage Lists', callback: () => emit('manageLists', props.librarySong) },
+  { label: 'Remove from Library', variant: 'danger' as const, callback: () => emit('removeFromLibrary', props.librarySong) },
+]
 
 const titleSegments = computed(() => {
   const displayTitle = props.librarySong.custom_title || props.librarySong.song?.title || ''
@@ -168,10 +130,6 @@ function getArtistSegments(artistName: string) {
   return match ? getSegments(artistName, match.indices) : []
 }
 
-function toggleDropdown() {
-  isDropdownOpen.value = !isDropdownOpen.value
-}
-
 function handleCardClick() {
   if (uiStore.selectionMode) {
     uiStore.toggleSelection(props.librarySong.id)
@@ -181,18 +139,4 @@ function handleCardClick() {
   }
 }
 
-function handleManageTags() {
-  isDropdownOpen.value = false
-  emit('manageTags', props.librarySong)
-}
-
-function handleManageLists() {
-  isDropdownOpen.value = false
-  emit('manageLists', props.librarySong)
-}
-
-function handleRemoveFromLibrary() {
-  isDropdownOpen.value = false
-  emit('removeFromLibrary', props.librarySong)
-}
 </script>
