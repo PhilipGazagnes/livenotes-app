@@ -51,6 +51,11 @@ const router = createRouter({
       component: () => import('@/pages/authenticated/SettingsPage.vue'),
     },
     {
+      path: ROUTES.PROJECT_SETTINGS,
+      name: 'ProjectSettings',
+      component: () => import('@/pages/authenticated/ProjectSettingsPage.vue'),
+    },
+    {
       path: ROUTES.PUBLIC_LIBRARIES,
       name: 'PublicLibraries',
       component: () => import('@/pages/authenticated/PublicLibrariesPage.vue'),

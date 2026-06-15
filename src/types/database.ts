@@ -7,6 +7,17 @@ export interface User {
   updated_at: string
 }
 
+export interface ContactInfo {
+  phone?: string
+  email?: string
+  location?: string
+  website?: string
+  facebook?: string
+  instagram?: string
+  x?: string
+  youtube?: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -17,6 +28,10 @@ export interface Project {
   updated_at: string
   notes_field_label: string
   notes_field_enabled: boolean
+  description: string | null
+  thumbnail_url: string | null
+  contact_enabled: boolean
+  contact_info: ContactInfo | null
 }
 
 export interface PublicLibrary {

@@ -137,100 +137,6 @@
           </div>
         </section>
 
-        <!-- Notes Field Section -->
-        <section>
-          <h2 class="text-lg font-semibold text-white mb-4">{{ I18N.SETTINGS.NOTES_FIELD }}</h2>
-
-          <div class="space-y-4">
-            <!-- Enable/Disable Notes Field -->
-            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div class="flex items-center justify-between">
-                <div class="flex-1">
-                  <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.SHOW_NOTES_FIELD }}</h3>
-                  <p class="text-sm text-gray-400">{{ I18N.SETTINGS.SHOW_NOTES_FIELD_DESC }}</p>
-                </div>
-                <button
-                  @click="toggleNotesFieldEnabled"
-                  :disabled="isUpdatingSettings"
-                  class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50"
-                  :class="settingsStore.notesFieldEnabled ? 'bg-blue-600' : 'bg-gray-600'"
-                  role="switch"
-                  :aria-checked="settingsStore.notesFieldEnabled"
-                  :aria-label="I18N.ARIA.TOGGLE_SHOW_NOTES_FIELD"
-                >
-                  <span
-                    class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                    :class="settingsStore.notesFieldEnabled ? 'translate-x-6' : 'translate-x-1'"
-                  />
-                </button>
-              </div>
-            </div>
-
-            <!-- Custom Label Input -->
-            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <div>
-                <label for="notesFieldLabel" class="block text-white font-medium mb-2">
-                  {{ I18N.SETTINGS.FIELD_LABEL_SECTION }}
-                </label>
-                <p class="text-sm text-gray-400 mb-3">
-                  {{ I18N.SETTINGS.FIELD_LABEL_HINT }}
-                </p>
-                <div class="flex gap-2">
-                  <input
-                    id="notesFieldLabel"
-                    v-model="notesFieldLabelInput"
-                    type="text"
-                    maxlength="30"
-                    class="flex-1 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                    :placeholder="I18N.PLACEHOLDERS.FIELD_LABEL"
-                    @keyup.enter="handleSaveNotesFieldLabel"
-                  />
-                  <button
-                    @click="handleSaveNotesFieldLabel"
-                    :disabled="isUpdatingSettings || !notesFieldLabelInput.trim()"
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {{ I18N.BUTTONS.SAVE }}
-                  </button>
-                </div>
-                <p class="text-xs text-gray-500 mt-1">
-                  {{ notesFieldLabelInput.length }}/30 characters
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Public Libraries Section -->
-        <section>
-          <h2 class="text-lg font-semibold text-white mb-4">{{ I18N.SETTINGS.PUBLIC_LIBRARIES }}</h2>
-          <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <label for="projectSlug" class="block text-white font-medium mb-2">{{ I18N.SETTINGS.PROJECT_URL_SLUG }}</label>
-            <p class="text-sm text-gray-400 mb-3">
-              Used to build your public library URLs: <span class="text-gray-300">yourapp.com/<strong>slug</strong>/library-name</span>
-            </p>
-            <div class="flex gap-2">
-              <input
-                id="projectSlug"
-                v-model="projectSlugInput"
-                type="text"
-                maxlength="40"
-                class="flex-1 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition lowercase"
-                :placeholder="I18N.PLACEHOLDERS.PROJECT_SLUG"
-                @keyup.enter="handleSaveProjectSlug"
-              />
-              <button
-                @click="handleSaveProjectSlug"
-                :disabled="isUpdatingSettings || !projectSlugInput.trim()"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {{ I18N.BUTTONS.SAVE }}
-              </button>
-            </div>
-            <p class="text-xs text-gray-500 mt-1">{{ I18N.VALIDATION.PROJECT_SLUG_HINT }}</p>
-          </div>
-        </section>
-
         <!-- Offline Section -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">{{ I18N.SETTINGS.OFFLINE }}</h2>
@@ -395,31 +301,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
 import { I18N } from '@/constants/i18n'
 import { useSettingsStore } from '@/stores/settings'
-import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { usePageLoad } from '@/composables/usePageLoad'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
 
 const settingsStore = useSettingsStore()
-const authStore = useAuthStore()
 const uiStore = useUiStore()
 const { isOnline } = useOnlineStatus()
 const { isSyncing, progress, lastSyncedAt, warmUp } = useOfflineSync()
 
-const notesFieldLabelInput = ref('')
-const projectSlugInput = ref('')
 const localScrollChar = ref(settingsStore.scrollDownChar)
 const localScrollAmount = ref(settingsStore.scrollDownAmount)
 const localScrollDuration = ref(settingsStore.scrollDownDuration)
-const isUpdatingSettings = ref(false)
-
-const { execute } = usePageLoad()
 
 async function handleWarmUp() {
   try {
@@ -427,94 +325,6 @@ async function handleWarmUp() {
     uiStore.showToast(I18N.TOAST.SYNCED_OFFLINE, 'success')
   } catch {
     uiStore.showToast(I18N.TOAST.SYNC_FAILED, 'error')
-  }
-}
-
-onMounted(() => {
-  execute(async () => {
-    // Load project settings
-    const projectId = await authStore.getPersonalProjectId()
-    if (projectId) {
-      await settingsStore.loadProjectSettings(projectId)
-      notesFieldLabelInput.value = settingsStore.notesFieldLabel
-      projectSlugInput.value = settingsStore.projectSlug ?? ''
-    }
-  }, {
-    errorMessage: 'Failed to load settings'
-  })
-})
-
-async function toggleNotesFieldEnabled() {
-  const projectId = await authStore.getPersonalProjectId()
-  if (!projectId) {
-    uiStore.showToast(I18N.VALIDATION.PROJECT_NOT_FOUND, 'error')
-    return
-  }
-
-  isUpdatingSettings.value = true
-  const newValue = !settingsStore.notesFieldEnabled
-
-  try {
-    const result = await settingsStore.updateNotesFieldEnabled(
-      projectId,
-      newValue
-    )
-
-    if (result.success) {
-      uiStore.showToast(
-        newValue ? I18N.TOAST.NOTES_FIELD_ENABLED : I18N.TOAST.NOTES_FIELD_DISABLED,
-        'success'
-      )
-    } else {
-      uiStore.showToast(result.error || I18N.TOAST.SETTING_UPDATE_FAILED, 'error')
-    }
-  } catch (error) {
-    console.error('Error toggling notes field:', error)
-    uiStore.showToast(I18N.TOAST.SETTING_UPDATE_FAILED, 'error')
-  } finally {
-    isUpdatingSettings.value = false
-  }
-}
-
-async function handleSaveNotesFieldLabel() {
-  const projectId = await authStore.getPersonalProjectId()
-  if (!projectId) {
-    uiStore.showToast(I18N.VALIDATION.PROJECT_NOT_FOUND, 'error')
-    return
-  }
-
-  const label = notesFieldLabelInput.value.trim()
-  if (!label || label.length > 30) {
-    uiStore.showToast(I18N.VALIDATION.LABEL_LENGTH, 'error')
-    return
-  }
-
-  isUpdatingSettings.value = true
-  try {
-    const result = await settingsStore.updateNotesFieldLabel(projectId, label)
-
-    if (result.success) {
-      uiStore.showToast(I18N.TOAST.LABEL_UPDATED, 'success')
-    } else {
-      uiStore.showToast(result.error || 'Failed to update label', 'error')
-    }
-  } finally {
-    isUpdatingSettings.value = false
-  }
-}
-
-async function handleSaveProjectSlug() {
-  const projectId = await authStore.getPersonalProjectId()
-  if (!projectId) return
-  const slug = projectSlugInput.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '')
-  projectSlugInput.value = slug
-  isUpdatingSettings.value = true
-  try {
-    const result = await settingsStore.updateProjectSlug(projectId, slug)
-    if (result.success) uiStore.showToast(I18N.TOAST.SLUG_SAVED, 'success')
-    else uiStore.showToast(result.error || I18N.TOAST.SLUG_SAVE_FAILED, 'error')
-  } finally {
-    isUpdatingSettings.value = false
   }
 }
 

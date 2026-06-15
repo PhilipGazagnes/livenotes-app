@@ -47,6 +47,13 @@
         </div>
 
         <div v-else class="pb-24">
+          <!-- Contact banner -->
+          <ProjectContactBanner
+            v-if="projectInfo"
+            :project="projectInfo"
+            @open="openContactDrawer"
+          />
+
           <!-- Empty state -->
           <div v-if="displayedSongs.length === 0" class="text-center py-12 px-4">
             <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SONGS_MATCH_SEARCH }}</p>
@@ -54,8 +61,6 @@
 
           <!-- Song list -->
           <div v-else class="p-4 space-y-3">
-            <div class="text-white text-center py-4">Cette animation vous est proposée par <strong>Phil</strong></div>
-
             <Card
               v-for="song in displayedSongs"
               :key="song.id"
@@ -112,11 +117,14 @@ import type { FuseResultMatch } from 'fuse.js'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Card from '@/components/Card.vue'
 import PublicLyricDrawer from '@/components/PublicLyricDrawer.vue'
+import ProjectContactBanner from '@/components/ProjectContactBanner.vue'
+import ProjectContactDrawer from '@/components/ProjectContactDrawer.vue'
 import { useDrawerStore } from '@/stores/drawer'
 import { fetchPublicLibraryBySlug, fetchPublicLibrarySongs } from '@/services/publicLibraryService'
+import { fetchProjectPublicInfo } from '@/services/settingsService'
 import { getSegments } from '@/utils/highlight'
 import type { TextSegment } from '@/utils/highlight'
-import type { LibrarySongWithDetails, PublicLibraryWithTags } from '@/types/database'
+import type { LibrarySongWithDetails, PublicLibraryWithTags, ContactInfo } from '@/types/database'
 import { I18N } from '@/constants/i18n'
 
 const route = useRoute()
@@ -126,6 +134,16 @@ const library = ref<PublicLibraryWithTags | null>(null)
 const songs = ref<LibrarySongWithDetails[]>([])
 const isLoading = ref(true)
 const notFound = ref(false)
+
+interface ProjectPublicInfo {
+  name: string
+  description: string | null
+  thumbnail_url: string | null
+  contact_enabled: boolean
+  contact_info: ContactInfo | null
+}
+const projectInfo = ref<ProjectPublicInfo | null>(null)
+
 const searchQuery = ref('')
 
 onMounted(async () => {
@@ -136,7 +154,12 @@ onMounted(async () => {
   if (!lib) { notFound.value = true; isLoading.value = false; return }
 
   library.value = lib
-  songs.value = await fetchPublicLibrarySongs(lib.project_id, lib.tags.map(t => t.id))
+  const [fetchedSongs, fetchedProject] = await Promise.all([
+    fetchPublicLibrarySongs(lib.project_id, lib.tags.map(t => t.id)),
+    fetchProjectPublicInfo(lib.project_id),
+  ])
+  songs.value = fetchedSongs
+  projectInfo.value = fetchedProject
   isLoading.value = false
 })
 
@@ -208,5 +231,11 @@ function getCardTextSegments(song: LibrarySongWithDetails): TextSegment[] | unde
 
 function openDrawer(song: LibrarySongWithDetails) {
   drawerStore.push(PublicLyricDrawer, { song })
+}
+
+function openContactDrawer() {
+  if (projectInfo.value) {
+    drawerStore.push(ProjectContactDrawer, { project: projectInfo.value })
+  }
 }
 </script>

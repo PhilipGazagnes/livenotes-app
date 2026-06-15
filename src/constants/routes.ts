@@ -10,6 +10,7 @@ export const ROUTES = {
   TAGS: '/project/tags',
   ARTISTS: '/project/artists',
   SETTINGS: '/project/settings',
+  PROJECT_SETTINGS: '/project/project-settings',
   PUBLIC_LIBRARIES: '/project/public-libraries',
   PUBLIC_LIBRARY: (projectSlug: string, librarySlug: string) => `/${projectSlug}/${librarySlug}`,
 } as const

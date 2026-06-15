@@ -42,9 +42,14 @@ export const useSettingsStore = defineStore('settings', () => {
   const forceOfflineMode = ref(defaultSettings.forceOfflineMode)
 
   // Project Settings (database)
+  const projectName = ref('')
+  const projectDescription = ref<string | null>(null)
   const notesFieldLabel = ref('Notes')
   const notesFieldEnabled = ref(true)
   const projectSlug = ref<string | null>(null)
+  const thumbnailUrl = ref<string | null>(null)
+  const contactEnabled = ref(false)
+  const contactInfo = ref<Record<string, string> | null>(null)
   const isLoadingProjectSettings = ref(false)
 
   // Load settings from localStorage
@@ -128,9 +133,14 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       const data = await fetchProjectSettings(projectId)
       if (data) {
+        projectName.value = data.name || ''
+        projectDescription.value = data.description ?? null
         notesFieldLabel.value = data.notes_field_label || 'Notes'
         notesFieldEnabled.value = data.notes_field_enabled ?? true
         projectSlug.value = data.slug ?? null
+        thumbnailUrl.value = data.thumbnail_url ?? null
+        contactEnabled.value = data.contact_enabled ?? false
+        contactInfo.value = data.contact_info ?? null
       }
     } catch (error) {
       logger.error('Failed to load project settings', error)
@@ -138,6 +148,31 @@ export const useSettingsStore = defineStore('settings', () => {
       notesFieldEnabled.value = true
     } finally {
       isLoadingProjectSettings.value = false
+    }
+  }
+
+  async function updateProjectName(projectId: string, name: string) {
+    try {
+      const trimmed = name.trim()
+      if (!trimmed) throw new Error('Project name cannot be empty')
+      await updateProjectSettings(projectId, { name: trimmed })
+      projectName.value = trimmed
+      return { success: true }
+    } catch (error) {
+      logger.error('Failed to update project name', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to update project name' }
+    }
+  }
+
+  async function updateProjectDescription(projectId: string, description: string) {
+    try {
+      const trimmed = description.trim()
+      await updateProjectSettings(projectId, { description: trimmed || null })
+      projectDescription.value = trimmed || null
+      return { success: true }
+    } catch (error) {
+      logger.error('Failed to update project description', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to update description' }
     }
   }
 
@@ -188,6 +223,43 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
+  async function updateThumbnailUrl(projectId: string, url: string) {
+    try {
+      const trimmed = url.trim()
+      await updateProjectSettings(projectId, { thumbnail_url: trimmed || null })
+      thumbnailUrl.value = trimmed || null
+      return { success: true }
+    } catch (error) {
+      logger.error('Failed to update thumbnail URL', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to update thumbnail' }
+    }
+  }
+
+  async function updateContactEnabled(projectId: string, enabled: boolean) {
+    try {
+      await updateProjectSettings(projectId, { contact_enabled: enabled })
+      contactEnabled.value = enabled
+      return { success: true }
+    } catch (error) {
+      logger.error('Failed to update contact enabled', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to update setting' }
+    }
+  }
+
+  async function updateContactInfo(projectId: string, info: Record<string, string>) {
+    try {
+      const cleaned = Object.fromEntries(
+        Object.entries(info).filter(([, v]) => v && v.trim())
+      )
+      await updateProjectSettings(projectId, { contact_info: Object.keys(cleaned).length ? cleaned : null })
+      contactInfo.value = Object.keys(cleaned).length ? cleaned : null
+      return { success: true }
+    } catch (error) {
+      logger.error('Failed to update contact info', error)
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to update contact info' }
+    }
+  }
+
   function saveScrollControlSettings(char: string, amount: number, duration: number) {
     scrollDownChar.value = char
     scrollDownAmount.value = amount
@@ -215,9 +287,14 @@ export const useSettingsStore = defineStore('settings', () => {
     songClickShowsLyrics,
 
     // Project Settings (database)
+    projectName,
+    projectDescription,
     notesFieldLabel,
     notesFieldEnabled,
     projectSlug,
+    thumbnailUrl,
+    contactEnabled,
+    contactInfo,
     isLoadingProjectSettings,
 
     // Display Actions
@@ -231,8 +308,13 @@ export const useSettingsStore = defineStore('settings', () => {
 
     // Project Actions
     loadProjectSettings,
+    updateProjectName,
+    updateProjectDescription,
     updateNotesFieldLabel,
     updateNotesFieldEnabled,
     updateProjectSlug,
+    updateThumbnailUrl,
+    updateContactEnabled,
+    updateContactInfo,
   }
 })

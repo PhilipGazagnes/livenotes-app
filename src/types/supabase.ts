@@ -353,36 +353,125 @@ export type Database = {
       }
       projects: {
         Row: {
+          contact_enabled: boolean
+          contact_info: Json | null
           created_at: string | null
+          description: string | null
           id: string
           name: string
           notes_field_enabled: boolean | null
           notes_field_label: string | null
           owner_id: string
+          slug: string | null
+          thumbnail_url: string | null
           type: string
           updated_at: string | null
         }
         Insert: {
+          contact_enabled?: boolean
+          contact_info?: Json | null
           created_at?: string | null
+          description?: string | null
           id?: string
           name: string
           notes_field_enabled?: boolean | null
           notes_field_label?: string | null
           owner_id: string
+          slug?: string | null
+          thumbnail_url?: string | null
           type: string
           updated_at?: string | null
         }
         Update: {
+          contact_enabled?: boolean
+          contact_info?: Json | null
           created_at?: string | null
+          description?: string | null
           id?: string
           name?: string
           notes_field_enabled?: boolean | null
           notes_field_label?: string | null
           owner_id?: string
+          slug?: string | null
+          thumbnail_url?: string | null
           type?: string
           updated_at?: string | null
         }
         Relationships: []
+      }
+      public_libraries: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          header_image_desktop: string | null
+          header_image_mobile: string | null
+          id: string
+          is_active: boolean
+          name: string
+          project_id: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          header_image_desktop?: string | null
+          header_image_mobile?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          project_id: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          header_image_desktop?: string | null
+          header_image_mobile?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          project_id?: string
+          slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_libraries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_library_tags: {
+        Row: {
+          public_library_id: string
+          tag_id: string
+        }
+        Insert: {
+          public_library_id: string
+          tag_id: string
+        }
+        Update: {
+          public_library_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_library_tags_public_library_id_fkey"
+            columns: ["public_library_id"]
+            isOneToOne: false
+            referencedRelation: "public_libraries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_library_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       song_artists: {
         Row: {
@@ -661,7 +750,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tags_project_id_fkey"
-            columns: ["project_id"]
+            columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
@@ -673,11 +762,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_active_public_library_project_ids: { Args: never; Returns: string[] }
+      increment_song_popularity: { Args: { song_id: string }; Returns: undefined }
       immutable_unaccent: { Args: { "": string }; Returns: string }
-      increment_song_popularity: {
-        Args: { song_id: string }
-        Returns: undefined
-      }
       unaccent: { Args: { "": string }; Returns: string }
       update_list_item_positions: {
         Args: { item_positions: Json }

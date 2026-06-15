@@ -40,6 +40,8 @@ export const I18N = {
     CLEAR: 'Clear',
     ADD_TO_LIBRARY: 'Add to Library',
     RESET: 'Reset',
+    DOWNLOAD_CONTACT_CARD: 'Download Contact Card',
+    SAVE_CONTACT: 'Save Contact Info',
   },
 
   // Loading states for buttons
@@ -50,6 +52,7 @@ export const I18N = {
     CREATING_ACCOUNT: 'Creating account...',
     GENERATING: 'Generating...',
     SYNCING: 'Syncing...',
+    SAVING_CONTACT: 'Saving...',
   },
 
   // ============================================================================
@@ -62,6 +65,7 @@ export const I18N = {
     LOGOUT: 'Logout',
     SETTINGS: 'Settings',
     ARTISTS: 'Artists',
+    PROJECT_SETTINGS: 'Project',
   },
 
   // ============================================================================
@@ -79,6 +83,7 @@ export const I18N = {
     SETTINGS: 'Settings',
     ARTISTS: 'Artists',
     PUBLIC_LIBRARIES: 'Public Libraries',
+    PROJECT_SETTINGS: 'Project Settings',
     MY_LIBRARY: 'My Library',
     SONGS_WITH_TAG: (tagName: string) => `Songs with tag "${tagName}"`,
     SONGS_BY_ARTIST: (artistName: string) => `Songs by ${artistName}`,
@@ -359,6 +364,7 @@ export const I18N = {
     TOGGLE_SHOW_LYRICS: 'Toggle show lyrics on tap',
     TOGGLE_FORCE_OFFLINE: 'Toggle force offline mode',
     TOGGLE_SHOW_NOTES_FIELD: 'Toggle show notes field',
+    TOGGLE_CONTACT_ENABLED: 'Toggle contact banner on public pages',
   },
 
   // ============================================================================
@@ -404,6 +410,16 @@ export const I18N = {
     SETTING_UPDATE_FAILED: 'Failed to update setting',
     ARTIST_RENAMED: 'Artist renamed successfully',
     ARTIST_DELETED: 'Artist deleted successfully',
+    CONTACT_SAVED: 'Contact info saved',
+    CONTACT_SAVE_FAILED: 'Failed to save contact info',
+    THUMBNAIL_SAVED: 'Thumbnail saved',
+    THUMBNAIL_SAVE_FAILED: 'Failed to save thumbnail',
+    CONTACT_ENABLED_ON: 'Contact banner enabled',
+    CONTACT_ENABLED_OFF: 'Contact banner disabled',
+    PROJECT_NAME_SAVED: 'Project name saved',
+    PROJECT_NAME_SAVE_FAILED: 'Failed to save project name',
+    PROJECT_DESCRIPTION_SAVED: 'Description saved',
+    PROJECT_DESCRIPTION_SAVE_FAILED: 'Failed to save description',
   },
 
   // ============================================================================
@@ -448,6 +464,23 @@ export const I18N = {
     RESET_TO_DEFAULTS: 'Reset to defaults',
     RESET_SETTINGS_TITLE: 'Reset Settings',
     RESET_SETTINGS_CONFIRM: 'Are you sure you want to reset all settings to their default values?',
+    PROJECT_NAME: 'Project Name',
+    PROJECT_NAME_HINT: 'The name displayed publicly and in your contact card',
+    PROJECT_DESCRIPTION: 'Description',
+    PROJECT_DESCRIPTION_HINT: 'A short bio or description (max 200 characters)',
+    PROJECT_THUMBNAIL: 'Project Thumbnail',
+    PROJECT_THUMBNAIL_DESC: 'Image URL displayed on public pages and in the contact card',
+    CONTACT_INFO: 'Contact Info',
+    CONTACT_SHOW_ON_PUBLIC: 'Show on public pages',
+    CONTACT_SHOW_ON_PUBLIC_DESC: 'Display a contact banner on your public library pages',
+    CONTACT_PHONE: 'Phone',
+    CONTACT_EMAIL: 'Email',
+    CONTACT_LOCATION: 'Location',
+    CONTACT_WEBSITE: 'Website',
+    CONTACT_FACEBOOK: 'Facebook',
+    CONTACT_INSTAGRAM: 'Instagram',
+    CONTACT_X: 'X (Twitter)',
+    CONTACT_YOUTUBE: 'YouTube',
   },
 
   // ============================================================================
@@ -515,6 +548,15 @@ export const I18N = {
     MINUTES_AGO: (m: number) => `${m}m ago`,
     HOURS_AGO: (h: number) => `${h}h ago`,
     DAYS_AGO: (d: number) => `${d}d ago`,
+  },
+  // ============================================================================
+  // PUBLIC CONTACT BANNER
+  // ============================================================================
+  PUBLIC_CONTACT: {
+    BROUGHT_BY: 'This entertainment is brought to you by',
+    SEE_CONTACT: 'Info / contact',
+    CONTACT_CARD_TITLE: (name: string) => `Contact ${name}`,
+    DOWNLOAD_VCARD: 'Download Contact Card',
   },
 } as const
 
