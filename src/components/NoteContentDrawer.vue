@@ -13,6 +13,7 @@
       </div>
       <button
         @click="drawerStore.pop()"
+        :aria-label="I18N.ARIA.CLOSE"
         class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,7 +48,7 @@
         <div v-if="localNote.type === 'looper' && looperContent" class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-xs font-medium text-gray-400 mb-1">BPM</label>
+              <label class="block text-xs font-medium text-gray-400 mb-1">{{ I18N.NOTES.LOOPER_BPM }}</label>
               <div class="text-2xl font-bold text-cyan-400">{{ looperContent.bpm }}</div>
             </div>
           </div>
@@ -69,7 +70,7 @@
               <div class="text-gray-200 bg-gray-900/50 rounded px-3 py-2">{{ looperContent.pattern2_var }}</div>
             </div>
             <div v-if="looperContent.comment">
-              <label class="block text-xs font-medium text-gray-400 mb-1">Comment</label>
+              <label class="block text-xs font-medium text-gray-400 mb-1">{{ I18N.NOTES.LOOPER_ADDITIONAL_NOTES }}</label>
               <div class="text-gray-200 bg-gray-900/50 rounded px-3 py-2 whitespace-pre-wrap">{{ looperContent.comment }}</div>
             </div>
           </div>
@@ -91,7 +92,7 @@
         </div>
 
         <div v-else-if="localNote.type === 'image'" class="space-y-3">
-          <img v-if="isValidUrl(localNote.content ?? '')" :src="localNote.content ?? undefined" alt="Note image" class="w-full rounded border border-gray-700" />
+          <img v-if="isValidUrl(localNote.content ?? '')" :src="localNote.content ?? undefined" :alt="I18N.NOTES.URL_CONTENT" class="w-full rounded border border-gray-700" />
           <p class="text-sm text-gray-400 break-all">{{ localNote.content }}</p>
         </div>
 
@@ -114,22 +115,24 @@
   <div class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4 flex gap-3">
     <button
       @click="handleEdit"
+      :aria-label="I18N.ARIA.EDIT_NOTE"
       class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
       </svg>
-      Edit
+      {{ I18N.BUTTONS.EDIT }}
     </button>
     <button
       @click="handleDelete"
       :disabled="isDeleting"
+      :aria-label="I18N.ARIA.DELETE_NOTE"
       class="px-4 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-600 text-red-400 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
       </svg>
-      {{ isDeleting ? '...' : 'Delete' }}
+      {{ isDeleting ? '...' : I18N.BUTTONS.DELETE }}
     </button>
   </div>
 </template>
@@ -141,6 +144,7 @@ import { useNotesStore } from '@/stores/notes'
 import { useUiStore } from '@/stores/ui'
 import type { Note, LooperContent } from '@/types/database'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 import NoteEditor from './NoteEditor.vue'
 
 const props = defineProps<{
@@ -180,8 +184,8 @@ async function handleDelete() {
   const confirmed = await uiStore.showConfirm(
     'Delete Note',
     `Are you sure you want to delete "${localNote.value.title || 'this note'}"?`,
-    'Delete',
-    'Cancel'
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL
   )
   if (!confirmed) return
 
@@ -199,12 +203,7 @@ async function handleDelete() {
 }
 
 function getNoteTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    songcode: 'SongCode', plain_text: 'Plain Text', youtube: 'YouTube',
-    image: 'Image', video: 'Video', audio: 'Audio', tablature: 'Tablature',
-    looper_notes: 'Looper Notes', looper: 'Looper', lyrics: 'Lyrics', chords: 'Chords',
-  }
-  return labels[type] || type
+  return (I18N.NOTES.TYPE_LABELS as Record<string, string>)[type] ?? type
 }
 
 function getNoteIcon(type: string) {
@@ -265,10 +264,10 @@ function formatDate(dateString: string): string {
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffMins < 1) return I18N.TIME.JUST_NOW
+  if (diffMins < 60) return I18N.TIME.MINUTES_AGO(diffMins)
+  if (diffHours < 24) return I18N.TIME.HOURS_AGO(diffHours)
+  if (diffDays < 7) return I18N.TIME.DAYS_AGO(diffDays)
   return date.toLocaleDateString()
 }
 

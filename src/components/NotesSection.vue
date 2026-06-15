@@ -83,6 +83,7 @@ import { useUiStore } from '@/stores/ui'
 import type { Note, NoteType } from '@/types/database'
 import { NOTE_TYPES } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 import NoteCard from './NoteCard.vue'
 import NoteEditor from './NoteEditor.vue'
 import CRUDEmptyState from './CRUDEmptyState.vue'
@@ -119,20 +120,7 @@ onMounted(async () => {
 })
 
 function noteTypeLabel(type: NoteType): string {
-  const labels: Record<NoteType, string> = {
-    songcode: 'SongCode',
-    plain_text: 'Plain Text',
-    youtube: 'YouTube',
-    image: 'Image',
-    video: 'Video',
-    audio: 'Audio',
-    tablature: 'Tablature',
-    looper_notes: 'Looper Notes',
-    looper: 'Looper',
-    lyrics: 'Lyrics',
-    chords: 'Chords',
-  }
-  return labels[type] || type
+  return (I18N.NOTES.TYPE_LABELS as Record<string, string>)[type] ?? type
 }
 
 function handleAddNote(type: NoteType) {
@@ -152,8 +140,8 @@ async function handleDeleteNote(note: Note) {
   const confirmed = await uiStore.showConfirm(
     'Delete Note',
     MESSAGES.CONFIRM_DELETE_NOTE(note.title),
-    'Delete',
-    'Cancel'
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL
   )
 
   if (!confirmed) return

@@ -24,7 +24,7 @@
         v-model="artistSearch"
         type="text"
         class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-        placeholder="Search or add artists..."
+        :placeholder="I18N.PLACEHOLDERS.SEARCH_OR_ADD_ARTISTS"
         @input="handleArtistSearch"
         @keydown.enter.prevent="handleArtistEnter"
       />
@@ -71,6 +71,7 @@
 import { ref, computed, watch } from 'vue'
 import { useGlobalSongsStore } from '@/stores/globalSongs'
 import type { ArtistV2 } from '@/types/database'
+import { I18N } from '@/constants/i18n'
 
 interface Props {
   modelValue: string[] // Array of artist IDs

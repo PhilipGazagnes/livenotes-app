@@ -18,8 +18,8 @@
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
         </svg>
-        <h2 class="text-xl font-semibold text-white mb-2">{{ MESSAGES.EMPTY_LIBRARY_NO_SONGS }}</h2>
-        <p class="text-gray-400 mb-6">{{ MESSAGES.EMPTY_LIBRARY_NO_SONGS_SUBTITLE }}</p>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIBRARY_EMPTY }}</h2>
+        <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIBRARY_EMPTY_SUBTITLE }}</p>
         
         <button
           @click="showAddSongModal = true"
@@ -28,7 +28,7 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
-          Add Your First Song
+          {{ I18N.LIBRARY.ADD_FIRST_SONG }}
         </button>
       </div>
 
@@ -38,7 +38,7 @@
           <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
-          <p class="text-gray-400">No songs match your filters</p>
+          <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SONGS_MATCH_FILTERS }}</p>
         </div>
         <div v-else class="p-4 space-y-4">
           <Card
@@ -69,60 +69,60 @@
                   @click="handleBulkDeleteSongs"
                   class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg"
                 >
-                  Delete Songs
+                  {{ I18N.BULK_ACTIONS.DELETE }}
                 </button>
                 <button
                   @click="handleBulkAddToLists"
                   class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg"
                 >
-                  Add to Lists
+                  {{ I18N.BULK_ACTIONS.ADD_TO_LISTS }}
                 </button>
                 <button
                   @click="handleBulkAssignTags"
                   class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
                 >
-                  Assign Tags
+                  {{ I18N.BULK_ACTIONS.ASSIGN_TAGS }}
                 </button>
                 <button
                   @click="handleBulkRemoveTags"
                   class="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg"
                 >
-                  Remove Tags
+                  {{ I18N.BULK_ACTIONS.REMOVE_TAGS }}
                 </button>
               </div>
               
               <!-- Selection Controls -->
               <div class="flex items-center justify-between">
-                <span class="text-white text-sm">{{ uiStore.selectedIds.length }} selected</span>
+                <span class="text-white text-sm">{{ I18N.COUNTERS.SELECTED(uiStore.selectedIds.length) }}</span>
                 <div class="flex gap-2">
                   <button
                     @click="handleSelectAll"
                     class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg"
                   >
-                    Select All
+                    {{ I18N.BUTTONS.SELECT_ALL }}
                   </button>
                   <button
                     @click="handleDeselectAll"
                     class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg"
                   >
-                    Deselect All
+                    {{ I18N.BUTTONS.DESELECT_ALL }}
                   </button>
                   <button
                     @click="uiStore.exitSelectionMode()"
                     class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
                   >
-                    Done
+                    {{ I18N.BUTTONS.DONE }}
                   </button>
                 </div>
               </div>
             </div>
             <div v-else class="flex items-center justify-between">
-              <span class="text-gray-400 text-sm">Select songs to perform bulk actions</span>
+              <span class="text-gray-400 text-sm">{{ I18N.LIBRARY.SELECT_SONGS_HINT }}</span>
               <button
                 @click="uiStore.exitSelectionMode()"
                 class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg"
               >
-                Cancel
+                {{ I18N.BUTTONS.CANCEL }}
               </button>
             </div>
           </div>
@@ -138,14 +138,14 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Search songs..."
+                :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
                 class="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
                 v-if="searchQuery"
                 @click="searchQuery = ''"
                 class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-                aria-label="Clear search"
+                :aria-label="I18N.ARIA.CLEAR_SEARCH"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -156,7 +156,7 @@
               @click="showFilterByTagsModal = true"
               class="px-4 py-3 bg-gray-900 border rounded-lg transition-colors"
               :class="selectedTagIds.length > 0 ? 'border-blue-500 text-blue-400' : 'border-gray-700 text-gray-400 hover:text-white'"
-              aria-label="Filter by tags"
+              :aria-label="I18N.FILTER.FILTER_BY_TAGS"
             >
               <div class="flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -243,7 +243,7 @@ import { useDrawerStore } from '@/stores/drawer'
 import { useSettingsStore } from '@/stores/settings'
 import type { LibrarySongWithDetails } from '@/types/database'
 import type { FuseResultMatch } from 'fuse.js'
-import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 import { getSegments } from '@/utils/highlight'
 import type { TextSegment } from '@/utils/highlight'
 import AppHeader from '@/components/AppHeader.vue'
@@ -312,12 +312,12 @@ const displayedSongs = computed(() => {
 // Compute dynamic page title
 const pageTitle = computed(() => {
   if (route.query.tagName) {
-    return `Songs with tag "${route.query.tagName}"`
+    return I18N.PAGE_TITLES.SONGS_WITH_TAG(route.query.tagName as string)
   }
   if (route.query.artistName) {
-    return `Songs by ${route.query.artistName}`
+    return I18N.PAGE_TITLES.SONGS_BY_ARTIST(route.query.artistName as string)
   }
-  return 'My Library'
+  return I18N.PAGE_TITLES.MY_LIBRARY
 })
 
 // Lifecycle
@@ -368,8 +368,8 @@ function applyQueryFilters() {
 }
 
 const headerMenuItems = [
-  { label: 'Create New Song', callback: handleCreateNewSong },
-  { label: 'Select Songs', callback: handleSelectSongs },
+  { label: I18N.DROPDOWN.CREATE_NEW_SONG, callback: handleCreateNewSong },
+  { label: I18N.DROPDOWN.SELECT_SONGS, callback: handleSelectSongs },
 ]
 
 function getCardTitleSegments(librarySong: LibrarySongWithDetails): TextSegment[] | undefined {
@@ -407,9 +407,9 @@ function getCardTextSegments(librarySong: LibrarySongWithDetails): TextSegment[]
 
 function getSongDropdownItems(librarySong: LibrarySongWithDetails) {
   return [
-    { label: 'Manage Tags', callback: () => handleManageTags(librarySong) },
-    { label: 'Manage Lists', callback: () => handleManageLists(librarySong) },
-    { label: 'Remove from Library', variant: 'danger' as const, callback: () => handleRemoveFromLibrary(librarySong) },
+    { label: I18N.DROPDOWN.MANAGE_TAGS, callback: () => handleManageTags(librarySong) },
+    { label: I18N.DROPDOWN.MANAGE_LISTS, callback: () => handleManageLists(librarySong) },
+    { label: I18N.DROPDOWN.REMOVE_FROM_LIBRARY, variant: 'danger' as const, callback: () => handleRemoveFromLibrary(librarySong) },
   ]
 }
 
@@ -455,17 +455,17 @@ function handleManageLists(librarySong: LibrarySongWithDetails) {
 
 async function handleRemoveFromLibrary(librarySong: LibrarySongWithDetails) {
   const confirmed = await uiStore.showConfirm(
-    'Remove from Library',
-    MESSAGES.CONFIRM_REMOVE_FROM_LIBRARY(librarySong.custom_title || librarySong.song?.title || 'this song'),
-    'Remove',
-    'Cancel'
+    I18N.LIBRARY.REMOVE_FROM_LIBRARY_TITLE,
+    I18N.LIBRARY.REMOVE_FROM_LIBRARY_CONFIRM(librarySong.custom_title || librarySong.song?.title || 'this song'),
+    I18N.LIBRARY.REMOVE_BUTTON,
+    I18N.BUTTONS.CANCEL
   )
   
   if (!confirmed) return
   
   try {
     await libraryStore.removeFromLibrary(librarySong.id)
-    uiStore.showToast(MESSAGES.SUCCESS.SONG_REMOVED_FROM_LIBRARY, 'success')
+    uiStore.showToast(I18N.TOAST.SONGS_REMOVED_FROM_LIBRARY(1), 'success')
   } catch (err) {
     uiStore.showErrorToast('remove song from library', err as Error)
   }
@@ -491,18 +491,19 @@ function handleListsUpdated() {
 // Bulk operations
 function handleBulkDeleteSongs() {
   uiStore.showConfirm(
-    'Delete Songs',
-    `Are you sure you want to remove ${uiStore.selectedIds.length} song(s) from your library?`,
-    'Delete',
-    'Cancel'
+    I18N.LIBRARY.DELETE_SONGS_TITLE,
+    I18N.LIBRARY.DELETE_SONGS_CONFIRM(uiStore.selectedIds.length),
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL
   ).then(async (confirmed) => {
     if (!confirmed) return
-    
+
     try {
+      const count = uiStore.selectedIds.length
       for (const librarySongId of uiStore.selectedIds) {
         await libraryStore.removeFromLibrary(librarySongId)
       }
-      uiStore.showToast(`${uiStore.selectedIds.length} song(s) removed from library`, 'success')
+      uiStore.showToast(I18N.TOAST.SONGS_REMOVED_FROM_LIBRARY(count), 'success')
       uiStore.exitSelectionMode()
       await libraryStore.loadLibrary()
     } catch (err) {
@@ -528,7 +529,7 @@ async function handleBulkAssignTagsApply(tagIds: string[]) {
   
   try {
     await tagsStore.bulkAssignTags(uiStore.selectedIds, tagIds)
-    uiStore.showToast(MESSAGES.SUCCESS_TAGS_ASSIGNED(songCount), 'success')
+    uiStore.showToast(I18N.TOAST.BULK_TAGS_ASSIGNED(songCount), 'success')
     await libraryStore.loadLibrary()
     uiStore.exitSelectionMode()
   } catch (err) {
@@ -541,7 +542,7 @@ async function handleBulkRemoveTagsApply(tagIds: string[]) {
   
   try {
     await tagsStore.bulkRemoveTags(uiStore.selectedIds, tagIds)
-    uiStore.showToast(MESSAGES.SUCCESS_TAGS_REMOVED(songCount), 'success')
+    uiStore.showToast(I18N.TOAST.BULK_TAGS_REMOVED(songCount), 'success')
     await libraryStore.loadLibrary()
     uiStore.exitSelectionMode()
   } catch (err) {
@@ -558,7 +559,7 @@ async function handleBulkAddToListsApply(listIds: string[]) {
         await listsStore.addLibrarySongToList(listId, librarySongId)
       }
     }
-    uiStore.showToast(MESSAGES.SUCCESS_SONGS_ADDED_TO_LIST(songCount, 'lists'), 'success')
+    uiStore.showToast(I18N.TOAST.BULK_ADDED_TO_LISTS(songCount), 'success')
     await libraryStore.loadLibrary()
     uiStore.exitSelectionMode()
   } catch (err) {

@@ -3,7 +3,7 @@
     <ion-content>
       <!-- Header -->
       <AppHeader
-        title="Settings"
+        :title="I18N.PAGE_TITLES.SETTINGS"
         :show-back="true"
         :show-menu="true"
       />
@@ -12,15 +12,15 @@
       <div class="p-4 space-y-6">
         <!-- List Display Section -->
         <section>
-          <h2 class="text-lg font-semibold text-white mb-4">List Display</h2>
-          
+          <h2 class="text-lg font-semibold text-white mb-4">{{ I18N.SETTINGS.LIST_DISPLAY }}</h2>
+
           <div class="space-y-4">
             <!-- Show Tags Toggle -->
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h3 class="text-white font-medium mb-1">Show Tags</h3>
-                  <p class="text-sm text-gray-400">Display song tags in list detail view</p>
+                  <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.SHOW_TAGS }}</h3>
+                  <p class="text-sm text-gray-400">{{ I18N.SETTINGS.SHOW_TAGS_DESC }}</p>
                 </div>
                 <button
                   @click="settingsStore.toggleShowTagsInLists()"
@@ -28,7 +28,7 @@
                   :class="settingsStore.showTagsInLists ? 'bg-blue-600' : 'bg-gray-600'"
                   role="switch"
                   :aria-checked="settingsStore.showTagsInLists"
-                  aria-label="Toggle show tags in lists"
+                  :aria-label="I18N.ARIA.TOGGLE_SHOW_TAGS"
                 >
                   <span
                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -42,8 +42,8 @@
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h3 class="text-white font-medium mb-1">Show Lists</h3>
-                  <p class="text-sm text-gray-400">Display which lists contain each song in list detail view</p>
+                  <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.SHOW_LISTS }}</h3>
+                  <p class="text-sm text-gray-400">{{ I18N.SETTINGS.SHOW_LISTS_DESC }}</p>
                 </div>
                 <button
                   @click="settingsStore.toggleShowListsInLists()"
@@ -51,7 +51,7 @@
                   :class="settingsStore.showListsInLists ? 'bg-blue-600' : 'bg-gray-600'"
                   role="switch"
                   :aria-checked="settingsStore.showListsInLists"
-                  aria-label="Toggle show lists in lists"
+                  :aria-label="I18N.ARIA.TOGGLE_SHOW_LISTS"
                 >
                   <span
                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -65,8 +65,8 @@
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h3 class="text-white font-medium mb-1">Show Artists</h3>
-                  <p class="text-sm text-gray-400">Display artist names in list detail view</p>
+                  <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.SHOW_ARTISTS }}</h3>
+                  <p class="text-sm text-gray-400">{{ I18N.SETTINGS.SHOW_ARTISTS_DESC }}</p>
                 </div>
                 <button
                   @click="settingsStore.toggleShowArtistsInLists()"
@@ -74,7 +74,7 @@
                   :class="settingsStore.showArtistsInLists ? 'bg-blue-600' : 'bg-gray-600'"
                   role="switch"
                   :aria-checked="settingsStore.showArtistsInLists"
-                  aria-label="Toggle show artists in lists"
+                  :aria-label="I18N.ARIA.TOGGLE_SHOW_ARTISTS"
                 >
                   <span
                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -87,8 +87,8 @@
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h3 class="text-white font-medium mb-1">Show lyrics on tap</h3>
-                  <p class="text-sm text-gray-400">Open lyrics directly when tapping a song (live mode). When off, the notes list opens instead.</p>
+                  <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.SHOW_LYRICS_ON_TAP }}</h3>
+                  <p class="text-sm text-gray-400">{{ I18N.SETTINGS.SHOW_LYRICS_ON_TAP_DESC }}</p>
                 </div>
                 <button
                   @click="settingsStore.songClickShowsLyrics = !settingsStore.songClickShowsLyrics"
@@ -96,7 +96,7 @@
                   :class="settingsStore.songClickShowsLyrics ? 'bg-blue-600' : 'bg-gray-600'"
                   role="switch"
                   :aria-checked="settingsStore.songClickShowsLyrics"
-                  aria-label="Toggle show lyrics on song tap"
+                  :aria-label="I18N.ARIA.TOGGLE_SHOW_LYRICS"
                 >
                   <span
                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -110,7 +110,7 @@
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h3 class="text-white font-medium mb-1">Lyrics default text size</h3>
+                  <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.LYRICS_TEXT_SIZE }}</h3>
                   <p class="text-sm text-gray-400">Starting zoom level when opening the lyrics drawer</p>
                 </div>
                 <div class="flex items-center gap-2 ml-4">
@@ -118,6 +118,7 @@
                     @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.max(0.75, settingsStore.lyricsDefaultFontSize - 0.125)) * 1000) / 1000"
                     :disabled="settingsStore.lyricsDefaultFontSize <= 0.75"
                     class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-700 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    :aria-label="I18N.ARIA.ZOOM_OUT"
                   >
                     <span class="text-sm font-bold leading-none">A</span><span class="text-xs leading-none">−</span>
                   </button>
@@ -126,6 +127,7 @@
                     @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.min(3.0, settingsStore.lyricsDefaultFontSize + 0.125)) * 1000) / 1000"
                     :disabled="settingsStore.lyricsDefaultFontSize >= 3.0"
                     class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-700 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    :aria-label="I18N.ARIA.ZOOM_IN"
                   >
                     <span class="text-sm font-bold leading-none">A</span><span class="text-xs leading-none">+</span>
                   </button>
@@ -137,15 +139,15 @@
 
         <!-- Notes Field Section -->
         <section>
-          <h2 class="text-lg font-semibold text-white mb-4">Notes Field</h2>
-          
+          <h2 class="text-lg font-semibold text-white mb-4">{{ I18N.SETTINGS.NOTES_FIELD }}</h2>
+
           <div class="space-y-4">
             <!-- Enable/Disable Notes Field -->
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
               <div class="flex items-center justify-between">
                 <div class="flex-1">
-                  <h3 class="text-white font-medium mb-1">Show Notes Field</h3>
-                  <p class="text-sm text-gray-400">Display notes field when creating or editing songs</p>
+                  <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.SHOW_NOTES_FIELD }}</h3>
+                  <p class="text-sm text-gray-400">{{ I18N.SETTINGS.SHOW_NOTES_FIELD_DESC }}</p>
                 </div>
                 <button
                   @click="toggleNotesFieldEnabled"
@@ -154,7 +156,7 @@
                   :class="settingsStore.notesFieldEnabled ? 'bg-blue-600' : 'bg-gray-600'"
                   role="switch"
                   :aria-checked="settingsStore.notesFieldEnabled"
-                  aria-label="Toggle show notes field"
+                  :aria-label="I18N.ARIA.TOGGLE_SHOW_NOTES_FIELD"
                 >
                   <span
                     class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -168,10 +170,10 @@
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
               <div>
                 <label for="notesFieldLabel" class="block text-white font-medium mb-2">
-                  Field Label
+                  {{ I18N.SETTINGS.FIELD_LABEL_SECTION }}
                 </label>
                 <p class="text-sm text-gray-400 mb-3">
-                  Customize the label for the notes field (e.g., "Looper", "Notes", "About")
+                  {{ I18N.SETTINGS.FIELD_LABEL_HINT }}
                 </p>
                 <div class="flex gap-2">
                   <input
@@ -180,7 +182,7 @@
                     type="text"
                     maxlength="30"
                     class="flex-1 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
-                    placeholder="Enter label..."
+                    :placeholder="I18N.PLACEHOLDERS.FIELD_LABEL"
                     @keyup.enter="handleSaveNotesFieldLabel"
                   />
                   <button
@@ -188,7 +190,7 @@
                     :disabled="isUpdatingSettings || !notesFieldLabelInput.trim()"
                     class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
-                    Save
+                    {{ I18N.BUTTONS.SAVE }}
                   </button>
                 </div>
                 <p class="text-xs text-gray-500 mt-1">
@@ -201,9 +203,9 @@
 
         <!-- Public Libraries Section -->
         <section>
-          <h2 class="text-lg font-semibold text-white mb-4">Public Libraries</h2>
+          <h2 class="text-lg font-semibold text-white mb-4">{{ I18N.SETTINGS.PUBLIC_LIBRARIES }}</h2>
           <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-            <label for="projectSlug" class="block text-white font-medium mb-2">Project URL slug</label>
+            <label for="projectSlug" class="block text-white font-medium mb-2">{{ I18N.SETTINGS.PROJECT_URL_SLUG }}</label>
             <p class="text-sm text-gray-400 mb-3">
               Used to build your public library URLs: <span class="text-gray-300">yourapp.com/<strong>slug</strong>/library-name</span>
             </p>
@@ -214,7 +216,7 @@
                 type="text"
                 maxlength="40"
                 class="flex-1 px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition lowercase"
-                placeholder="my-band-name"
+                :placeholder="I18N.PLACEHOLDERS.PROJECT_SLUG"
                 @keyup.enter="handleSaveProjectSlug"
               />
               <button
@@ -222,23 +224,23 @@
                 :disabled="isUpdatingSettings || !projectSlugInput.trim()"
                 class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Save
+                {{ I18N.BUTTONS.SAVE }}
               </button>
             </div>
-            <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers and hyphens only. Cannot be "project".</p>
+            <p class="text-xs text-gray-500 mt-1">{{ I18N.VALIDATION.PROJECT_SLUG_HINT }}</p>
           </div>
         </section>
 
         <!-- Offline Section -->
         <section>
-          <h2 class="text-lg font-semibold text-white mb-4">Offline</h2>
+          <h2 class="text-lg font-semibold text-white mb-4">{{ I18N.SETTINGS.OFFLINE }}</h2>
 
           <!-- Force Offline Mode Toggle -->
           <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-4">
             <div class="flex items-center justify-between">
               <div class="flex-1">
-                <h3 class="text-white font-medium mb-1">Force Offline Mode</h3>
-                <p class="text-sm text-gray-400">Use cached data only. Enable this when connected to a network without internet (e.g. a mixing console hotspot).</p>
+                <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.FORCE_OFFLINE }}</h3>
+                <p class="text-sm text-gray-400">{{ I18N.SETTINGS.FORCE_OFFLINE_DESC }}</p>
                 <p v-if="settingsStore.forceOfflineMode" class="text-xs text-orange-400 mt-2">Offline mode forced on. Remote sync is disabled.</p>
               </div>
               <button
@@ -247,7 +249,7 @@
                 :class="settingsStore.forceOfflineMode ? 'bg-orange-500' : 'bg-gray-600'"
                 role="switch"
                 :aria-checked="settingsStore.forceOfflineMode"
-                aria-label="Toggle force offline mode"
+                :aria-label="I18N.ARIA.TOGGLE_FORCE_OFFLINE"
               >
                 <span
                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
@@ -259,7 +261,7 @@
 
           <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 space-y-4">
             <div>
-              <h3 class="text-white font-medium mb-1">Sync for offline use</h3>
+              <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.SYNC_FOR_OFFLINE }}</h3>
               <p class="text-sm text-gray-400 mb-3">
                 Downloads all your songs, setlists, and notes so the app works without an internet connection.
               </p>
@@ -280,9 +282,9 @@
 
               <div class="flex items-center justify-between">
                 <p v-if="lastSyncedAt" class="text-xs text-gray-500">
-                  Last synced: {{ formatSyncDate(lastSyncedAt) }}
+                  {{ I18N.SETTINGS.LAST_SYNCED(formatSyncDate(lastSyncedAt)) }}
                 </p>
-                <p v-else class="text-xs text-gray-500">Never synced</p>
+                <p v-else class="text-xs text-gray-500">{{ I18N.SETTINGS.NEVER_SYNCED }}</p>
 
                 <button
                   @click="handleWarmUp"
@@ -292,12 +294,12 @@
                   <svg v-if="isSyncing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                   </svg>
-                  <span>{{ isSyncing ? 'Syncing...' : 'Sync now' }}</span>
+                  <span>{{ isSyncing ? I18N.LOADING.SYNCING : I18N.BUTTONS.SYNC_NOW }}</span>
                 </button>
               </div>
 
               <p v-if="!isOnline" class="text-xs text-orange-400 mt-2">
-                You must be online to sync data.
+                {{ I18N.VALIDATION.SYNC_REQUIRES_ONLINE }}
               </p>
             </div>
           </div>
@@ -356,7 +358,7 @@
               @click="handleSaveScrollSettings"
               class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
             >
-              Save
+              {{ I18N.BUTTONS.SAVE }}
             </button>
           </div>
         </section>
@@ -364,7 +366,7 @@
         <!-- Reset Section -->
         <section>
           <h2 class="text-lg font-semibold text-white mb-4">Reset</h2>
-          
+
           <button
             @click="handleReset"
             class="w-full bg-gray-800 rounded-lg p-4 border border-gray-700 text-left hover:bg-gray-750 transition-colors"
@@ -374,7 +376,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
               <div class="flex-1">
-                <h3 class="text-white font-medium mb-1">Reset to Defaults</h3>
+                <h3 class="text-white font-medium mb-1">{{ I18N.SETTINGS.RESET_TO_DEFAULTS }}</h3>
                 <p class="text-sm text-gray-400">Restore all settings to their default values</p>
               </div>
             </div>
@@ -396,6 +398,7 @@
 import { ref, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
+import { I18N } from '@/constants/i18n'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -421,9 +424,9 @@ const { execute } = usePageLoad()
 async function handleWarmUp() {
   try {
     await warmUp()
-    uiStore.showToast('All data synced for offline use', 'success')
+    uiStore.showToast(I18N.TOAST.SYNCED_OFFLINE, 'success')
   } catch {
-    uiStore.showToast('Sync failed. Please try again.', 'error')
+    uiStore.showToast(I18N.TOAST.SYNC_FAILED, 'error')
   }
 }
 
@@ -444,30 +447,30 @@ onMounted(() => {
 async function toggleNotesFieldEnabled() {
   const projectId = await authStore.getPersonalProjectId()
   if (!projectId) {
-    uiStore.showToast('Project not found', 'error')
+    uiStore.showToast(I18N.VALIDATION.PROJECT_NOT_FOUND, 'error')
     return
   }
 
   isUpdatingSettings.value = true
   const newValue = !settingsStore.notesFieldEnabled
-  
+
   try {
     const result = await settingsStore.updateNotesFieldEnabled(
       projectId,
       newValue
     )
-    
+
     if (result.success) {
       uiStore.showToast(
-        newValue ? 'Notes field enabled' : 'Notes field disabled',
+        newValue ? I18N.TOAST.NOTES_FIELD_ENABLED : I18N.TOAST.NOTES_FIELD_DISABLED,
         'success'
       )
     } else {
-      uiStore.showToast(result.error || 'Failed to update setting', 'error')
+      uiStore.showToast(result.error || I18N.TOAST.SETTING_UPDATE_FAILED, 'error')
     }
   } catch (error) {
     console.error('Error toggling notes field:', error)
-    uiStore.showToast('Failed to update setting', 'error')
+    uiStore.showToast(I18N.TOAST.SETTING_UPDATE_FAILED, 'error')
   } finally {
     isUpdatingSettings.value = false
   }
@@ -476,22 +479,22 @@ async function toggleNotesFieldEnabled() {
 async function handleSaveNotesFieldLabel() {
   const projectId = await authStore.getPersonalProjectId()
   if (!projectId) {
-    uiStore.showToast('Project not found', 'error')
+    uiStore.showToast(I18N.VALIDATION.PROJECT_NOT_FOUND, 'error')
     return
   }
 
   const label = notesFieldLabelInput.value.trim()
   if (!label || label.length > 30) {
-    uiStore.showToast('Label must be between 1 and 30 characters', 'error')
+    uiStore.showToast(I18N.VALIDATION.LABEL_LENGTH, 'error')
     return
   }
 
   isUpdatingSettings.value = true
   try {
     const result = await settingsStore.updateNotesFieldLabel(projectId, label)
-    
+
     if (result.success) {
-      uiStore.showToast('Label updated successfully', 'success')
+      uiStore.showToast(I18N.TOAST.LABEL_UPDATED, 'success')
     } else {
       uiStore.showToast(result.error || 'Failed to update label', 'error')
     }
@@ -508,8 +511,8 @@ async function handleSaveProjectSlug() {
   isUpdatingSettings.value = true
   try {
     const result = await settingsStore.updateProjectSlug(projectId, slug)
-    if (result.success) uiStore.showToast('Slug saved', 'success')
-    else uiStore.showToast(result.error || 'Failed to save slug', 'error')
+    if (result.success) uiStore.showToast(I18N.TOAST.SLUG_SAVED, 'success')
+    else uiStore.showToast(result.error || I18N.TOAST.SLUG_SAVE_FAILED, 'error')
   } finally {
     isUpdatingSettings.value = false
   }
@@ -521,15 +524,15 @@ function handleSaveScrollSettings() {
     localScrollAmount.value,
     localScrollDuration.value
   )
-  uiStore.showToast('Scroll settings saved', 'success')
+  uiStore.showToast(I18N.TOAST.SCROLL_SETTINGS_SAVED, 'success')
 }
 
 async function handleReset() {
   const confirmed = await uiStore.showConfirm(
-    'Reset Settings',
-    'Are you sure you want to reset all settings to their default values?',
-    'Reset',
-    'Cancel'
+    I18N.SETTINGS.RESET_SETTINGS_TITLE,
+    I18N.SETTINGS.RESET_SETTINGS_CONFIRM,
+    I18N.BUTTONS.RESET,
+    I18N.BUTTONS.CANCEL
   )
 
   if (confirmed) {
@@ -537,7 +540,7 @@ async function handleReset() {
     localScrollChar.value = settingsStore.scrollDownChar
     localScrollAmount.value = settingsStore.scrollDownAmount
     localScrollDuration.value = settingsStore.scrollDownDuration
-    uiStore.showToast('Settings reset to defaults', 'success')
+    uiStore.showToast(I18N.TOAST.SETTINGS_RESET, 'success')
   }
 }
 </script>

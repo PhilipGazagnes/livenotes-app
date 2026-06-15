@@ -1,7 +1,7 @@
 <template>
   <ion-page>
     <ion-content>
-      <AppHeader title="Public Libraries" :show-back="true" :show-menu="true">
+      <AppHeader :title="I18N.PAGE_TITLES.PUBLIC_LIBRARIES" :show-back="true" :show-menu="true">
         <template #action>
           <DropdownMenu :items="headerMenuItems" />
         </template>
@@ -12,7 +12,7 @@
         <div v-if="!settingsStore.projectSlug" class="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
           <p class="text-yellow-300 text-sm">
             You need to set a project URL slug in
-            <router-link :to="ROUTES.SETTINGS" class="underline font-medium">Settings</router-link>
+            <router-link :to="ROUTES.SETTINGS" class="underline font-medium">{{ I18N.NAVIGATION.SETTINGS }}</router-link>
             before your public library URLs will work.
           </p>
         </div>
@@ -26,8 +26,8 @@
           <svg class="w-20 h-20 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
           </svg>
-          <h2 class="text-xl font-semibold text-white mb-2">No public libraries yet</h2>
-          <p class="text-gray-400 mb-6">Create a public library to share a song list with your audience</p>
+          <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.NO_PUBLIC_LIBRARIES.TITLE }}</h2>
+          <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.NO_PUBLIC_LIBRARIES.SUBTITLE }}</p>
         </div>
 
         <div v-else class="space-y-3">
@@ -50,26 +50,26 @@
 
           <!-- Name -->
           <div>
-            <label class="block text-sm text-gray-400 mb-1">Name</label>
+            <label class="block text-sm text-gray-400 mb-1">{{ I18N.FORM.NAME }}</label>
             <input
               v-model="form.name"
               type="text"
               maxlength="60"
               class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="e.g. Saturday Night Setlist"
+              :placeholder="I18N.PLACEHOLDERS.LIBRARY_NAME"
               @input="onNameInput"
             />
           </div>
 
           <!-- Slug -->
           <div>
-            <label class="block text-sm text-gray-400 mb-1">URL slug</label>
+            <label class="block text-sm text-gray-400 mb-1">{{ I18N.FORM.URL_SLUG }}</label>
             <input
               v-model="form.slug"
               type="text"
               maxlength="40"
               class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none lowercase"
-              placeholder="saturday-night"
+              :placeholder="I18N.PLACEHOLDERS.URL_SLUG"
             />
             <p v-if="settingsStore.projectSlug" class="text-xs text-gray-500 mt-1">
               URL: /{{ settingsStore.projectSlug }}/{{ form.slug || '...' }}
@@ -78,8 +78,8 @@
 
           <!-- Tags -->
           <div>
-            <label class="block text-sm text-gray-400 mb-2">Tags (songs with any of these tags will appear)</label>
-            <div v-if="tagsStore.tags.length === 0" class="text-sm text-gray-500">No tags available</div>
+            <label class="block text-sm text-gray-400 mb-2">{{ I18N.FORM.TAGS_FILTER }}</label>
+            <div v-if="tagsStore.tags.length === 0" class="text-sm text-gray-500">{{ I18N.EMPTY_STATES.NO_TAGS_AVAILABLE }}</div>
             <div v-else class="flex flex-wrap gap-2">
               <button
                 v-for="tag in tagsStore.tags"
@@ -100,7 +100,7 @@
               v-model="form.headerImageMobile"
               type="url"
               class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="https://..."
+              :placeholder="I18N.PLACEHOLDERS.COVER_URL"
             />
           </div>
           <div>
@@ -109,13 +109,13 @@
               v-model="form.headerImageDesktop"
               type="url"
               class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="https://..."
+              :placeholder="I18N.PLACEHOLDERS.COVER_URL"
             />
           </div>
 
           <!-- Active toggle (edit only) -->
           <div v-if="editingId" class="flex items-center justify-between">
-            <span class="text-sm text-gray-300">Active</span>
+            <span class="text-sm text-gray-300">{{ I18N.SETTINGS.ACTIVE }}</span>
             <button
               @click="form.isActive = !form.isActive"
               class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
@@ -129,14 +129,14 @@
           <!-- Actions -->
           <div class="flex gap-3 pt-2">
             <button @click="showForm = false" class="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
-              Cancel
+              {{ I18N.BUTTONS.CANCEL }}
             </button>
             <button
               @click="handleSubmit"
               :disabled="!form.name.trim() || !form.slug.trim() || store.isLoading"
               class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {{ store.isLoading ? 'Saving...' : 'Save' }}
+              {{ store.isLoading ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
             </button>
           </div>
         </div>
@@ -153,6 +153,7 @@ import DropdownMenu from '@/components/DropdownMenu.vue'
 import Card from '@/components/Card.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { ROUTES } from '@/constants/routes'
+import { I18N } from '@/constants/i18n'
 import { usePublicLibrariesStore } from '@/stores/publicLibraries'
 import { useSettingsStore } from '@/stores/settings'
 import { useTagsStore } from '@/stores/tags'
@@ -173,8 +174,8 @@ const headerMenuItems = [
 
 function getLibraryMenuItems(lib: PublicLibraryWithTags) {
   return [
-    { label: 'Edit', callback: () => openEdit(lib) },
-    { label: 'Delete', variant: 'danger' as const, callback: () => handleDelete(lib.id) },
+    { label: I18N.DROPDOWN.EDIT, callback: () => openEdit(lib) },
+    { label: I18N.DROPDOWN.DELETE, variant: 'danger' as const, callback: () => handleDelete(lib.id) },
   ]
 }
 
@@ -223,7 +224,7 @@ function openEdit(lib: PublicLibraryWithTags) {
 
 async function handleSubmit() {
   const slug = form.value.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+|-+$/g, '')
-  if (!slug) { uiStore.showToast('Invalid slug', 'error'); return }
+  if (!slug) { uiStore.showToast(I18N.VALIDATION.INVALID_SLUG, 'error'); return }
 
   const headerImages = {
     header_image_mobile: form.value.headerImageMobile.trim() || null,
@@ -239,17 +240,17 @@ async function handleSubmit() {
 
   if (result.success) {
     showForm.value = false
-    uiStore.showToast(editingId.value ? 'Library updated' : 'Library created', 'success')
+    uiStore.showToast(editingId.value ? I18N.TOAST.LIBRARY_UPDATED : I18N.TOAST.LIBRARY_CREATED, 'success')
   } else {
-    uiStore.showToast(result.error || 'Failed to save', 'error')
+    uiStore.showToast(result.error || I18N.TOAST.LIBRARY_SAVE_FAILED, 'error')
   }
 }
 
 async function handleDelete(id: string) {
-  const confirmed = await uiStore.showConfirm('Delete library', 'This will remove the public library. The URL will stop working.', 'Delete', 'Cancel')
+  const confirmed = await uiStore.showConfirm(I18N.MODALS.DELETE_LIBRARY, I18N.MODAL_CONTENT.DELETE_LIBRARY_CONFIRM, I18N.BUTTONS.DELETE, I18N.BUTTONS.CANCEL)
   if (!confirmed) return
   const result = await store.deleteLibrary(id)
-  if (result.success) uiStore.showToast('Library deleted', 'success')
-  else uiStore.showToast(result.error || 'Failed to delete', 'error')
+  if (result.success) uiStore.showToast(I18N.TOAST.LIBRARY_DELETED, 'success')
+  else uiStore.showToast(result.error || I18N.TOAST.LIBRARY_DELETE_FAILED, 'error')
 }
 </script>

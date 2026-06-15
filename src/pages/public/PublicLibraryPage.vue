@@ -6,8 +6,8 @@
         <svg class="w-24 h-24 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <h1 class="text-2xl font-bold text-white mb-2">Not found</h1>
-        <p class="text-gray-400">This library doesn't exist or is no longer active.</p>
+        <h1 class="text-2xl font-bold text-white mb-2">{{ I18N.EMPTY_STATES.PUBLIC_LIBRARY_NOT_FOUND.TITLE }}</h1>
+        <p class="text-gray-400">{{ I18N.EMPTY_STATES.PUBLIC_LIBRARY_NOT_FOUND.SUBTITLE }}</p>
       </div>
 
       <template v-else>
@@ -36,7 +36,7 @@
         >
           <div class="flex items-center justify-between px-4 py-3">
             <div class="w-10"></div>
-            <h1 class="text-xl font-bold text-white truncate">{{ library?.name ?? ' ' }}</h1>
+            <h1 class="text-xl font-bold text-white truncate">{{ library?.name ?? ' ' }}</h1>
             <div class="w-10"></div>
           </div>
         </header>
@@ -49,11 +49,13 @@
         <div v-else class="pb-24">
           <!-- Empty state -->
           <div v-if="displayedSongs.length === 0" class="text-center py-12 px-4">
-            <p class="text-gray-400">No songs match your search.</p>
+            <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SONGS_MATCH_SEARCH }}</p>
           </div>
 
           <!-- Song list -->
           <div v-else class="p-4 space-y-3">
+            <div class="text-white text-center py-4">Cette animation vous est proposée par <strong>Phil</strong></div>
+
             <Card
               v-for="song in displayedSongs"
               :key="song.id"
@@ -78,14 +80,14 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Search songs..."
+                :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
                 class="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
                 v-if="searchQuery"
                 @click="searchQuery = ''"
                 class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-                aria-label="Clear search"
+                :aria-label="I18N.ARIA.CLEAR_SEARCH"
               >
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -115,6 +117,7 @@ import { fetchPublicLibraryBySlug, fetchPublicLibrarySongs } from '@/services/pu
 import { getSegments } from '@/utils/highlight'
 import type { TextSegment } from '@/utils/highlight'
 import type { LibrarySongWithDetails, PublicLibraryWithTags } from '@/types/database'
+import { I18N } from '@/constants/i18n'
 
 const route = useRoute()
 const drawerStore = useDrawerStore()

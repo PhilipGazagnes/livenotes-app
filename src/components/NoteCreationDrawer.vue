@@ -4,14 +4,15 @@
     <div class="flex items-start justify-between">
       <div class="flex-1 min-w-0 mr-3">
         <h2 class="text-xl font-semibold text-white">
-          {{ step === 'type-selection' ? 'Add Note' : `New ${selectedTypeLabel} Note` }}
+          {{ step === 'type-selection' ? I18N.NOTES.ADD_NOTE : I18N.NOTES.NEW_NOTE(selectedTypeLabel) }}
         </h2>
         <p class="text-sm text-gray-400 mt-1">
-          {{ step === 'type-selection' ? 'Choose note type' : 'Fill in note details' }}
+          {{ step === 'type-selection' ? I18N.NOTES.CHOOSE_TYPE : I18N.NOTES.FILL_DETAILS }}
         </p>
       </div>
       <button
         @click="handleCancel"
+        :aria-label="I18N.ARIA.CLOSE"
         class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -24,7 +25,7 @@
   <!-- Content: Type Selection -->
   <div v-if="step === 'type-selection'" class="flex-1 overflow-y-auto p-6">
     <div class="space-y-3">
-      <p class="text-sm text-gray-400 mb-4">What type of note would you like to add?</p>
+      <p class="text-sm text-gray-400 mb-4">{{ I18N.NOTES.TYPE_PROMPT }}</p>
 
       <button
         v-for="noteType in NOTE_TYPE_CONFIG"
@@ -60,7 +61,7 @@
     <form @submit.prevent="handleSave" class="space-y-4">
       <div>
         <label class="block text-sm font-medium text-gray-300 mb-2">
-          Name <span class="text-red-500">*</span>
+          {{ I18N.FORM.NAME }} <span class="text-red-500">{{ I18N.FORM.REQUIRED }}</span>
         </label>
         <input
           v-model="formData.name"
@@ -76,19 +77,19 @@
       <!-- SongCode -->
       <div v-if="selectedType === 'songcode'">
         <label class="block text-sm font-medium text-gray-300 mb-2">
-          SongCode <span class="text-red-500">*</span>
+          SongCode <span class="text-red-500">{{ I18N.FORM.REQUIRED }}</span>
         </label>
         <textarea
           v-model="formData.content"
           :maxlength="VALIDATION.NOTE_CONTENT_MAX_LENGTH"
           :rows="15"
-          placeholder="Enter SongCode notation...&#10;&#10;Example:&#10;[I]ntro&#10;[V]erse&#10;[C]horus&#10;[B]ridge"
+          :placeholder="I18N.PLACEHOLDERS.NOTE_SONGCODE"
           class="w-full px-4 py-3 bg-black/30 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono text-sm resize-none"
         />
         <p class="text-xs text-gray-500 mt-1">{{ formData.content.length }} / {{ VALIDATION.NOTE_CONTENT_MAX_LENGTH }}</p>
         <div class="bg-blue-900/20 border border-blue-800/30 rounded-lg p-3 mt-3">
           <p class="text-sm text-blue-300">
-            💡 <strong>Tip:</strong> Use section markers like [I]ntro, [V]erse, [C]horus, [B]ridge
+            {{ I18N.NOTES.SONGCODE_TIP }}
           </p>
         </div>
       </div>
@@ -96,13 +97,13 @@
       <!-- Plain Text -->
       <div v-else-if="selectedType === 'plain_text'">
         <label class="block text-sm font-medium text-gray-300 mb-2">
-          Content <span class="text-red-500">*</span>
+          {{ I18N.NOTES.URL_CONTENT }} <span class="text-red-500">{{ I18N.FORM.REQUIRED }}</span>
         </label>
         <textarea
           v-model="formData.content"
           :maxlength="VALIDATION.NOTE_CONTENT_MAX_LENGTH"
           :rows="12"
-          placeholder="Enter your notes here..."
+          :placeholder="I18N.PLACEHOLDERS.NOTE_CONTENT"
           class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
         />
         <p class="text-xs text-gray-500 mt-1">{{ formData.content.length }} / {{ VALIDATION.NOTE_CONTENT_MAX_LENGTH }}</p>
@@ -111,33 +112,33 @@
       <!-- Looper -->
       <div v-else-if="selectedType === 'looper'" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">BPM <span class="text-red-500">*</span></label>
-          <input v-model="looperData.bpm" type="text" placeholder="120"
+          <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_BPM }} <span class="text-red-500">{{ I18N.FORM.REQUIRED }}</span></label>
+          <input v-model="looperData.bpm" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_BPM"
             class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Pattern 1 <span class="text-red-500">*</span></label>
-          <input v-model="looperData.pattern1" type="text" placeholder="e.g., Kick-Snare-Kick-Snare"
+          <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 1 <span class="text-red-500">{{ I18N.FORM.REQUIRED }}</span></label>
+          <input v-model="looperData.pattern1" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN"
             class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Pattern 1 Variation</label>
-          <input v-model="looperData.pattern1_var" type="text" placeholder="e.g., Double time on chorus"
+          <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 1 Variation</label>
+          <input v-model="looperData.pattern1_var" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN_VAR1"
             class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Pattern 2</label>
-          <input v-model="looperData.pattern2" type="text" placeholder="e.g., Bass line loop"
+          <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 2</label>
+          <input v-model="looperData.pattern2" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN2"
             class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Pattern 2 Variation</label>
-          <input v-model="looperData.pattern2_var" type="text" placeholder="e.g., Variation for bridge"
+          <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 2 Variation</label>
+          <input v-model="looperData.pattern2_var" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN_VAR2"
             class="w-full px-4 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-300 mb-2">Comment</label>
-          <textarea v-model="looperData.comment" rows="3" placeholder="Additional notes about the looper setup..."
+          <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_ADDITIONAL_NOTES }}</label>
+          <textarea v-model="looperData.comment" rows="3" :placeholder="I18N.PLACEHOLDERS.LOOPER_NOTES"
             class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none" />
         </div>
       </div>
@@ -151,7 +152,7 @@
         @click="handleCancel"
         class="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
       >
-        Cancel
+        {{ I18N.BUTTONS.CANCEL }}
       </button>
       <button
         @click="handleChooseType"
@@ -161,7 +162,7 @@
           selectedType ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
         ]"
       >
-        Choose
+        {{ I18N.BUTTONS.CHOOSE }}
       </button>
     </div>
 
@@ -170,7 +171,7 @@
         @click="handleBackToTypeSelection"
         class="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
       >
-        Back
+        {{ I18N.BUTTONS.BACK }}
       </button>
       <button
         @click="handleSave"
@@ -184,7 +185,7 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <span>{{ isSaving ? 'Saving...' : 'Save' }}</span>
+        <span>{{ isSaving ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}</span>
       </button>
     </div>
   </div>
@@ -198,6 +199,7 @@ import { useUiStore } from '@/stores/ui'
 import type { NoteType, LooperContent } from '@/types/database'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 
 const props = defineProps<{
   librarySongId: string
@@ -223,7 +225,7 @@ const NOTE_TYPE_CONFIG = [
   {
     value: 'songcode' as NoteType,
     label: 'SongCode',
-    description: 'Structured song notation for arrangements',
+    description: I18N.NOTES.TYPE_DESCRIPTIONS.songcode,
     icon: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
       h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' })
     ]),
@@ -233,7 +235,7 @@ const NOTE_TYPE_CONFIG = [
   {
     value: 'plain_text' as NoteType,
     label: 'Plain Text',
-    description: 'General notes and annotations',
+    description: I18N.NOTES.TYPE_DESCRIPTIONS.plain_text,
     icon: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
       h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M4 6h16M4 12h16M4 18h16' })
     ]),
@@ -243,7 +245,7 @@ const NOTE_TYPE_CONFIG = [
   {
     value: 'looper' as NoteType,
     label: 'Looper',
-    description: 'Loop pedal settings with BPM and patterns',
+    description: I18N.NOTES.TYPE_DESCRIPTIONS.looper,
     icon: () => h('svg', { fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' }, [
       h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-width': '2', d: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' })
     ]),
@@ -294,7 +296,7 @@ function getNamePlaceholder(type: NoteType): string {
     looper_notes: 'e.g., "Loop 1 settings", "Pedal configuration"',
     looper: 'e.g., "Main loop setup", "Verse pattern"'
   }
-  return placeholders[type] || 'Enter note name'
+  return placeholders[type] || I18N.PLACEHOLDERS.NOTE_TITLE
 }
 
 async function handleSave() {

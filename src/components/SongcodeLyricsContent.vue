@@ -3,7 +3,7 @@
   <div class="flex-1 relative overflow-hidden">
     <div ref="scrollEl" class="h-full overflow-y-auto px-5 pb-16">
       <div v-if="sections.length === 0" class="text-center py-12">
-        <p class="text-gray-400 text-sm">No lyrics found</p>
+        <p class="text-gray-400 text-sm">{{ I18N.EMPTY_STATES.NO_LYRICS }}</p>
       </div>
       <div v-else class="space-y-7 pt-5">
         <div v-for="({ section, pattern }, index) in sections" :key="index">
@@ -35,7 +35,7 @@
         @click="zoomOut"
         :disabled="fontSize <= FONT_MIN"
         class="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        title="Zoom out"
+        :title="I18N.ARIA.ZOOM_OUT"
       >
         <span class="text-base font-semibold leading-none" style="font-size: 0.8rem">A</span>
         <span class="text-xs leading-none ml-0.5">−</span>
@@ -44,7 +44,7 @@
         @click="zoomIn"
         :disabled="fontSize >= FONT_MAX"
         class="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-gray-300 hover:text-white hover:border-gray-500 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        title="Zoom in"
+        :title="I18N.ARIA.ZOOM_IN"
       >
         <span class="text-lg font-semibold leading-none" style="font-size: 1.1rem">A</span>
         <span class="text-xs leading-none ml-0.5">+</span>
@@ -58,6 +58,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import type { LivenotesJson } from '@/types/database'
 import PatternDisplay from './PatternDisplay.vue'
 import { useSettingsStore } from '@/stores/settings'
+import { I18N } from '@/constants/i18n'
 
 const settingsStore = useSettingsStore()
 const scrollEl = ref<HTMLElement | null>(null)

@@ -5,19 +5,19 @@
     @click.self="emit('close')"
   >
     <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-      <h3 class="text-xl font-semibold text-white mb-4">Add Song to Library</h3>
-      
+      <h3 class="text-xl font-semibold text-white mb-4">{{ I18N.MODALS.ADD_SONG_TO_LIBRARY }}</h3>
+
       <!-- Search Input -->
       <div class="mb-4">
         <label for="song-search" class="block text-sm font-medium text-gray-300 mb-2">
-          Search for a song
+          {{ I18N.MODALS.SEARCH_FOR_SONG }}
         </label>
         <input
           id="song-search"
           v-model="searchQuery"
           type="text"
           class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          placeholder="Enter song title..."
+          :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
           autofocus
           @input="handleSearchInput"
         />
@@ -26,7 +26,7 @@
       <!-- Search Results / Duplicates -->
       <div v-if="searchResults.length > 0" class="mb-6">
         <p class="text-sm text-gray-400 mb-3">
-          Found {{ searchResults.length }} song{{ searchResults.length !== 1 ? 's' : '' }}
+          {{ I18N.PLURALS.SONG_COUNT_FOUND(searchResults.length) }}
         </p>
         <div class="space-y-2 max-h-64 overflow-y-auto">
           <div
@@ -40,7 +40,7 @@
                 {{ song.artists.map(a => a.name).join(', ') }}
               </p>
               <p class="text-xs text-gray-500 mt-1">
-                Added {{ song.popularity_score }} time{{ song.popularity_score !== 1 ? 's' : '' }}
+                {{ I18N.PLURALS.ADDED_COUNT(song.popularity_score) }}
               </p>
             </div>
             <button
@@ -48,7 +48,7 @@
               :disabled="isLoading"
               class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Add to Library
+              {{ I18N.BUTTONS.ADD_TO_LIBRARY }}
             </button>
           </div>
         </div>
@@ -57,26 +57,26 @@
       <!-- No Results / Create New -->
       <div v-if="searchQuery.trim() && searchResults.length === 0 && !isSearching" class="mb-6">
         <p class="text-sm text-gray-400 mb-4">
-          No songs found. Create a new one?
+          {{ I18N.EMPTY_STATES.NO_SONGS_FOUND_CREATE }}
         </p>
-        
+
         <div class="bg-gray-900 rounded-lg p-4 space-y-4">
           <div>
             <label for="new-song-title" class="block text-sm font-medium text-gray-300 mb-2">
-              Song Title <span class="text-red-400">*</span>
+              {{ I18N.FORM.SONG_TITLE }} <span class="text-red-400">{{ I18N.FORM.REQUIRED }}</span>
             </label>
             <input
               id="new-song-title"
               v-model="newSongTitle"
               type="text"
               class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              :placeholder="searchQuery || 'Song title'"
+              :placeholder="searchQuery || I18N.PLACEHOLDERS.SONG_TITLE"
             />
           </div>
 
           <div>
             <label for="new-song-artists" class="block text-sm font-medium text-gray-300 mb-2">
-              Artists
+              {{ I18N.NAVIGATION.ARTISTS }}
             </label>
             <ArtistSelector v-model="selectedArtistIds" />
           </div>
@@ -86,8 +86,8 @@
             :disabled="isLoading || !newSongTitle.trim()"
             class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            <span v-if="isLoading">Creating...</span>
-            <span v-else>Create & Add to Library</span>
+            <span v-if="isLoading">{{ I18N.LOADING.CREATING }}</span>
+            <span v-else>{{ I18N.BUTTONS.CREATE_AND_ADD }}</span>
           </button>
         </div>
       </div>
@@ -108,7 +108,7 @@
           @click="emit('close')"
           class="w-full px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
         >
-          Cancel
+          {{ I18N.BUTTONS.CANCEL }}
         </button>
       </div>
     </div>
@@ -121,6 +121,7 @@ import { useGlobalSongsStore } from '@/stores/globalSongs'
 import { useLibraryStore } from '@/stores/library'
 import type { SongV2WithArtists } from '@/types/database'
 import { MESSAGES } from '@/constants/messages'
+import { I18N } from '@/constants/i18n'
 import { useUiStore } from '@/stores/ui'
 import ArtistSelector from './ArtistSelector.vue'
 import LoadingSpinner from './LoadingSpinner.vue'
@@ -191,7 +192,7 @@ function handleSearchInput() {
 
 async function performSearch() {
   const query = searchQuery.value.trim()
-  
+
   if (!query) {
     searchResults.value = []
     return
@@ -204,7 +205,7 @@ async function performSearch() {
     const results = await globalSongsStore.searchSongs(query)
     searchResults.value = results
   } catch (err) {
-    errorMessage.value = 'Failed to search songs'
+    errorMessage.value = I18N.TOAST.SEARCH_SONGS_FAILED
     console.error('Search error:', err)
   } finally {
     isSearching.value = false
@@ -224,7 +225,7 @@ async function addExistingSong(song: SongV2WithArtists) {
     if (err?.message?.includes('unique') || err?.code === '23505') {
       errorMessage.value = MESSAGES.ERROR.SONG_ALREADY_IN_LIBRARY
     } else {
-      errorMessage.value = 'Failed to add song to library'
+      errorMessage.value = I18N.TOAST.ADD_TO_LIBRARY_FAILED
     }
     console.error('Add to library error:', err)
   } finally {
@@ -234,7 +235,7 @@ async function addExistingSong(song: SongV2WithArtists) {
 
 async function createAndAddNewSong() {
   const title = newSongTitle.value.trim()
-  
+
   if (!title) {
     errorMessage.value = MESSAGES.ERROR.TITLE_REQUIRED
     return
@@ -246,15 +247,15 @@ async function createAndAddNewSong() {
   try {
     // 1. Create the song in the global catalog
     const newSong = await globalSongsStore.createSong(title, selectedArtistIds.value)
-    
+
     // 2. Add to library
     await libraryStore.addToLibrary(newSong.id)
-    
+
     uiStore.showToast(MESSAGES.SUCCESS.SONG_CREATED, 'success')
     emit('songAdded')
     emit('close')
   } catch (err) {
-    errorMessage.value = 'Failed to create song'
+    errorMessage.value = I18N.TOAST.CREATE_SONG_FAILED
     console.error('Create song error:', err)
   } finally {
     isLoading.value = false

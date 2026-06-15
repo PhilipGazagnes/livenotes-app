@@ -29,8 +29,8 @@
         <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
         </svg>
-        <h2 class="text-xl font-semibold text-white mb-2">{{ MESSAGES.EMPTY_LIST_NO_SONGS }}</h2>
-        <p class="text-gray-400 mb-6">{{ MESSAGES.EMPTY_LIST_NO_SONGS_SUBTITLE }}</p>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIST_NO_SONGS.TITLE }}</h2>
+        <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIST_NO_SONGS.SUBTITLE }}</p>
       </div>
 
       <!-- Items in List -->
@@ -121,12 +121,12 @@
       >
         <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700">
           <h3 class="text-xl font-semibold text-white mb-4">
-            {{ editingTitle ? 'Edit Title' : 'Add Title Section' }}
+            {{ editingTitle ? I18N.MODALS.EDIT_TITLE_SECTION : I18N.MODALS.ADD_TITLE_SECTION }}
           </h3>
-          
+
           <div class="mb-4">
             <label for="titleInput" class="block text-sm font-medium text-gray-300 mb-2">
-              Title Text <span class="text-red-400">*</span>
+              {{ I18N.FORM.TITLE }} <span class="text-red-400">{{ I18N.FORM.REQUIRED }}</span>
             </label>
             <input
               id="titleInput"
@@ -134,7 +134,7 @@
               type="text"
               maxlength="200"
               class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              placeholder="Enter section title"
+              :placeholder="I18N.PLACEHOLDERS.SECTION_TITLE"
               @keyup.enter="handleSaveTitle"
               autofocus
             />
@@ -145,14 +145,14 @@
               @click="showTitleModal = false"
               class="flex-1 px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
             >
-              Cancel
+              {{ I18N.BUTTONS.CANCEL }}
             </button>
             <button
               @click="handleSaveTitle"
               :disabled="!titleInput.trim() || isSavingTitle"
               class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {{ isSavingTitle ? 'Saving...' : (editingTitle ? 'Update' : 'Add') }}
+              {{ isSavingTitle ? I18N.LOADING.SAVING : (editingTitle ? I18N.BUTTONS.SAVE : I18N.BUTTONS.ADD) }}
             </button>
           </div>
         </div>
@@ -243,7 +243,7 @@ const currentList = computed(() => listsStore.currentList)
 const listItems = computed(() => currentList.value?.items || [])
 
 const headerMenuItems = [
-  { label: 'Add Title Section', callback: handleAddTitle },
+  { label: I18N.DROPDOWN.ADD_TITLE_SECTION, callback: handleAddTitle },
   { label: I18N.DROPDOWN.SELECT_SONGS, callback: handleEnterSelectionMode },
 ]
 
@@ -280,7 +280,7 @@ function getItemDropdownItems(item: ListItem & { song: SongWithTags }) {
 async function openSongManageTags(item: ListItem & { song: SongWithTags }) {
   const personalProjectId = await authStore.getPersonalProjectId()
   if (personalProjectId) await tagsStore.fetchTags(personalProjectId)
-  if (!item.library_song_id) { uiStore.showToast('Cannot manage tags: missing library song ID', 'error'); return }
+  if (!item.library_song_id) { uiStore.showToast(I18N.TOAST.MANAGE_TAGS_ERROR, 'error'); return }
   selectedSongItem.value = item
   showSongManageTagsModal.value = true
 }
@@ -288,7 +288,7 @@ async function openSongManageTags(item: ListItem & { song: SongWithTags }) {
 async function openSongManageLists(item: ListItem & { song: SongWithTags }) {
   const personalProjectId = await authStore.getPersonalProjectId()
   if (personalProjectId) await listsStore.fetchLists(personalProjectId)
-  if (!item.library_song_id) { uiStore.showToast('Cannot manage lists: missing library song ID', 'error'); return }
+  if (!item.library_song_id) { uiStore.showToast(I18N.TOAST.MANAGE_LISTS_ERROR, 'error'); return }
   selectedSongItem.value = item
   showSongManageListsModal.value = true
 }
@@ -309,8 +309,8 @@ async function handleDeleteSong(item: ListItem & { song: SongWithTags }) {
   const confirmed = await uiStore.showConfirm(
     'Delete Song',
     MESSAGES.CONFIRM_DELETE_SONG(item.song.title),
-    'Delete',
-    'Cancel'
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL
   )
   if (!confirmed) return
   const songId = item.song.id
@@ -393,7 +393,7 @@ async function handleDragEnd() {
   if (!result.success) {
     // Rollback on error
     console.error('Failed to reorder items:', result.error)
-    uiStore.showToast('Failed to reorder items', 'error')
+    uiStore.showToast(I18N.TOAST.REORDER_FAILED, 'error')
     await listsStore.fetchListById(currentList.value.id)
   }
   // Silent success - no toast needed since UI already updated
@@ -427,7 +427,7 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error loading list:', error)
-    uiStore.showToast('Failed to load list', 'error')
+    uiStore.showToast(I18N.TOAST.LIST_LOAD_FAILED, 'error')
   } finally {
     // Always hide overlay
     uiStore.hideOperationOverlay()
@@ -487,20 +487,20 @@ async function handleSaveTitle() {
   try {
     if (editingTitle.value) {
       await updateListItemTitle(editingTitle.value.id, titleInput.value.trim())
-      uiStore.showToast('Title updated', 'success')
+      uiStore.showToast(I18N.TOAST.TITLE_UPDATED, 'success')
     } else {
       const maxPosition = listItems.value.length > 0
         ? Math.max(...listItems.value.map(item => item.position))
         : -1
       await createListItemTitle(currentList.value.id, titleInput.value.trim(), maxPosition + 1)
-      uiStore.showToast('Title added', 'success')
+      uiStore.showToast(I18N.TOAST.TITLE_ADDED, 'success')
     }
-    
+
     showTitleModal.value = false
     await handleRefresh()
   } catch (err) {
     console.error('Failed to save title:', err)
-    uiStore.showToast('Failed to save title', 'error')
+    uiStore.showToast(I18N.TOAST.TITLE_SAVE_FAILED, 'error')
   } finally {
     isSavingTitle.value = false
   }
@@ -510,19 +510,19 @@ async function handleDeleteTitle(item: any) {
   const confirmed = await uiStore.showConfirm(
     'Delete Title',
     'Are you sure you want to delete this title section?',
-    'Delete',
-    'Cancel'
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL
   )
-  
+
   if (!confirmed) return
-  
+
   try {
     await deleteListItem(item.id)
-    uiStore.showToast('Title deleted', 'success')
+    uiStore.showToast(I18N.TOAST.TITLE_DELETED, 'success')
     await handleRefresh()
   } catch (err) {
     console.error('Failed to delete title:', err)
-    uiStore.showToast('Failed to delete title', 'error')
+    uiStore.showToast(I18N.TOAST.TITLE_DELETE_FAILED, 'error')
   }
 }
 
@@ -556,7 +556,7 @@ function handleSongsDeleted(deletedIds: string[]) {
 function handleOpenNotes(item: ListItem & { song: SongWithTags }) {
   const librarySongId = item.library_song_id
   if (!librarySongId) {
-    uiStore.showToast('Cannot open notes for this song', 'error')
+    uiStore.showToast(I18N.TOAST.NOTES_CANNOT_OPEN, 'error')
     return
   }
   const drawer = settingsStore.songClickShowsLyrics ? LiveLyricsDrawer : SongNotesDrawer

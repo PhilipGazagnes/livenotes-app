@@ -12,6 +12,7 @@
       </div>
       <button
         @click="drawerStore.pop()"
+        :aria-label="I18N.ARIA.CLOSE"
         class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +34,7 @@
       <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
       </svg>
-      <h3 class="text-lg font-semibold text-white mb-2">No notes yet</h3>
+      <h3 class="text-lg font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.NO_NOTES_YET }}</h3>
       <p class="text-gray-400 text-sm">Add notes to this song to see them here</p>
     </div>
 
@@ -116,7 +117,7 @@
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
       </svg>
-      Add Note
+      {{ I18N.NOTES.ADD_NOTE }}
     </button>
   </div>
 </template>
@@ -129,6 +130,7 @@ import type { LibrarySongWithDetails, LivenotesJson, Note, SongcodeNoteData, Loo
 import NoteContentDrawer from './NoteContentDrawer.vue'
 import NoteCreationDrawer from './NoteCreationDrawer.vue'
 import SongcodeLyricsDrawer from './SongcodeLyricsDrawer.vue'
+import { I18N } from '@/constants/i18n'
 
 const props = defineProps<{
   librarySongId: string
@@ -205,12 +207,7 @@ function getLyricsPreview(note: Note): string {
 }
 
 function getNoteTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    songcode: 'SongCode', plain_text: 'Plain Text', youtube: 'YouTube',
-    image: 'Image', video: 'Video', audio: 'Audio', tablature: 'Tablature',
-    looper_notes: 'Looper Notes', looper: 'Looper', lyrics: 'Lyrics', chords: 'Chords',
-  }
-  return labels[type] || type
+  return (I18N.NOTES.TYPE_LABELS as Record<string, string>)[type] ?? type
 }
 
 function getNoteIcon(type: string) {
@@ -264,7 +261,7 @@ function getNoteIconColor(type: string): string {
 }
 
 function getContentPreview(note: Note): string {
-  if (!note.content) return 'No content'
+  if (!note.content) return I18N.EMPTY_STATES.NO_CONTENT
   const cleaned = note.content.replace(/\s+/g, ' ').trim()
   return cleaned.length > 100 ? cleaned.substring(0, 100) + '...' : cleaned
 }
@@ -276,10 +273,10 @@ function formatDate(dateString: string): string {
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
+  if (diffMins < 1) return I18N.TIME.JUST_NOW
+  if (diffMins < 60) return I18N.TIME.MINUTES_AGO(diffMins)
+  if (diffHours < 24) return I18N.TIME.HOURS_AGO(diffHours)
+  if (diffDays < 7) return I18N.TIME.DAYS_AGO(diffDays)
   return date.toLocaleDateString()
 }
 </script>

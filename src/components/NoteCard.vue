@@ -8,26 +8,26 @@
           Updated {{ formatDate(note.updated_at ?? '') }}
         </p>
       </div>
-      
+
       <div class="flex items-center gap-2 ml-3">
         <button
           @click="$emit('edit', note)"
           class="p-2 text-gray-400 hover:text-blue-400 transition-colors"
-          title="Edit note"
+          :title="I18N.ARIA.EDIT_NOTE"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
         </button>
-        
+
         <button
           @click="$emit('delete', note)"
           class="p-2 text-gray-400 hover:text-red-400 transition-colors"
-          title="Delete note"
+          :title="I18N.ARIA.DELETE_NOTE"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>
         </button>
@@ -49,12 +49,12 @@
       <!-- URL-based types: show link -->
       <div v-else-if="isUrlType" class="flex items-center gap-2">
         <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
         </svg>
-        <a 
+        <a
           :href="note.content ?? undefined"
-          target="_blank" 
+          target="_blank"
           rel="noopener noreferrer"
           class="text-blue-400 hover:text-blue-300 truncate"
         >
@@ -64,7 +64,7 @@
 
       <!-- Looper: structured display -->
       <div v-else-if="note.type === 'looper' && looperData" class="space-y-1">
-        <div class="text-cyan-400 font-bold text-base">{{ looperData.bpm }} BPM</div>
+        <div class="text-cyan-400 font-bold text-base">{{ looperData.bpm }} {{ I18N.NOTES.LOOPER_BPM }}</div>
         <div class="flex flex-wrap items-baseline gap-x-2">
           <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-sm">{{ looperData.pattern1 }}</span>
           <span v-if="looperData.pattern1_var" class="text-white text-sm">{{ looperData.pattern1_var }}</span>
@@ -87,6 +87,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Note, LooperContent } from '@/types/database'
+import { I18N } from '@/constants/i18n'
 
 interface Props {
   note: Note
@@ -111,7 +112,7 @@ const isUrlType = computed(() => {
 
 const contentPreview = computed(() => {
   if (!props.note.content) return ''
-  
+
   // For formatted types, limit to first 10 lines
   if (['songcode', 'tablature'].includes(props.note.type)) {
     const lines = props.note.content.split('\n').slice(0, 10)
@@ -120,12 +121,12 @@ const contentPreview = computed(() => {
     }
     return lines.join('\n')
   }
-  
+
   // For other text types, limit to 200 characters
   if (props.note.content.length > 200) {
     return props.note.content.substring(0, 200) + '...'
   }
-  
+
   return props.note.content
 })
 
@@ -138,13 +139,13 @@ function formatDate(dateString: string): string {
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
+  if (diffMins < 1) return I18N.TIME.JUST_NOW
+  if (diffMins < 60) return I18N.TIME.MINUTES_AGO(diffMins)
+  if (diffHours < 24) return I18N.TIME.HOURS_AGO(diffHours)
+  if (diffDays < 7) return I18N.TIME.DAYS_AGO(diffDays)
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
     day: 'numeric',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
   })

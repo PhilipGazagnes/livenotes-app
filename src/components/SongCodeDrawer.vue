@@ -8,7 +8,7 @@
         <ion-toolbar class="bg-gray-800" style="--padding-top: 0.5rem; --padding-bottom: 0.5rem; --padding-start: 1rem;">
           <ion-title class="text-white text-base">{{ songTitle }}</ion-title>
           <ion-buttons slot="end">
-            <ion-button @click="handleCancel" class="text-gray-300">
+            <ion-button @click="handleCancel" class="text-gray-300" :aria-label="I18N.ARIA.CLOSE">
               <ion-icon :icon="closeOutline" slot="icon-only" />
             </ion-button>
           </ion-buttons>
@@ -26,7 +26,7 @@
           <!-- SongCode Textarea -->
           <div class="flex-1 flex flex-col">
             <div class="flex justify-between items-center mb-2">
-              <label class="text-sm font-medium text-gray-300">SongCode</label>
+              <label class="text-sm font-medium text-gray-300">{{ I18N.SONGCODE.ACTIVE_LABEL }}</label>
               <span v-if="songcodeStore.currentSongcode?.songcode_updated_at" class="text-xs text-gray-500">
                 Updated {{ formatDate(songcodeStore.currentSongcode.songcode_updated_at) }}
               </span>
@@ -34,7 +34,7 @@
             <textarea
               v-model="songcodeText"
               class="flex-1 w-full p-3 font-mono text-sm bg-gray-800 border border-gray-700 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-500"
-              placeholder="Enter your SongCode here..."
+              :placeholder="I18N.PLACEHOLDERS.SONGCODE"
             />
           </div>
 
@@ -43,7 +43,7 @@
           <div class="flex flex-col mt-4">
             <div class="flex justify-between items-center mb-2">
               <div class="flex items-center gap-2">
-                <label class="text-sm font-medium text-gray-300">Livenotes JSON</label>
+                <label class="text-sm font-medium text-gray-300">{{ I18N.SONGCODE.GENERATE_JSON }}</label>
                 <span v-if="isJsonOutdated" class="text-xs px-2 py-0.5 bg-orange-900/30 border border-orange-700 text-orange-400 rounded">
                   Outdated
                 </span>
@@ -58,7 +58,7 @@
                   class="px-3 py-1.5 text-xs bg-gray-700 border border-gray-600 text-gray-300 rounded hover:bg-gray-600 transition-colors flex items-center gap-1"
                 >
                   <ion-icon :icon="copyOutline" class="text-sm" />
-                  Copy
+                  {{ I18N.BUTTONS.COPY }}
                 </button>
               </div>
             </div>
@@ -66,7 +66,7 @@
               JSON.stringify(songcodeStore.currentSongcode.livenotes_json, null, 2)
             }}</pre>
             <div v-else class="p-3 bg-gray-800 border border-gray-700 rounded text-xs h-52 flex items-center justify-center text-gray-500">
-              No JSON generated yet
+              {{ I18N.EMPTY_STATES.NO_JSON_YET }}
             </div>
           </div>
 
@@ -84,7 +84,7 @@
             :disabled="!songcodeText.trim() || songcodeStore.isLoading"
             class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {{ songcodeStore.isLoading ? 'Generating...' : 'Generate JSON' }}
+            {{ songcodeStore.isLoading ? I18N.LOADING.GENERATING : I18N.BUTTONS.GENERATE_JSON }}
           </button>
           <button
             type="button"
@@ -92,7 +92,7 @@
             :disabled="!hasChanges || songcodeStore.isLoading"
             class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {{ songcodeStore.isLoading ? 'Saving...' : 'Save' }}
+            {{ songcodeStore.isLoading ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
           </button>
         </div>
       </ion-content>
@@ -117,6 +117,7 @@ import {
 import { copyOutline, closeOutline } from 'ionicons/icons'
 import { useSongcodeStore } from '@/stores/songcode'
 import { useUiStore } from '@/stores/ui'
+import { I18N } from '@/constants/i18n'
 
 interface Props {
   isOpen: boolean
@@ -140,10 +141,10 @@ const hasChanges = computed(() => songcodeText.value !== originalSongcode.value)
 const isJsonOutdated = computed(() => {
   const sc = songcodeStore.currentSongcode
   if (!sc?.songcode_updated_at || !sc?.livenotes_json_updated_at) return false
-  
+
   const songcodeTime = new Date(sc.songcode_updated_at).getTime()
   const jsonTime = new Date(sc.livenotes_json_updated_at).getTime()
-  
+
   return songcodeTime > jsonTime
 })
 
@@ -160,7 +161,7 @@ async function handleSave() {
   const result = await songcodeStore.updateSongcode(props.songId, songcodeText.value)
   if (result.success) {
     originalSongcode.value = songcodeText.value
-    uiStore.showToast('SongCode saved', 'success')
+    uiStore.showToast(I18N.TOAST.SONGCODE_SAVED, 'success')
   }
 }
 
@@ -171,7 +172,7 @@ async function handleGenerate() {
     if (!saveResult.success) return
     originalSongcode.value = songcodeText.value
   }
-  
+
   // Then generate
   await songcodeStore.generateLivenotesJsonForSong(props.songId)
 }
