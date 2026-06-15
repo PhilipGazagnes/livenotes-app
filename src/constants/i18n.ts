@@ -230,6 +230,7 @@ export const I18N = {
     CREATE_TAG: 'Create Tag',
     RENAME_TAG: 'Rename Tag',
     DELETE_TAG: 'Delete Tag',
+    DELETE_ARTIST: 'Delete Artist',
     CREATE_LIST: 'Create New List',
     RENAME_LIST: 'Rename List',
     DELETE_LIST: 'Delete List',

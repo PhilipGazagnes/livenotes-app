@@ -40,7 +40,7 @@
                 {{ song.artists.map(a => a.name).join(', ') }}
               </p>
               <p class="text-xs text-gray-500 mt-1">
-                {{ I18N.PLURALS.ADDED_COUNT(song.popularity_score) }}
+                {{ I18N.PLURALS.ADDED_COUNT(song.popularity_score ?? 0) }}
               </p>
             </div>
             <button
