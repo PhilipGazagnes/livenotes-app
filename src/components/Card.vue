@@ -26,8 +26,8 @@
         <div class="flex-1 min-w-0">
           <!-- Title -->
           <h3 class="text-lg font-semibold text-white mb-1 truncate">
-            <template v-if="titleSegments && titleSegments.length > 0">
-              <template v-for="seg in titleSegments" :key="seg.text + seg.highlighted">
+            <template v-if="effectiveTitleSegments && effectiveTitleSegments.length > 0">
+              <template v-for="seg in effectiveTitleSegments" :key="seg.text + seg.highlighted">
                 <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>
                 <span v-else>{{ seg.text }}</span>
               </template>
@@ -36,9 +36,9 @@
           </h3>
 
           <!-- Text -->
-          <p v-if="text || (textSegments && textSegments.length > 0)" class="text-gray-400 text-sm mb-2 truncate">
-            <template v-if="textSegments && textSegments.length > 0">
-              <template v-for="seg in textSegments" :key="seg.text + seg.highlighted">
+          <p v-if="text || (effectiveTextSegments && effectiveTextSegments.length > 0)" class="text-gray-400 text-sm mb-2 truncate">
+            <template v-if="effectiveTextSegments && effectiveTextSegments.length > 0">
+              <template v-for="seg in effectiveTextSegments" :key="seg.text + seg.highlighted">
                 <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>
                 <span v-else>{{ seg.text }}</span>
               </template>
@@ -104,6 +104,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TextSegment } from '@/utils/highlight'
+import { getSegmentsFromQuery } from '@/utils/highlight'
 import type { DropdownMenuItem } from '@/components/DropdownMenu.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
 import { useUiStore } from '@/stores/ui'
@@ -113,12 +114,25 @@ const props = defineProps<{
   titleSegments?: TextSegment[]
   text?: string
   textSegments?: TextSegment[]
+  highlightText?: string
   tags?: { id: string; name: string }[]
   lists?: { id: string; name: string }[]
   dropdownItems?: DropdownMenuItem[]
   id?: string
   draggable?: boolean
 }>()
+
+const effectiveTitleSegments = computed<TextSegment[] | undefined>(() => {
+  if (props.titleSegments?.length) return props.titleSegments
+  if (props.highlightText && props.title) return getSegmentsFromQuery(props.title, props.highlightText)
+  return undefined
+})
+
+const effectiveTextSegments = computed<TextSegment[] | undefined>(() => {
+  if (props.textSegments?.length) return props.textSegments
+  if (props.highlightText && props.text) return getSegmentsFromQuery(props.text, props.highlightText)
+  return undefined
+})
 
 const emit = defineEmits<{
   click: []

@@ -8,6 +8,14 @@ export function normalizeText(text: string): string {
   return text.trim().replace(/\s+/g, ' ')
 }
 
+// Strip diacritical marks so "é" matches "e", "ñ" matches "n", etc.
+// Uses NFD decomposition then removes combining chars (U+0300–U+036F).
+// The result has the same code-unit length as the NFC input, so match
+// indices returned here are valid for slicing the original string.
+export function foldAccents(text: string): string {
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+}
+
 /**
  * Validate song title
  * @returns Error message or null if valid

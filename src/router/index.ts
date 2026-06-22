@@ -82,8 +82,8 @@ router.beforeEach(async (to, _from, next) => {
     uiStore.showOperationOverlay('Loading...')
   }
   
-  // Exit selection mode on navigation
-  if (uiStore.selectionMode) {
+  // Exit selection mode on real page navigation (not drawer open/close, which reuses the same path)
+  if (uiStore.selectionMode && to.path !== _from.path) {
     uiStore.exitSelectionMode()
   }
   

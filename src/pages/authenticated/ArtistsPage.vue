@@ -7,9 +7,6 @@
         :show-back="true"
         :show-menu="true"
       >
-        <template #action>
-          <DropdownMenu :items="headerMenuItems" />
-        </template>
       </AppHeader>
 
       <!-- Empty State -->
@@ -28,8 +25,10 @@
           <Card
             v-for="artist in filteredArtists"
             :key="artist.id"
+            :id="artist.id"
             :title="artist.name"
             :text="getArtistText(artist)"
+            :highlight-text="searchQuery"
             :dropdown-items="getArtistDropdownItems(artist)"
             @click="navigateToArtist(artist)"
           />
@@ -45,34 +44,13 @@
         <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SEARCH_RESULTS }}</p>
       </div>
 
-      <!-- Sticky Bottom Bar -->
-      <div v-if="!artistsStore.isLoading && artistsWithCount.length > 0" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
-        <div class="max-w-2xl mx-auto">
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-            </div>
-            <input
-              v-model="searchQuery"
-              type="text"
-              :placeholder="I18N.PLACEHOLDERS.SEARCH_ARTISTS"
-              class="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            <button
-              v-if="searchQuery"
-              @click="searchQuery = ''"
-              class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-              :aria-label="I18N.ARIA.CLEAR_SEARCH"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+      <StickyBar
+        v-model:search-query="searchQuery"
+        :all-item-ids="filteredArtists.map(a => a.id)"
+        :filters-enabled="false"
+        @new-clicked="showCreateModal = true"
+        @choose-action-clicked="handleChooseAction"
+      />
 
       <!-- Create Modal -->
       <CRUDModal
@@ -112,28 +90,93 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import DropdownMenu from '@/components/DropdownMenu.vue'
 import Card from '@/components/Card.vue'
 import CRUDModal from '@/components/CRUDModal.vue'
 import CRUDEmptyState from '@/components/CRUDEmptyState.vue'
+import StickyBar from '@/components/StickyBar.vue'
+import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useDrawerStore } from '@/stores/drawer'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { MESSAGES } from '@/constants/messages'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
+import { supabase } from '@/lib/supabase'
+import { foldAccents } from '@/utils/validation'
 import type { ArtistWithCount } from '@/types/database'
 
 const router = useRouter()
 const artistsStore = useArtistsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const drawerStore = useDrawerStore()
 
-const headerMenuItems = [
-  { label: I18N.MODALS.CREATE_ARTIST, callback: () => { showCreateModal.value = true } },
-]
+
+function handleChooseAction() {
+  const actions: BulkAction[] = [
+    { label: I18N.BULK_ACTIONS.DELETE_ARTISTS, variant: 'danger', keepDrawerOpen: true, onClick: handleBulkDeleteArtists },
+  ]
+  drawerStore.push(BulkActionsDrawer, { actions })
+}
+
+function handleBulkDeleteArtists() {
+  const ids = [...uiStore.selectedIds]
+  const artistCount = ids.length
+  const songCount = ids.reduce((sum, id) => {
+    return sum + (artistsWithCount.value.find(a => a.id === id)?.song_count ?? 0)
+  }, 0)
+
+  const artistLabel = (n: number) => `${n} artist${n !== 1 ? 's' : ''}`
+  const songLabel = (n: number) => `${n} associated song${n !== 1 ? 's' : ''}`
+
+  drawerStore.push(ConfirmDrawer, {
+    title: `Delete ${artistLabel(artistCount)}?`,
+    message: `This will remove ${artistLabel(artistCount)} and ${songLabel(songCount)} from your library.`,
+    confirmLabel: I18N.BUTTONS.DELETE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmVariant: 'danger',
+    confirmCallback: async () => {
+      try {
+        const personalProjectId = await authStore.getPersonalProjectId()
+        if (!personalProjectId) throw new Error('Project not found')
+
+        const { data: songArtists } = await supabase
+          .from('song_artists_v2')
+          .select('song_id')
+          .in('artist_id', ids)
+
+        const songIds = [...new Set((songArtists ?? []).map((sa: { song_id: string }) => sa.song_id))]
+
+        if (songIds.length > 0) {
+          const { data: libSongs } = await supabase
+            .from('library_songs')
+            .select('id')
+            .eq('project_id', personalProjectId)
+            .in('song_id', songIds)
+
+          const libraryIds = (libSongs ?? []).map((ls: { id: string }) => ls.id)
+          if (libraryIds.length > 0) {
+            const { error } = await supabase.from('library_songs').delete().in('id', libraryIds)
+            if (error) throw error
+          }
+        }
+
+        artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
+        uiStore.showToast(`Deleted ${artistLabel(artistCount)} and ${songLabel(songCount)}`, 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('delete artists', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
+}
 
 function getArtistText(artist: ArtistWithCount): string {
   const count = artist.song_count
@@ -159,9 +202,9 @@ const filteredArtists = computed(() => {
     return artistsWithCount.value
   }
 
-  const query = searchQuery.value.toLowerCase()
+  const query = foldAccents(searchQuery.value)
   return artistsWithCount.value.filter(artist =>
-    artist.name.toLowerCase().includes(query)
+    foldAccents(artist.name).includes(query)
   )
 })
 

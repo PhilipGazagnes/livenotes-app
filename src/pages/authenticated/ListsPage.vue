@@ -7,9 +7,6 @@
         :show-back="true"
         :show-menu="true"
       >
-        <template #action>
-          <DropdownMenu v-if="!uiStore.selectionMode" :items="headerMenuItems" />
-        </template>
       </AppHeader>
 
       <!-- Empty State -->
@@ -34,58 +31,24 @@
       <!-- Lists List -->
       <div v-else class="p-4 space-y-3 pb-24">
         <Card
-          v-for="list in listsStore.listsByName"
+          v-for="list in filteredLists"
           :key="list.id"
           :title="list.name"
           :text="getListText(list)"
           :id="list.id"
+          :highlight-text="searchQuery"
           :dropdown-items="getListDropdownItems(list)"
           @click="handleListClick(list)"
         />
       </div>
 
-      <!-- Sticky Bottom Bar -->
-      <div v-if="uiStore.selectionMode" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
-        <div class="max-w-2xl mx-auto space-y-3">
-          <!-- Action Buttons -->
-          <div v-if="uiStore.selectedIds.length > 0" class="flex gap-2">
-            <button
-              @click="handleBulkDelete"
-              class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              {{ I18N.BULK_ACTIONS.DELETE_LISTS }}
-            </button>
-          </div>
-
-          <!-- Selection Controls -->
-          <div class="flex items-center justify-between gap-4">
-            <div class="text-white font-medium">
-              {{ I18N.COUNTERS.SELECTED(uiStore.selectedIds.length) }}
-            </div>
-            <div class="flex gap-2">
-              <button
-                @click="handleSelectAll"
-                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BUTTONS.SELECT_ALL }}
-              </button>
-              <button
-                v-if="uiStore.selectedIds.length > 0"
-                @click="uiStore.deselectAll"
-                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BUTTONS.DESELECT_ALL }}
-              </button>
-              <button
-                @click="uiStore.exitSelectionMode"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                {{ I18N.BUTTONS.DONE }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StickyBar
+        v-model:search-query="searchQuery"
+        :all-item-ids="filteredLists.map(l => l.id)"
+        :filters-enabled="false"
+        @new-clicked="showCreateModal = true"
+        @choose-action-clicked="handleChooseAction"
+      />
 
       <!-- Create List Modal -->
       <Teleport to="body">
@@ -199,22 +162,35 @@ import { IonPage, IonContent } from '@ionic/vue'
 import { useListsStore } from '@/stores/lists'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useDrawerStore } from '@/stores/drawer'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { ROUTES } from '@/constants/routes'
-import { normalizeText } from '@/utils/validation'
+import { normalizeText, foldAccents } from '@/utils/validation'
 import { executeOperation } from '@/utils/operations'
 import { usePageLoad } from '@/composables/usePageLoad'
 import { supabase } from '@/lib/supabase'
 import AppHeader from '@/components/AppHeader.vue'
-import DropdownMenu from '@/components/DropdownMenu.vue'
 import Card from '@/components/Card.vue'
+import StickyBar from '@/components/StickyBar.vue'
+import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import type { List } from '@/types/database'
 
 const router = useRouter()
 const listsStore = useListsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const drawerStore = useDrawerStore()
+
+const searchQuery = ref('')
+
+const filteredLists = computed(() => {
+  const q = foldAccents(searchQuery.value.trim())
+  if (!q) return listsStore.listsByName
+  return listsStore.listsByName.filter(l => foldAccents(l.name).includes(q))
+})
 
 const listSongCounts = ref<Map<string, number>>(new Map())
 const showCreateModal = ref(false)
@@ -244,22 +220,12 @@ const renameListName = ref('')
 const renameError = ref('')
 const isRenaming = ref(false)
 
-const headerMenuItems = computed(() => [
-  { label: I18N.DROPDOWN.CREATE_NEW_LIST, callback: handleCreateClick },
-  ...(listsStore.listCount > 0 ? [{ label: I18N.DROPDOWN.SELECT_LISTS, callback: handleEnterSelectionMode }] : []),
-])
 
-function handleCreateClick() {
-  showCreateModal.value = true
-}
-
-function handleEnterSelectionMode() {
-  uiStore.enterSelectionMode()
-}
-
-function handleSelectAll() {
-  const allListIds = listsStore.listsByName.map(list => list.id)
-  uiStore.selectAll(allListIds)
+function handleChooseAction() {
+  const actions: BulkAction[] = [
+    { label: I18N.BULK_ACTIONS.DELETE_LISTS, variant: 'danger', keepDrawerOpen: true, onClick: handleBulkDelete },
+  ]
+  drawerStore.push(BulkActionsDrawer, { actions })
 }
 
 const { execute } = usePageLoad()
@@ -289,31 +255,29 @@ onMounted(() => {
   })
 })
 
-async function handleBulkDelete() {
-  const count = uiStore.selectedIds.length
-  const confirmed = await uiStore.showConfirm(
-    I18N.MODAL_CONTENT.BULK_DELETE_LISTS_TITLE(count),
-    I18N.MODAL_CONTENT.BULK_DELETE_LISTS_MESSAGE(count),
-    I18N.BUTTONS.DELETE,
-    I18N.BUTTONS.CANCEL
-  )
-  
-  if (confirmed) {
-    const projectId = await authStore.getPersonalProjectId()
-    if (projectId) {
-      await executeOperation(
-        () => listsStore.bulkDeleteLists(uiStore.selectedIds, projectId),
-        {
-          loadingMessage: 'Deleting lists...',
-          successMessage: I18N.TOAST.BULK_DELETED_LISTS(count),
-          errorContext: 'delete lists',
-          onSuccess: () => {
-            uiStore.exitSelectionMode()
-          },
-        }
-      )
-    }
-  }
+function handleBulkDelete() {
+  const ids = [...uiStore.selectedIds]
+  const count = ids.length
+  drawerStore.push(ConfirmDrawer, {
+    title: I18N.MODAL_CONTENT.BULK_DELETE_LISTS_TITLE(count),
+    message: I18N.MODAL_CONTENT.BULK_DELETE_LISTS_MESSAGE(count),
+    confirmLabel: I18N.BUTTONS.DELETE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmVariant: 'danger',
+    confirmCallback: async () => {
+      try {
+        const projectId = await authStore.getPersonalProjectId()
+        if (!projectId) throw new Error('Project not found')
+        await listsStore.bulkDeleteLists(ids, projectId)
+        uiStore.showToast(I18N.TOAST.BULK_DELETED_LISTS(count), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('delete lists', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
 }
 
 async function handleCreateSubmit() {

@@ -120,6 +120,8 @@ export const useListsStore = defineStore('lists', () => {
     isLoading.value = true
     error.value = null
     try {
+      const existingIds = await listService.fetchExistingLibrarySongIdsInList(listId)
+      if (existingIds.has(librarySongId)) return { success: true }
       const position = await listService.fetchListMaxPosition(listId)
       await listService.insertLibrarySongToList(listId, librarySongId, position)
       if (currentList.value?.id === listId) await fetchListById(listId)
@@ -155,9 +157,12 @@ export const useListsStore = defineStore('lists', () => {
     isLoading.value = true
     error.value = null
     try {
+      const existingIds = await listService.fetchExistingLibrarySongIdsInList(listId)
+      const newIds = librarySongIds.filter(id => !existingIds.has(id))
+      if (newIds.length === 0) return { success: true }
       const startPosition = await listService.fetchListMaxPosition(listId)
-      for (let i = 0; i < librarySongIds.length; i++) {
-        await listService.insertLibrarySongToList(listId, librarySongIds[i], startPosition + i)
+      for (let i = 0; i < newIds.length; i++) {
+        await listService.insertLibrarySongToList(listId, newIds[i], startPosition + i)
       }
       if (currentList.value?.id === listId) await fetchListById(listId)
       return { success: true }

@@ -147,6 +147,16 @@ export async function fetchListMaxPosition(listId: string): Promise<number> {
   return data.length > 0 ? data[0].position + 1 : 0
 }
 
+export async function fetchExistingLibrarySongIdsInList(listId: string): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('list_items')
+    .select('library_song_id')
+    .eq('list_id', listId)
+    .not('library_song_id', 'is', null)
+  if (error) throw error
+  return new Set((data ?? []).map((row: { library_song_id: string | null }) => row.library_song_id).filter((id): id is string => id !== null))
+}
+
 export async function insertLibrarySongToList(
   listId: string,
   librarySongId: string,

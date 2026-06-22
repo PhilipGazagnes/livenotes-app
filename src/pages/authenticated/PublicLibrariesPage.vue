@@ -2,9 +2,6 @@
   <ion-page>
     <ion-content>
       <AppHeader :title="I18N.PAGE_TITLES.PUBLIC_LIBRARIES" :show-back="true" :show-menu="true">
-        <template #action>
-          <DropdownMenu :items="headerMenuItems" />
-        </template>
       </AppHeader>
 
       <div class="p-4 space-y-4 pb-24">
@@ -32,16 +29,26 @@
 
         <div v-else class="space-y-3">
           <Card
-            v-for="lib in store.libraries"
+            v-for="lib in filteredLibraries"
             :key="lib.id"
+            :id="lib.id"
             :title="lib.name"
             :text="settingsStore.projectSlug ? `/${settingsStore.projectSlug}/${lib.slug}` : undefined"
+            :highlight-text="searchQuery"
             :tags="lib.tags"
             :dropdown-items="getLibraryMenuItems(lib)"
           />
         </div>
 
       </div>
+
+      <StickyBar
+        v-model:search-query="searchQuery"
+        :all-item-ids="filteredLibraries.map(l => l.id)"
+        :filters-enabled="false"
+        @new-clicked="openCreate"
+        @choose-action-clicked="handleChooseAction"
+      />
 
       <!-- Create / Edit modal -->
       <div v-if="showForm" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4">
@@ -146,12 +153,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import DropdownMenu from '@/components/DropdownMenu.vue'
 import Card from '@/components/Card.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import StickyBar from '@/components/StickyBar.vue'
+import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { usePublicLibrariesStore } from '@/stores/publicLibraries'
@@ -159,7 +169,10 @@ import { useSettingsStore } from '@/stores/settings'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useDrawerStore } from '@/stores/drawer'
 import { slugify } from '@/utils/slugify'
+import { foldAccents } from '@/utils/validation'
+import PublicLibraryFormDrawer from '@/components/PublicLibraryFormDrawer.vue'
 import type { PublicLibraryWithTags } from '@/types/database'
 
 const store = usePublicLibrariesStore()
@@ -167,10 +180,16 @@ const settingsStore = useSettingsStore()
 const tagsStore = useTagsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const drawerStore = useDrawerStore()
 
-const headerMenuItems = [
-  { label: 'Create New', callback: openCreate },
-]
+const searchQuery = ref('')
+
+const filteredLibraries = computed(() => {
+  const q = foldAccents(searchQuery.value.trim())
+  if (!q) return store.libraries
+  return store.libraries.filter(l => foldAccents(l.name).includes(q))
+})
+
 
 function getLibraryMenuItems(lib: PublicLibraryWithTags) {
   return [
@@ -203,10 +222,42 @@ function toggleTag(tagId: string) {
   else form.value.tagIds.splice(idx, 1)
 }
 
+function handleChooseAction() {
+  const actions: BulkAction[] = [
+    { label: I18N.DROPDOWN.DELETE, variant: 'danger', keepDrawerOpen: true, onClick: handleBulkDelete },
+  ]
+  drawerStore.push(BulkActionsDrawer, { actions })
+}
+
+function handleBulkDelete() {
+  const count = uiStore.selectedIds.length
+  const ids = [...uiStore.selectedIds]
+  const label = count !== 1 ? 'libraries' : 'library'
+
+  drawerStore.push(ConfirmDrawer, {
+    title: `Delete ${count} ${label}?`,
+    message: `This will permanently delete ${count} public ${label}.`,
+    confirmLabel: I18N.BUTTONS.DELETE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmVariant: 'danger',
+    confirmCallback: async () => {
+      try {
+        for (const id of ids) {
+          await store.deleteLibrary(id)
+        }
+        uiStore.showToast(`Deleted ${count} public ${label}`, 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('delete libraries', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
+}
+
 function openCreate() {
-  editingId.value = null
-  form.value = { name: '', slug: '', tagIds: [], isActive: true, headerImageMobile: '', headerImageDesktop: '' }
-  showForm.value = true
+  drawerStore.push(PublicLibraryFormDrawer, {})
 }
 
 function openEdit(lib: PublicLibraryWithTags) {
@@ -246,11 +297,28 @@ async function handleSubmit() {
   }
 }
 
-async function handleDelete(id: string) {
-  const confirmed = await uiStore.showConfirm(I18N.MODALS.DELETE_LIBRARY, I18N.MODAL_CONTENT.DELETE_LIBRARY_CONFIRM, I18N.BUTTONS.DELETE, I18N.BUTTONS.CANCEL)
-  if (!confirmed) return
-  const result = await store.deleteLibrary(id)
-  if (result.success) uiStore.showToast(I18N.TOAST.LIBRARY_DELETED, 'success')
-  else uiStore.showToast(result.error || I18N.TOAST.LIBRARY_DELETE_FAILED, 'error')
+function handleDelete(id: string) {
+  drawerStore.push(ConfirmDrawer, {
+    title: I18N.MODALS.DELETE_LIBRARY,
+    message: I18N.MODAL_CONTENT.DELETE_LIBRARY_CONFIRM,
+    confirmLabel: I18N.BUTTONS.DELETE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmVariant: 'danger',
+    confirmCallback: async () => {
+      try {
+        const result = await store.deleteLibrary(id)
+        if (result.success) {
+          uiStore.showToast(I18N.TOAST.LIBRARY_DELETED, 'success')
+          drawerStore.popAll()
+        } else {
+          uiStore.showToast(result.error || I18N.TOAST.LIBRARY_DELETE_FAILED, 'error')
+          drawerStore.popAll()
+        }
+      } catch (err) {
+        uiStore.showErrorToast('delete library', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
 }
 </script>

@@ -315,11 +315,13 @@ export const I18N = {
   // ============================================================================
   BULK_ACTIONS: {
     DELETE: 'Delete Songs',
+    DELETE_TAGS: 'Delete Tags',
     ADD_TO_LISTS: 'Add to Lists',
     ASSIGN_TAGS: 'Assign Tags',
     REMOVE_TAGS: 'Remove Tags',
     REMOVE_FROM_LIST: 'Remove from List',
     DELETE_LISTS: 'Delete Lists',
+    DELETE_ARTISTS: 'Delete artists (and associated songs)',
   },
 
   // ============================================================================

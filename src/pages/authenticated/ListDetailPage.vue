@@ -7,12 +7,6 @@
         :show-back="true"
         :show-menu="true"
       >
-        <template #action>
-          <DropdownMenu
-            v-if="!uiStore.selectionMode && listItems.length > 0"
-            :items="headerMenuItems"
-          />
-        </template>
       </AppHeader>
 
       <!-- Empty State -->
@@ -70,6 +64,7 @@
                 v-else
                 :title="item.song?.title || ''"
                 :text="getItemText(item as any)"
+                :highlight-text="searchQuery"
                 :tags="getItemTags(item as any)"
                 :lists="getItemLists(item as any)"
                 :dropdown-items="getItemDropdownItems(item as any)"
@@ -90,73 +85,14 @@
         </div>
       </div>
 
-      <!-- Sticky Bottom Bar -->
-      <div v-if="listItems.length > 0" class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
-        <div class="max-w-2xl mx-auto">
-          <!-- Selection Mode Controls -->
-          <ListBulkActions
-            v-if="uiStore.selectionMode"
-            :listId="listId"
-            :listName="currentList?.name || ''"
-            :listItems="listItems"
-            @selectAll="handleSelectAll"
-            @refresh="handleRefresh"
-            @songsDeleted="handleSongsDeleted"
-          />
+      <StickyBar
+        v-model:search-query="searchQuery"
+        :all-item-ids="displayedItems.filter(i => i.type === 'song').map(i => i.id)"
+        :filters-enabled="false"
+        @new-clicked="handleAddTitle"
+        @choose-action-clicked="handleChooseAction"
+      />
 
-          <!-- Search & Filter Controls -->
-          <ListFilterBar
-            v-else
-            v-model:searchQuery="searchQuery"
-            v-model:selectedTagIds="selectedTagIds"
-          />
-        </div>
-      </div>
-
-      <!-- Title Modal -->
-      <div
-        v-if="showTitleModal"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-20"
-        @click.self="showTitleModal = false"
-      >
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md border border-gray-700">
-          <h3 class="text-xl font-semibold text-white mb-4">
-            {{ editingTitle ? I18N.MODALS.EDIT_TITLE_SECTION : I18N.MODALS.ADD_TITLE_SECTION }}
-          </h3>
-
-          <div class="mb-4">
-            <label for="titleInput" class="block text-sm font-medium text-gray-300 mb-2">
-              {{ I18N.FORM.TITLE }} <span class="text-red-400">{{ I18N.FORM.REQUIRED }}</span>
-            </label>
-            <input
-              id="titleInput"
-              v-model="titleInput"
-              type="text"
-              maxlength="200"
-              class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              :placeholder="I18N.PLACEHOLDERS.SECTION_TITLE"
-              @keyup.enter="handleSaveTitle"
-              autofocus
-            />
-          </div>
-
-          <div class="flex gap-3">
-            <button
-              @click="showTitleModal = false"
-              class="flex-1 px-6 py-3 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              {{ I18N.BUTTONS.CANCEL }}
-            </button>
-            <button
-              @click="handleSaveTitle"
-              :disabled="!titleInput.trim() || isSavingTitle"
-              class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {{ isSavingTitle ? I18N.LOADING.SAVING : (editingTitle ? I18N.BUTTONS.SAVE : I18N.BUTTONS.ADD) }}
-            </button>
-          </div>
-        </div>
-      </div>
 
       <!-- Song Manage Tags Modal -->
       <ManageTagsModal
@@ -180,6 +116,7 @@
         @saved="handleSongListsSaved"
       />
 
+
     </ion-content>
   </ion-page>
 </template>
@@ -200,15 +137,21 @@ import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { executeOperation } from '@/utils/operations'
 import AppHeader from '@/components/AppHeader.vue'
-import DropdownMenu from '@/components/DropdownMenu.vue'
 import Card from '@/components/Card.vue'
 import ListTitleCard from '@/components/ListTitleCard.vue'
-import ListBulkActions from '@/components/ListBulkActions.vue'
-import ListFilterBar from '@/components/ListFilterBar.vue'
+import StickyBar from '@/components/StickyBar.vue'
+import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useSongsStore } from '@/stores/songs'
+import { foldAccents } from '@/utils/validation'
+import CreateItemDrawer from '@/components/CreateItemDrawer.vue'
+import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
+import BulkAddToListsDrawer from '@/components/BulkAddToListsDrawer.vue'
+import BulkAssignTagsDrawer from '@/components/BulkAssignTagsDrawer.vue'
+import BulkRemoveTagsDrawer from '@/components/BulkRemoveTagsDrawer.vue'
 import type { ListItem, SongWithTags } from '@/types/database'
 
 const ManageTagsModal = defineAsyncComponent(() => import('@/components/ManageTagsModal.vue'))
@@ -225,11 +168,6 @@ const settingsStore = useSettingsStore()
 const songsStore = useSongsStore()
 
 const searchQuery = ref('')
-const selectedTagIds = ref<string[]>([])
-const showTitleModal = ref(false)
-const editingTitle = ref<ListItem | null>(null)
-const titleInput = ref('')
-const isSavingTitle = ref(false)
 
 // Ref to ion-content for scroll handling
 const ionContentRef = ref<InstanceType<typeof IonContent> | null>(null)
@@ -242,14 +180,11 @@ const listId = computed(() => route.params.id as string)
 const currentList = computed(() => listsStore.currentList)
 const listItems = computed(() => currentList.value?.items || [])
 
-const headerMenuItems = [
-  { label: I18N.DROPDOWN.ADD_TITLE_SECTION, callback: handleAddTitle },
-  { label: I18N.DROPDOWN.SELECT_SONGS, callback: handleEnterSelectionMode },
-]
 
 const selectedSongItem = ref<(ListItem & { song: SongWithTags }) | null>(null)
 const showSongManageTagsModal = ref(false)
 const showSongManageListsModal = ref(false)
+
 
 function getItemText(item: ListItem & { song: SongWithTags }): string | undefined {
   if (!settingsStore.showArtistsInLists) return undefined
@@ -329,29 +264,20 @@ async function handleDeleteSong(item: ListItem & { song: SongWithTags }) {
 const displayedItems = computed({
   get() {
     let filtered = listItems.value
-    
+
     // Separate songs to apply filters (titles always show)
     let songs = filtered.filter(item => item.type === 'song')
-    
-    // Apply tag filter (AND logic - song must have ALL selected tags)
-    if (selectedTagIds.value.length > 0) {
-      songs = songs.filter(item => {
-        if (!item.song) return false
-        const songTagIds = item.song.tags?.map(t => t.id) || []
-        return selectedTagIds.value.every(tagId => songTagIds.includes(tagId))
-      })
-    }
-    
+
     // Apply search query
     if (searchQuery.value.trim()) {
-      const query = searchQuery.value.toLowerCase()
+      const query = foldAccents(searchQuery.value)
       songs = songs.filter(item => {
         if (!item.song) return false
         const song = item.song
-        return song.title.toLowerCase().includes(query) ||
-               song.artist?.toLowerCase().includes(query) ||
+        return foldAccents(song.title).includes(query) ||
+               (song.artist && foldAccents(song.artist).includes(query)) ||
                song.livenotes_poc_id?.toLowerCase().includes(query) ||
-               song.notes?.toLowerCase().includes(query)
+               (song.notes && foldAccents(song.notes).includes(query))
       })
     }
     
@@ -434,18 +360,29 @@ onMounted(async () => {
   }
 })
 
-async function handleRemove(item: ListItem) {
-  if (!currentList.value || !item.song_id) return
+function handleRemove(item: ListItem & { song?: SongWithTags }) {
+  if (!currentList.value || !item.library_song_id) return
+  const listId = currentList.value.id
+  const listName = currentList.value.name
+  const librarySongId = item.library_song_id
+  const songTitle = item.song?.title ?? 'this song'
 
-  await executeOperation(
-    () => listsStore.removeSongFromList(currentList.value!.id, item.song_id!),
-    {
-      loadingMessage: 'Removing song from list...',
-      successMessage: I18N.TOAST.REMOVED_FROM_LIST(currentList.value!.name),
-      errorContext: 'remove song from list',
-    }
-  )
-  // No need to refresh - removeSongFromList already updates local state
+  drawerStore.push(ConfirmDrawer, {
+    title: I18N.DROPDOWN.REMOVE_FROM_LIST,
+    message: `Remove "${songTitle}" from ${listName}?`,
+    confirmLabel: I18N.BUTTONS.REMOVE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmCallback: async () => {
+      try {
+        await listsStore.removeLibrarySongFromList(listId, librarySongId)
+        uiStore.showToast(I18N.TOAST.REMOVED_FROM_LIST(listName), 'success')
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('remove song from list', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
 }
 
 function handleSongDeleted(songId: string) {
@@ -468,42 +405,49 @@ async function handleListsUpdated(_songId: string) {
 }
 
 function handleAddTitle() {
-  editingTitle.value = null
-  titleInput.value = ''
-  showTitleModal.value = true
+  if (!currentList.value) return
+  const listId = currentList.value.id
+  drawerStore.push(CreateItemDrawer, {
+    title: I18N.MODALS.ADD_TITLE_SECTION,
+    label: I18N.FORM.TITLE,
+    placeholder: I18N.PLACEHOLDERS.SECTION_TITLE,
+    maxLength: 200,
+    submitLabel: I18N.BUTTONS.ADD,
+    successMessage: I18N.TOAST.TITLE_ADDED,
+    submitCallback: async (name: string) => {
+      try {
+        const maxPosition = listItems.value.length > 0
+          ? Math.max(...listItems.value.map(item => item.position))
+          : -1
+        await createListItemTitle(listId, name, maxPosition + 1)
+        await handleRefresh()
+        return { success: true }
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'Failed to add title' }
+      }
+    },
+  })
 }
 
 function handleEditTitle(item: ListItem) {
-  editingTitle.value = item
-  titleInput.value = item.title || ''
-  showTitleModal.value = true
-}
-
-async function handleSaveTitle() {
-  if (!currentList.value || !titleInput.value.trim()) return
-  
-  isSavingTitle.value = true
-  
-  try {
-    if (editingTitle.value) {
-      await updateListItemTitle(editingTitle.value.id, titleInput.value.trim())
-      uiStore.showToast(I18N.TOAST.TITLE_UPDATED, 'success')
-    } else {
-      const maxPosition = listItems.value.length > 0
-        ? Math.max(...listItems.value.map(item => item.position))
-        : -1
-      await createListItemTitle(currentList.value.id, titleInput.value.trim(), maxPosition + 1)
-      uiStore.showToast(I18N.TOAST.TITLE_ADDED, 'success')
-    }
-
-    showTitleModal.value = false
-    await handleRefresh()
-  } catch (err) {
-    console.error('Failed to save title:', err)
-    uiStore.showToast(I18N.TOAST.TITLE_SAVE_FAILED, 'error')
-  } finally {
-    isSavingTitle.value = false
-  }
+  drawerStore.push(CreateItemDrawer, {
+    title: I18N.MODALS.EDIT_TITLE_SECTION,
+    label: I18N.FORM.TITLE,
+    placeholder: I18N.PLACEHOLDERS.SECTION_TITLE,
+    maxLength: 200,
+    submitLabel: I18N.BUTTONS.SAVE,
+    successMessage: I18N.TOAST.TITLE_UPDATED,
+    initialValue: item.title || '',
+    submitCallback: async (name: string) => {
+      try {
+        await updateListItemTitle(item.id, name)
+        await handleRefresh()
+        return { success: true }
+      } catch (err) {
+        return { success: false, error: err instanceof Error ? err.message : 'Failed to update title' }
+      }
+    },
+  })
 }
 
 async function handleDeleteTitle(item: any) {
@@ -533,24 +477,151 @@ async function handleRefresh() {
   }
 }
 
-function handleEnterSelectionMode() {
-  uiStore.enterSelectionMode()
+
+function handleChooseAction() {
+  const actions: BulkAction[] = [
+    { label: I18N.BULK_ACTIONS.REMOVE_FROM_LIST, variant: 'warning', keepDrawerOpen: true, onClick: handleBulkRemoveFromList },
+    { label: I18N.BULK_ACTIONS.DELETE, variant: 'danger', keepDrawerOpen: true, onClick: handleBulkDeleteSongs },
+    { label: I18N.BULK_ACTIONS.ADD_TO_LISTS, keepDrawerOpen: true, onClick: handleBulkAddToLists },
+    { label: I18N.BULK_ACTIONS.ASSIGN_TAGS, keepDrawerOpen: true, onClick: handleBulkAssignTags },
+    { label: I18N.BULK_ACTIONS.REMOVE_TAGS, keepDrawerOpen: true, onClick: handleBulkRemoveTags },
+  ]
+  drawerStore.push(BulkActionsDrawer, { actions })
 }
 
-function handleSelectAll() {
-  const allListItemIds = displayedItems.value
-    .filter(item => item.type === 'song')
-    .map(item => item.id)
-  uiStore.selectAll(allListItemIds)
+function handleBulkRemoveFromList() {
+  const ids = [...uiStore.selectedIds]
+  const count = ids.length
+  const listName = currentList.value?.name || ''
+
+  drawerStore.push(ConfirmDrawer, {
+    title: `Remove ${count} song${count !== 1 ? 's' : ''} from list?`,
+    message: `This will remove ${count} song${count !== 1 ? 's' : ''} from ${listName}.`,
+    confirmLabel: I18N.BUTTONS.REMOVE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmCallback: async () => {
+      try {
+        for (const listItemId of ids) {
+          const { error } = await (await import('@/lib/supabase')).supabase
+            .from('list_items')
+            .delete()
+            .eq('id', listItemId)
+          if (error) throw error
+        }
+        await handleRefresh()
+        uiStore.showToast(I18N.TOAST.BULK_REMOVED_FROM_LIST(count, listName), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('remove songs from list', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
 }
 
-function handleSongsDeleted(deletedIds: string[]) {
-  // Remove deleted songs from list's local state
-  if (currentList.value) {
-    currentList.value.items = currentList.value.items.filter(
-      item => item.song_id && !deletedIds.includes(item.song_id)
-    )
-  }
+function handleBulkDeleteSongs() {
+  const count = uiStore.selectedIds.length
+  const selectedListItemIds = [...uiStore.selectedIds]
+  const librarySongIds = selectedListItemIds
+    .map(id => listItems.value.find(i => i.id === id)?.library_song_id)
+    .filter(Boolean) as string[]
+
+  drawerStore.push(ConfirmDrawer, {
+    title: I18N.MODAL_CONTENT.BULK_DELETE_SONGS_TITLE(count),
+    message: I18N.MODAL_CONTENT.BULK_DELETE_SONGS_MESSAGE(count),
+    confirmLabel: I18N.BUTTONS.DELETE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmVariant: 'danger',
+    confirmCallback: async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        for (const librarySongId of librarySongIds) {
+          const { error } = await supabase
+            .from('library_songs')
+            .delete()
+            .eq('id', librarySongId)
+          if (error) throw error
+        }
+        await handleRefresh()
+        uiStore.showToast(I18N.TOAST.BULK_DELETED_SONGS(count), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('delete songs', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
+}
+
+function handleBulkAddToLists() {
+  const ids = [...uiStore.selectedIds]
+  const librarySongIds = ids
+    .map(id => listItems.value.find(i => i.id === id)?.library_song_id)
+    .filter(Boolean) as string[]
+
+  drawerStore.push(BulkAddToListsDrawer, {
+    excludeListId: listId.value,
+    applyCallback: async (listIds: string[]) => {
+      try {
+        for (const targetListId of listIds) {
+          await listsStore.bulkAddLibrarySongsToList(targetListId, librarySongIds)
+        }
+        await handleRefresh()
+        uiStore.showToast(I18N.TOAST.BULK_ADDED_TO_LISTS(ids.length), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('add to lists', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
+}
+
+function handleBulkAssignTags() {
+  const ids = [...uiStore.selectedIds]
+  const librarySongIds = ids
+    .map(id => listItems.value.find(i => i.id === id)?.library_song_id)
+    .filter(Boolean) as string[]
+
+  drawerStore.push(BulkAssignTagsDrawer, {
+    applyCallback: async (tagIds: string[]) => {
+      try {
+        await tagsStore.bulkAssignTags(librarySongIds, tagIds)
+        await handleRefresh()
+        uiStore.showToast(I18N.TOAST.BULK_TAGS_ASSIGNED(ids.length), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('assign tags', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
+}
+
+function handleBulkRemoveTags() {
+  const ids = [...uiStore.selectedIds]
+  const librarySongIds = ids
+    .map(id => listItems.value.find(i => i.id === id)?.library_song_id)
+    .filter(Boolean) as string[]
+
+  drawerStore.push(BulkRemoveTagsDrawer, {
+    applyCallback: async (tagIds: string[]) => {
+      try {
+        await tagsStore.bulkRemoveTags(librarySongIds, tagIds)
+        await handleRefresh()
+        uiStore.showToast(I18N.TOAST.BULK_TAGS_REMOVED(ids.length), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('remove tags', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
 }
 
 function handleOpenNotes(item: ListItem & { song: SongWithTags }) {

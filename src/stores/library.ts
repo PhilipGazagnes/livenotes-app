@@ -22,6 +22,7 @@ const FUSE_OPTIONS = {
   threshold: 0.3,
   minMatchCharLength: 2,
   ignoreLocation: true,
+  ignoreDiacritics: true,
 }
 
 /**
@@ -36,6 +37,7 @@ export const useLibraryStore = defineStore('library', () => {
   const error = ref<string | null>(null)
   const searchQuery = ref('')
   const selectedTagIds = ref<string[]>([])
+  const tagFilterMode = ref<'and' | 'or'>('and')
 
   const authStore = useAuthStore()
 
@@ -61,9 +63,10 @@ export const useLibraryStore = defineStore('library', () => {
     let result = searchResult.value.songs
 
     if (selectedTagIds.value.length > 0) {
+      const check = tagFilterMode.value === 'or' ? 'some' : 'every'
       result = result.filter(ls => {
         const songTagIds = ls.tags?.map((t: Tag) => t.id) ?? []
-        return selectedTagIds.value.every(tagId => songTagIds.includes(tagId))
+        return selectedTagIds.value[check](tagId => songTagIds.includes(tagId))
       })
     }
 
@@ -167,6 +170,7 @@ export const useLibraryStore = defineStore('library', () => {
     error,
     searchQuery,
     selectedTagIds,
+    tagFilterMode,
     currentProjectId,
     matchMap,
     filteredLibrarySongs,

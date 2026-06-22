@@ -1,11 +1,8 @@
 <template>
   <ion-page>
-    <ion-content>
+    <ion-content ref="contentRef">
       <!-- Header -->
       <AppHeader :title="pageTitle">
-        <template #action>
-          <DropdownMenu v-if="!uiStore.selectionMode" :items="headerMenuItems" />
-        </template>
       </AppHeader>
 
       <!-- Loading State -->
@@ -57,117 +54,15 @@
         </div>
       </div>
 
-      <!-- Sticky Bottom Bar -->
-      <div class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
-        <div class="max-w-2xl mx-auto">
-          <!-- Selection Mode Controls -->
-          <div v-if="uiStore.selectionMode">
-            <div v-if="uiStore.selectedIds.length > 0" class="space-y-3">
-              <!-- Action Buttons -->
-              <div class="grid grid-cols-4 gap-2">
-                <button
-                  @click="handleBulkDeleteSongs"
-                  class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg"
-                >
-                  {{ I18N.BULK_ACTIONS.DELETE }}
-                </button>
-                <button
-                  @click="handleBulkAddToLists"
-                  class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg"
-                >
-                  {{ I18N.BULK_ACTIONS.ADD_TO_LISTS }}
-                </button>
-                <button
-                  @click="handleBulkAssignTags"
-                  class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
-                >
-                  {{ I18N.BULK_ACTIONS.ASSIGN_TAGS }}
-                </button>
-                <button
-                  @click="handleBulkRemoveTags"
-                  class="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg"
-                >
-                  {{ I18N.BULK_ACTIONS.REMOVE_TAGS }}
-                </button>
-              </div>
-              
-              <!-- Selection Controls -->
-              <div class="flex items-center justify-between">
-                <span class="text-white text-sm">{{ I18N.COUNTERS.SELECTED(uiStore.selectedIds.length) }}</span>
-                <div class="flex gap-2">
-                  <button
-                    @click="handleSelectAll"
-                    class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg"
-                  >
-                    {{ I18N.BUTTONS.SELECT_ALL }}
-                  </button>
-                  <button
-                    @click="handleDeselectAll"
-                    class="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg"
-                  >
-                    {{ I18N.BUTTONS.DESELECT_ALL }}
-                  </button>
-                  <button
-                    @click="uiStore.exitSelectionMode()"
-                    class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg"
-                  >
-                    {{ I18N.BUTTONS.DONE }}
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div v-else class="flex items-center justify-between">
-              <span class="text-gray-400 text-sm">{{ I18N.LIBRARY.SELECT_SONGS_HINT }}</span>
-              <button
-                @click="uiStore.exitSelectionMode()"
-                class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg"
-              >
-                {{ I18N.BUTTONS.CANCEL }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Search & Filter Controls -->
-          <div v-else class="flex gap-2">
-            <div class="relative flex-1">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-              </div>
-              <input
-                v-model="searchQuery"
-                type="text"
-                :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
-                class="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                v-if="searchQuery"
-                @click="searchQuery = ''"
-                class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-                :aria-label="I18N.ARIA.CLEAR_SEARCH"
-              >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-            <button
-              @click="showFilterByTagsModal = true"
-              class="px-4 py-3 bg-gray-900 border rounded-lg transition-colors"
-              :class="selectedTagIds.length > 0 ? 'border-blue-500 text-blue-400' : 'border-gray-700 text-gray-400 hover:text-white'"
-              :aria-label="I18N.FILTER.FILTER_BY_TAGS"
-            >
-              <div class="flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                </svg>
-                <span v-if="selectedTagIds.length > 0" class="text-sm font-medium">{{ selectedTagIds.length }}</span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
+      <StickyBar
+        v-model:search-query="searchQuery"
+        :all-item-ids="displayedSongs.map(s => s.id)"
+        :filters-enabled="true"
+        :filters-active="selectedTagIds.length > 0"
+        @filters-clicked="handleFiltersClicked"
+        @new-clicked="showAddSongModal = true"
+        @choose-action-clicked="handleChooseAction"
+      />
 
       <!-- Modals -->
       <SongSearchModal
@@ -197,41 +92,16 @@
         @saved="handleListsUpdated"
       />
 
-      <FilterByTagsModal
-        v-if="showFilterByTagsModal"
-        :isOpen="true"
-        :initialTagIds="selectedTagIds"
-        @close="showFilterByTagsModal = false"
-        @apply="handleFilterByTags"
-      />
-
-      <BulkAssignTagsModal
-        v-if="showBulkAssignTagsModal"
-        :isOpen="true"
-        @close="showBulkAssignTagsModal = false"
-        @apply="handleBulkAssignTagsApply"
-      />
-
-      <BulkRemoveTagsModal
-        v-if="showBulkRemoveTagsModal"
-        :isOpen="true"
-        @close="showBulkRemoveTagsModal = false"
-        @apply="handleBulkRemoveTagsApply"
-      />
-
-      <BulkAddToListsModal
-        v-if="showBulkAddToListsModal"
-        :isOpen="true"
-        @close="showBulkAddToListsModal = false"
-        @apply="handleBulkAddToListsApply"
-      />
 
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from 'vue'
+import BulkAssignTagsDrawer from '@/components/BulkAssignTagsDrawer.vue'
+import BulkRemoveTagsDrawer from '@/components/BulkRemoveTagsDrawer.vue'
+import BulkAddToListsDrawer from '@/components/BulkAddToListsDrawer.vue'
 import { useRoute } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import { useLibraryStore } from '@/stores/library'
@@ -247,11 +117,14 @@ import { I18N } from '@/constants/i18n'
 import { getSegments } from '@/utils/highlight'
 import type { TextSegment } from '@/utils/highlight'
 import AppHeader from '@/components/AppHeader.vue'
-import DropdownMenu from '@/components/DropdownMenu.vue'
 import Card from '@/components/Card.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
+import StickyBar from '@/components/StickyBar.vue'
+import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 
 const route = useRoute()
 
@@ -259,10 +132,7 @@ const route = useRoute()
 const SongSearchModal = defineAsyncComponent(() => import('@/components/SongSearchModal.vue'))
 const ManageTagsModal = defineAsyncComponent(() => import('@/components/ManageTagsModal.vue'))
 const ManageListsModal = defineAsyncComponent(() => import('@/components/ManageListsModal.vue'))
-const FilterByTagsModal = defineAsyncComponent(() => import('@/components/FilterByTagsModal.vue'))
-const BulkAssignTagsModal = defineAsyncComponent(() => import('@/components/BulkAssignTagsModal.vue'))
-const BulkRemoveTagsModal = defineAsyncComponent(() => import('@/components/BulkRemoveTagsModal.vue'))
-const BulkAddToListsModal = defineAsyncComponent(() => import('@/components/BulkAddToListsModal.vue'))
+import FilterByTagsDrawer from '@/components/FilterByTagsDrawer.vue'
 
 const libraryStore = useLibraryStore()
 const tagsStore = useTagsStore()
@@ -272,14 +142,24 @@ const uiStore = useUiStore()
 const drawerStore = useDrawerStore()
 const settingsStore = useSettingsStore()
 
+const contentRef = ref<InstanceType<typeof IonContent> | null>(null)
+let savedScrollTop = 0
+
+async function captureScroll() {
+  const scrollEl = await (contentRef.value as any)?.$el?.getScrollElement()
+  savedScrollTop = scrollEl?.scrollTop ?? 0
+}
+
+async function restoreScroll() {
+  await nextTick()
+  const scrollEl = await (contentRef.value as any)?.$el?.getScrollElement()
+  scrollEl?.scrollTo({ top: savedScrollTop, behavior: 'instant' })
+}
+
 // State
 const showAddSongModal = ref(false)
 const showManageTagsModal = ref(false)
 const showManageListsModal = ref(false)
-const showFilterByTagsModal = ref(false)
-const showBulkAssignTagsModal = ref(false)
-const showBulkRemoveTagsModal = ref(false)
-const showBulkAddToListsModal = ref(false)
 const selectedLibrarySong = ref<LibrarySongWithDetails | null>(null)
 const loadTimedOut = ref(false)
 let loadTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -349,17 +229,23 @@ onUnmounted(() => {
 })
 
 // Watch for query parameter changes
-watch(() => route.query, () => {
-  applyQueryFilters()
+watch(() => route.query, (newQuery, oldQuery) => {
+  if (newQuery.tag) {
+    libraryStore.selectedTagIds = [newQuery.tag as string]
+    libraryStore.searchQuery = ''
+  } else if (newQuery.artist) {
+    libraryStore.selectedTagIds = []
+    libraryStore.searchQuery = ''
+  } else if (oldQuery?.tag || oldQuery?.artist) {
+    libraryStore.selectedTagIds = []
+  }
 })
 
 function applyQueryFilters() {
   if (route.query.tag) {
-    // Tag-filtered view: show all songs with this tag, no other filters
     libraryStore.selectedTagIds = [route.query.tag as string]
     libraryStore.searchQuery = ''
   } else if (route.query.artist) {
-    // Artist-filtered view: show all songs by this artist, no other filters
     libraryStore.selectedTagIds = []
     libraryStore.searchQuery = ''
   } else {
@@ -367,10 +253,6 @@ function applyQueryFilters() {
   }
 }
 
-const headerMenuItems = [
-  { label: I18N.DROPDOWN.CREATE_NEW_SONG, callback: handleCreateNewSong },
-  { label: I18N.DROPDOWN.SELECT_SONGS, callback: handleSelectSongs },
-]
 
 function getCardTitleSegments(librarySong: LibrarySongWithDetails): TextSegment[] | undefined {
   const displayTitle = librarySong.custom_title || librarySong.song?.title || ''
@@ -418,29 +300,27 @@ function handleSongClick(librarySong: LibrarySongWithDetails) {
   drawerStore.push(drawer, { librarySongId: librarySong.id })
 }
 
-function handleCreateNewSong() {
-  showAddSongModal.value = true
+
+async function handleChooseAction() {
+  await captureScroll()
+  const actions: BulkAction[] = [
+    { label: I18N.BULK_ACTIONS.DELETE, variant: 'danger', keepDrawerOpen: true, onClick: handleBulkDeleteSongs },
+    { label: I18N.BULK_ACTIONS.ADD_TO_LISTS, keepDrawerOpen: true, onClick: handleBulkAddToLists },
+    { label: I18N.BULK_ACTIONS.ASSIGN_TAGS, keepDrawerOpen: true, onClick: handleBulkAssignTags },
+    { label: I18N.BULK_ACTIONS.REMOVE_TAGS, keepDrawerOpen: true, onClick: handleBulkRemoveTags },
+  ]
+  drawerStore.push(BulkActionsDrawer, { actions })
 }
 
-function handleSelectSongs() {
-  uiStore.enterSelectionMode()
-}
-
-function handleSelectAll() {
-  const allIds = displayedSongs.value.map(song => song.id)
-  allIds.forEach(id => {
-    if (!uiStore.selectedIds.includes(id)) {
-      uiStore.toggleSelection(id)
-    }
+function handleFiltersClicked() {
+  drawerStore.push(FilterByTagsDrawer, {
+    initialTagIds: [...selectedTagIds.value],
+    initialFilterMode: libraryStore.tagFilterMode,
+    applyCallback: (tagIds: string[], mode: 'and' | 'or') => {
+      libraryStore.selectedTagIds = tagIds
+      libraryStore.tagFilterMode = mode
+    },
   })
-}
-
-function handleDeselectAll() {
-  uiStore.selectedIds = []
-}
-
-function handleFilterByTags(tagIds: string[]) {
-  libraryStore.selectedTagIds = tagIds
 }
 
 function handleManageTags(librarySong: LibrarySongWithDetails) {
@@ -490,81 +370,91 @@ function handleListsUpdated() {
 
 // Bulk operations
 function handleBulkDeleteSongs() {
-  uiStore.showConfirm(
-    I18N.LIBRARY.DELETE_SONGS_TITLE,
-    I18N.LIBRARY.DELETE_SONGS_CONFIRM(uiStore.selectedIds.length),
-    I18N.BUTTONS.DELETE,
-    I18N.BUTTONS.CANCEL
-  ).then(async (confirmed) => {
-    if (!confirmed) return
-
-    try {
-      const count = uiStore.selectedIds.length
-      for (const librarySongId of uiStore.selectedIds) {
-        await libraryStore.removeFromLibrary(librarySongId)
+  const ids = [...uiStore.selectedIds]
+  drawerStore.push(ConfirmDrawer, {
+    title: I18N.LIBRARY.DELETE_SONGS_TITLE,
+    message: I18N.LIBRARY.DELETE_SONGS_CONFIRM(ids.length),
+    confirmLabel: I18N.BUTTONS.DELETE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmVariant: 'danger',
+    confirmCallback: async () => {
+      try {
+        for (const librarySongId of ids) {
+          await libraryStore.removeFromLibrary(librarySongId)
+        }
+        uiStore.showToast(I18N.TOAST.SONGS_REMOVED_FROM_LIBRARY(ids.length), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+        await restoreScroll()
+      } catch (err) {
+        uiStore.showErrorToast('delete songs', err as Error)
+        drawerStore.popAll()
+        await restoreScroll()
       }
-      uiStore.showToast(I18N.TOAST.SONGS_REMOVED_FROM_LIBRARY(count), 'success')
-      uiStore.exitSelectionMode()
-      await libraryStore.loadLibrary()
-    } catch (err) {
-      uiStore.showErrorToast('delete songs', err as Error)
-    }
+    },
   })
 }
 
 function handleBulkAssignTags() {
-  showBulkAssignTagsModal.value = true
+  const ids = [...uiStore.selectedIds]
+  drawerStore.push(BulkAssignTagsDrawer, {
+    applyCallback: async (tagIds: string[]) => {
+      try {
+        await tagsStore.bulkAssignTags(ids, tagIds)
+        await libraryStore.loadLibrary({ force: true })
+        uiStore.showToast(I18N.TOAST.BULK_TAGS_ASSIGNED(ids.length), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+        await restoreScroll()
+      } catch (err) {
+        uiStore.showErrorToast('assign tags', err as Error)
+        drawerStore.popAll()
+        await restoreScroll()
+      }
+    },
+  })
 }
 
 function handleBulkRemoveTags() {
-  showBulkRemoveTagsModal.value = true
+  const ids = [...uiStore.selectedIds]
+  drawerStore.push(BulkRemoveTagsDrawer, {
+    applyCallback: async (tagIds: string[]) => {
+      try {
+        await tagsStore.bulkRemoveTags(ids, tagIds)
+        await libraryStore.loadLibrary({ force: true })
+        uiStore.showToast(I18N.TOAST.BULK_TAGS_REMOVED(ids.length), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+        await restoreScroll()
+      } catch (err) {
+        uiStore.showErrorToast('remove tags', err as Error)
+        drawerStore.popAll()
+        await restoreScroll()
+      }
+    },
+  })
 }
 
 function handleBulkAddToLists() {
-  showBulkAddToListsModal.value = true
-}
-
-async function handleBulkAssignTagsApply(tagIds: string[]) {
-  const songCount = uiStore.selectedIds.length
-  
-  try {
-    await tagsStore.bulkAssignTags(uiStore.selectedIds, tagIds)
-    uiStore.showToast(I18N.TOAST.BULK_TAGS_ASSIGNED(songCount), 'success')
-    await libraryStore.loadLibrary()
-    uiStore.exitSelectionMode()
-  } catch (err) {
-    uiStore.showErrorToast('assign tags', err as Error)
-  }
-}
-
-async function handleBulkRemoveTagsApply(tagIds: string[]) {
-  const songCount = uiStore.selectedIds.length
-  
-  try {
-    await tagsStore.bulkRemoveTags(uiStore.selectedIds, tagIds)
-    uiStore.showToast(I18N.TOAST.BULK_TAGS_REMOVED(songCount), 'success')
-    await libraryStore.loadLibrary()
-    uiStore.exitSelectionMode()
-  } catch (err) {
-    uiStore.showErrorToast('remove tags', err as Error)
-  }
-}
-
-async function handleBulkAddToListsApply(listIds: string[]) {
-  const songCount = uiStore.selectedIds.length
-  
-  try {
-    for (const librarySongId of uiStore.selectedIds) {
-      for (const listId of listIds) {
-        await listsStore.addLibrarySongToList(listId, librarySongId)
+  const ids = [...uiStore.selectedIds]
+  drawerStore.push(BulkAddToListsDrawer, {
+    applyCallback: async (listIds: string[]) => {
+      try {
+        for (const listId of listIds) {
+          await listsStore.bulkAddLibrarySongsToList(listId, ids)
+        }
+        await libraryStore.loadLibrary({ force: true })
+        uiStore.showToast(I18N.TOAST.BULK_ADDED_TO_LISTS(ids.length), 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+        await restoreScroll()
+      } catch (err) {
+        uiStore.showErrorToast('add to lists', err as Error)
+        drawerStore.popAll()
+        await restoreScroll()
       }
-    }
-    uiStore.showToast(I18N.TOAST.BULK_ADDED_TO_LISTS(songCount), 'success')
-    await libraryStore.loadLibrary()
-    uiStore.exitSelectionMode()
-  } catch (err) {
-    uiStore.showErrorToast('add to lists', err as Error)
-  }
+    },
+  })
 }
 
 </script>

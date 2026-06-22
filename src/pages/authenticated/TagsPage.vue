@@ -7,9 +7,6 @@
         :show-back="true"
         :show-menu="true"
       >
-        <template #action>
-          <DropdownMenu :items="headerMenuItems" />
-        </template>
       </AppHeader>
 
       <!-- Empty State -->
@@ -19,36 +16,29 @@
         :subtitle="MESSAGES.EMPTY_NO_TAGS_SUBTITLE"
         :ctaText="I18N.EMPTY_STATES.NO_TAGS.CTA"
         iconPath="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-        @create="showCreateModal = true"
+        @create="openCreateTagDrawer"
       />
 
       <!-- Tags List -->
       <div v-else class="p-4 space-y-3 pb-24">
         <Card
-          v-for="tag in tagsStore.tagsByName"
+          v-for="tag in filteredTags"
           :key="tag.id"
+          :id="tag.id"
           :title="tag.name"
           :text="getTagText(tag)"
+          :highlight-text="searchQuery"
           :dropdown-items="getTagDropdownItems(tag)"
           @click="navigateToTag(tag)"
         />
       </div>
 
-      <!-- Create Modal -->
-      <CRUDModal
-        :isOpen="showCreateModal"
-        :title="I18N.MODALS.CREATE_TAG"
-        :label="I18N.FORM.TAG_NAME"
-        v-model="newItemName"
-        :error="createError"
-        :placeholder="I18N.PLACEHOLDERS.TAG_NAME"
-        :maxLength="50"
-        :isSubmitting="isCreating"
-        :submitText="I18N.BUTTONS.CREATE"
-        :loadingText="I18N.LOADING.CREATING"
-        :cancelText="I18N.BUTTONS.CANCEL"
-        @close="showCreateModal = false"
-        @submit="handleCreate"
+      <StickyBar
+        v-model:search-query="searchQuery"
+        :all-item-ids="filteredTags.map(t => t.id)"
+        :filters-enabled="false"
+        @new-clicked="openCreateTagDrawer"
+        @choose-action-clicked="handleChooseAction"
       />
 
       <!-- Rename Modal -->
@@ -72,35 +62,101 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import DropdownMenu from '@/components/DropdownMenu.vue'
 import Card from '@/components/Card.vue'
 import CRUDModal from '@/components/CRUDModal.vue'
 import CRUDEmptyState from '@/components/CRUDEmptyState.vue'
+import StickyBar from '@/components/StickyBar.vue'
+import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
+import CreateItemDrawer from '@/components/CreateItemDrawer.vue'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useDrawerStore } from '@/stores/drawer'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { ROUTES } from '@/constants/routes'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
 import { supabase } from '@/lib/supabase'
+import { foldAccents } from '@/utils/validation'
 import type { Tag } from '@/types/database'
 
 const router = useRouter()
 const tagsStore = useTagsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const drawerStore = useDrawerStore()
+
+const searchQuery = ref('')
+
+const filteredTags = computed(() => {
+  const q = foldAccents(searchQuery.value.trim())
+  if (!q) return tagsStore.tagsByName
+  return tagsStore.tagsByName.filter(t => foldAccents(t.name).includes(q))
+})
 
 const tagSongCounts = ref<Map<string, number>>(new Map())
 
-const headerMenuItems = [
-  { label: 'Create Tag', callback: () => { showCreateModal.value = true } },
-]
+function openCreateTagDrawer() {
+  drawerStore.push(CreateItemDrawer, {
+    title: I18N.MODALS.CREATE_TAG,
+    label: I18N.FORM.TAG_NAME,
+    placeholder: I18N.PLACEHOLDERS.TAG_NAME,
+    maxLength: 50,
+    submitLabel: I18N.BUTTONS.CREATE,
+    successMessage: MESSAGES.SUCCESS.TAG_CREATED,
+    validateFn: (name: string) => {
+      if (!name) return MESSAGES.ERROR.TAG_NAME_REQUIRED
+      if (name.length > 50) return MESSAGES.ERROR.TAG_NAME_TOO_LONG
+      if (tagsStore.tags.some(t => t.name === name)) return MESSAGES.ERROR.TAG_ALREADY_EXISTS
+      return ''
+    },
+    submitCallback: async (name: string) => {
+      const personalProjectId = await authStore.getPersonalProjectId()
+      if (!personalProjectId) return { success: false, error: 'Project not found' }
+      return await tagsStore.createTag(personalProjectId, name)
+    },
+  })
+}
+
+
+function handleChooseAction() {
+  const actions: BulkAction[] = [
+    { label: I18N.BULK_ACTIONS.DELETE_TAGS, variant: 'danger', keepDrawerOpen: true, onClick: handleBulkDelete },
+  ]
+  drawerStore.push(BulkActionsDrawer, { actions })
+}
+
+function handleBulkDelete() {
+  const ids = [...uiStore.selectedIds]
+  const count = ids.length
+  drawerStore.push(ConfirmDrawer, {
+    title: `Delete ${count} tag${count !== 1 ? 's' : ''}?`,
+    message: `This will permanently delete ${count} tag${count !== 1 ? 's' : ''}. Your songs won't be affected.`,
+    confirmLabel: I18N.BUTTONS.DELETE,
+    cancelLabel: I18N.BUTTONS.CANCEL,
+    confirmVariant: 'danger',
+    confirmCallback: async () => {
+      try {
+        for (const id of ids) {
+          await tagsStore.deleteTag(id)
+        }
+        uiStore.showToast(`Deleted ${count} tag${count !== 1 ? 's' : ''}`, 'success')
+        uiStore.exitSelectionMode()
+        drawerStore.popAll()
+      } catch (err) {
+        uiStore.showErrorToast('delete tags', err as Error)
+        drawerStore.popAll()
+      }
+    },
+  })
+}
 
 function getTagText(tag: Tag): string {
   return I18N.PLURALS.SONG_COUNT(tagSongCounts.value.get(tag.id) ?? 0)
@@ -118,11 +174,6 @@ function navigateToTag(tag: Tag) {
 }
 
 const {
-  showCreateModal,
-  newItemName,
-  createError,
-  isCreating,
-  handleCreate,
   showRenameModal,
   editItemName,
   renameError,
