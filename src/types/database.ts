@@ -18,16 +18,63 @@ export interface ContactInfo {
   youtube?: string
 }
 
+export interface Profile {
+  id: string
+  display_name: string
+  avatar_url: string | null
+  active_project_id: string | null
+  is_super_admin: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ProjectRole = 'reader' | 'editor' | 'administrator'
+
+export interface ProjectMembership {
+  id: string
+  project_id: string
+  user_id: string
+  role: ProjectRole
+  invited_by: string | null
+  joined_at: string
+}
+
+export interface InvitationLink {
+  id: string
+  project_id: string
+  token: string
+  role: ProjectRole
+  created_by: string
+  created_at: string
+  expires_at: string
+  used_by: string | null
+  used_at: string | null
+  is_revoked: boolean
+}
+
+export type PushRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface NotePushRequest {
+  id: string
+  source_note_id: string
+  source_project_id: string
+  target_project_id: string
+  pushed_by: string
+  status: PushRequestStatus
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+}
+
 export interface Project {
   id: string
   name: string
   slug: string | null
-  type: 'personal' | 'shared'
   owner_id: string
-  created_at: string
-  updated_at: string
-  notes_field_label: string
-  notes_field_enabled: boolean
+  created_at: string | null
+  updated_at: string | null
+  notes_field_label: string | null
+  notes_field_enabled: boolean | null
   description: string | null
   thumbnail_url: string | null
   contact_enabled: boolean

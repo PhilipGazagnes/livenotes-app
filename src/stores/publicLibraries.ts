@@ -18,7 +18,7 @@ export const usePublicLibrariesStore = defineStore('publicLibraries', () => {
   const authStore = useAuthStore()
 
   async function loadLibraries({ force = false } = {}) {
-    const projectId = authStore.personalProjectId
+    const projectId = authStore.activeProjectId
     if (!projectId) return
     if (!force && libraries.value.length > 0) return
     isLoading.value = true
@@ -38,7 +38,7 @@ export const usePublicLibrariesStore = defineStore('publicLibraries', () => {
     tagIds: string[],
     extra: { header_image_mobile?: string | null; header_image_desktop?: string | null } = {}
   ) {
-    const projectId = authStore.personalProjectId
+    const projectId = authStore.activeProjectId
     const userId = authStore.userId
     if (!projectId || !userId) throw new Error('Not authenticated')
     isLoading.value = true

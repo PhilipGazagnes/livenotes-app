@@ -27,6 +27,14 @@ export async function signOut() {
   return supabase.auth.signOut()
 }
 
+export async function updatePassword(newPassword: string) {
+  return supabase.auth.updateUser({ password: newPassword })
+}
+
+export async function updateEmail(newEmail: string) {
+  return supabase.auth.updateUser({ email: newEmail })
+}
+
 export function startAutoRefresh(): void {
   supabase.auth.startAutoRefresh()
 }

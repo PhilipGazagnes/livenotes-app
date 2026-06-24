@@ -188,9 +188,9 @@ async function handleCreateTag() {
   
   isCreatingTag.value = true
   
-  const personalProjectId = await authStore.getPersonalProjectId()
+  const personalProjectId = authStore.activeProjectId
   if (!personalProjectId) return
-  
+
   const result = await tagsStore.createTag(personalProjectId, trimmed)
   
   if (result.success && result.data) {

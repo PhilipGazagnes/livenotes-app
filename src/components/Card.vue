@@ -77,7 +77,7 @@
 
         <!-- Dropdown -->
         <DropdownMenu
-          v-if="dropdownItems && dropdownItems.length > 0 && !(id && uiStore.selectionMode)"
+          v-if="authStore.isEditor && dropdownItems && dropdownItems.length > 0 && !(id && uiStore.selectionMode)"
           :items="dropdownItems"
         />
       </div>
@@ -85,7 +85,7 @@
 
     <!-- Drag handle zone -->
     <div
-      v-if="draggable && !(id && uiStore.selectionMode)"
+      v-if="authStore.isEditor && draggable && !(id && uiStore.selectionMode)"
       class="drag-handle w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
       @click.stop
     >
@@ -108,6 +108,7 @@ import { getSegmentsFromQuery } from '@/utils/highlight'
 import type { DropdownMenuItem } from '@/components/DropdownMenu.vue'
 import DropdownMenu from '@/components/DropdownMenu.vue'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
   title: string
@@ -139,6 +140,7 @@ const emit = defineEmits<{
 }>()
 
 const uiStore = useUiStore()
+const authStore = useAuthStore()
 const isSelected = computed(() => props.id ? uiStore.isSelected(props.id) : false)
 
 function handleClick() {

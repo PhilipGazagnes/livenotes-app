@@ -16,12 +16,12 @@
         </h3>
       </div>
 
-      <DropdownMenu v-if="!uiStore.selectionMode" :items="dropdownItems" />
+      <DropdownMenu v-if="authStore.isEditor && !uiStore.selectionMode" :items="dropdownItems" />
     </div>
 
     <!-- Drag handle zone (only in draggable contexts, not in selection mode) -->
     <div
-      v-if="draggable && !uiStore.selectionMode"
+      v-if="authStore.isEditor && draggable && !uiStore.selectionMode"
       class="drag-handle w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
       @click.stop
     >
@@ -41,6 +41,7 @@
 <script setup lang="ts">
 import type { ListItem } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import DropdownMenu from '@/components/DropdownMenu.vue'
 
 defineProps<{
@@ -54,6 +55,7 @@ const emit = defineEmits<{
 }>()
 
 const uiStore = useUiStore()
+const authStore = useAuthStore()
 
 const dropdownItems = [
   { label: 'Edit', callback: () => emit('edit') },

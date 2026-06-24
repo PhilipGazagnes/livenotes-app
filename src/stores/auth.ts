@@ -1,80 +1,96 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+import type { Profile, Project } from '@/types/database'
 import * as authService from '@/services/authService'
-import {
-  createPersonalProject,
-  fetchPersonalProjects,
-  countProjectSongs,
-} from '@/services/projectService'
+import { fetchProfile, updateProfile } from '@/services/profileService'
+import { fetchProjectById } from '@/services/projectService'
+import { fetchUserRoleInProject } from '@/services/membershipService'
+import type { ProjectRole } from '@/types/database'
 
-const PERSONAL_PROJECT_KEY = 'livenotes-project-id'
+const ACTIVE_PROJECT_CACHE_KEY = 'livenotes-project-id'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<SupabaseUser | null>(null)
+  const profile = ref<Profile | null>(null)
+  const activeProject = ref<Project | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const isInitialized = ref(false)
-  const personalProjectId = ref<string | null>(null)
+  const activeProjectId = ref<string | null>(null)
+  const activeProjectRole = ref<ProjectRole | null>(null)
   let initPromise: Promise<void> | null = null
 
   // Getters
   const isAuthenticated = computed(() => !!user.value)
   const userId = computed(() => user.value?.id ?? null)
+  const displayName = computed(() => profile.value?.display_name ?? user.value?.email ?? '')
+  const isEditor = computed(() =>
+    activeProjectRole.value === 'editor' || activeProjectRole.value === 'administrator'
+  )
+  const isAdmin = computed(() => activeProjectRole.value === 'administrator')
 
-  async function _createPersonalProject(): Promise<void> {
-    if (!user.value) return
-    try {
-      personalProjectId.value = await createPersonalProject(user.value.id)
-    } catch (err) {
-      console.error('Failed to create personal project:', err)
-    }
-  }
-
-  async function _loadPersonalProject(): Promise<void> {
+  async function _loadProfile(): Promise<void> {
     if (!user.value) return
 
-    // Use cached project ID immediately so offline startup never hangs waiting
-    // for a network call. Then refresh the value in the background while online.
-    const cached = localStorage.getItem(PERSONAL_PROJECT_KEY)
+    // Use cached active project ID immediately for offline startup,
+    // then refresh the full profile in the background.
+    const cached = localStorage.getItem(ACTIVE_PROJECT_CACHE_KEY)
     if (cached) {
-      personalProjectId.value = cached
-      _refreshPersonalProject().catch(() => {})
+      activeProjectId.value = cached
+      Promise.all([
+        fetchProjectById(cached).then(p => { activeProject.value = p }),
+        fetchUserRoleInProject(cached, user.value.id).then(r => { activeProjectRole.value = r }),
+      ]).catch(() => {})
+      _refreshProfile().catch(() => {})
       return
     }
 
-    // No cached value yet — first time, must be online.
-    await _refreshPersonalProject()
+    await _refreshProfile()
   }
 
-  async function _refreshPersonalProject(): Promise<void> {
+  async function _refreshProfile(): Promise<void> {
     if (!user.value) return
-
     try {
-      const projects = await fetchPersonalProjects(user.value.id)
-
-      if (!projects || projects.length === 0) {
-        await _createPersonalProject()
-        return
-      }
-
-      let projectWithMostSongs = projects[0]
-      let maxSongCount = 0
-
-      for (const project of projects.slice(0, 10)) {
-        const count = await countProjectSongs(project.id)
-        if (count > maxSongCount) {
-          maxSongCount = count
-          projectWithMostSongs = project
+      const data = await fetchProfile(user.value.id)
+      if (data) {
+        profile.value = data
+        activeProjectId.value = data.active_project_id
+        if (data.active_project_id) {
+          localStorage.setItem(ACTIVE_PROJECT_CACHE_KEY, data.active_project_id)
+          const [project, role] = await Promise.all([
+            fetchProjectById(data.active_project_id),
+            fetchUserRoleInProject(data.active_project_id, user.value.id),
+          ])
+          activeProject.value = project
+          activeProjectRole.value = role
+        } else {
+          localStorage.removeItem(ACTIVE_PROJECT_CACHE_KEY)
+          activeProject.value = null
+          activeProjectRole.value = null
         }
       }
-
-      personalProjectId.value = projectWithMostSongs.id
-      localStorage.setItem(PERSONAL_PROJECT_KEY, personalProjectId.value)
     } catch (err) {
-      console.error('Failed to refresh personal project:', err)
+      console.error('Failed to refresh profile:', err)
     }
+  }
+
+  async function setActiveProject(projectId: string): Promise<void> {
+    if (!user.value) return
+    activeProjectId.value = projectId
+    localStorage.setItem(ACTIVE_PROJECT_CACHE_KEY, projectId)
+    if (profile.value) {
+      profile.value = { ...profile.value, active_project_id: projectId }
+    }
+    // Load new project details, role, and persist in parallel
+    const [project, role] = await Promise.all([
+      fetchProjectById(projectId),
+      fetchUserRoleInProject(projectId, user.value.id),
+      updateProfile(user.value.id, { active_project_id: projectId }),
+    ])
+    activeProject.value = project
+    activeProjectRole.value = role
   }
 
   // Actions
@@ -96,14 +112,16 @@ export const useAuthStore = defineStore('auth', () => {
         authService.subscribeToAuthChanges(async (_event, session) => {
           user.value = session?.user ?? null
           if (session?.user) {
-            await _loadPersonalProject()
+            await _loadProfile()
           } else {
-            personalProjectId.value = null
+            profile.value = null
+            activeProjectId.value = null
+            activeProjectRole.value = null
           }
         })
 
         if (session?.user) {
-          await _loadPersonalProject()
+          await _loadProfile()
         }
 
         isInitialized.value = true
@@ -127,10 +145,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (signupError) throw signupError
 
       user.value = data.user
-
-      if (user.value) {
-        await _createPersonalProject()
-      }
+      // Profile is auto-created by the DB trigger; no project is set on signup.
 
       return { success: true }
     } catch (err) {
@@ -152,7 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.user
 
       if (user.value) {
-        await _loadPersonalProject()
+        await _loadProfile()
       }
 
       return { success: true }
@@ -190,8 +205,11 @@ export const useAuthStore = defineStore('auth', () => {
       if (logoutError) throw logoutError
 
       user.value = null
-      personalProjectId.value = null
-      localStorage.removeItem(PERSONAL_PROJECT_KEY)
+      profile.value = null
+      activeProject.value = null
+      activeProjectId.value = null
+      activeProjectRole.value = null
+      localStorage.removeItem(ACTIVE_PROJECT_CACHE_KEY)
 
       return { success: true }
     } catch (err) {
@@ -202,35 +220,28 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function getPersonalProjectId(): Promise<string | null> {
-    if (!isInitialized.value) {
-      await initialize()
-    }
-
-    if (personalProjectId.value) {
-      return personalProjectId.value
-    }
-
-    await _loadPersonalProject()
-    return personalProjectId.value
-  }
-
   return {
     // State
     user,
+    profile,
+    activeProject,
     isLoading,
     error,
     isInitialized,
-    personalProjectId,
+    activeProjectId,
+    activeProjectRole,
     // Getters
     isAuthenticated,
     userId,
+    displayName,
+    isEditor,
+    isAdmin,
     // Actions
     initialize,
     signup,
     login,
     loginWithOAuth,
     logout,
-    getPersonalProjectId,
+    setActiveProject,
   }
 })

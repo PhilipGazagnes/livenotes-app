@@ -44,7 +44,7 @@ export function useOfflineSync() {
 
     try {
       const authStore = useAuthStore()
-      const projectId = await authStore.getPersonalProjectId()
+      const projectId = authStore.activeProjectId
       if (!projectId) throw new Error('No project found')
 
       // Library songs — the Library page main query (already includes notes inline)

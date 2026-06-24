@@ -132,7 +132,7 @@ const form = ref({ name: '', slug: '', tagIds: [] as string[], headerImageMobile
 const isLoading = ref(false)
 
 onMounted(async () => {
-  const projectId = await authStore.getPersonalProjectId()
+  const projectId = authStore.activeProjectId
   if (projectId) await tagsStore.fetchTags(projectId)
 })
 

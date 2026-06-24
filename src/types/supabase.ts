@@ -105,6 +105,53 @@ export type Database = {
           },
         ]
       }
+      invitation_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          is_revoked: boolean
+          project_id: string
+          role: Database["public"]["Enums"]["project_role"]
+          token: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          is_revoked?: boolean
+          project_id: string
+          role?: Database["public"]["Enums"]["project_role"]
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          is_revoked?: boolean
+          project_id?: string
+          role?: Database["public"]["Enums"]["project_role"]
+          token?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_links_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       library_song_tags: {
         Row: {
           created_at: string | null
@@ -292,6 +339,64 @@ export type Database = {
           },
         ]
       }
+      note_push_requests: {
+        Row: {
+          created_at: string
+          id: string
+          pushed_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_note_id: string
+          source_project_id: string
+          status: Database["public"]["Enums"]["push_request_status"]
+          target_project_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pushed_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_note_id: string
+          source_project_id: string
+          status?: Database["public"]["Enums"]["push_request_status"]
+          target_project_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pushed_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_note_id?: string
+          source_project_id?: string
+          status?: Database["public"]["Enums"]["push_request_status"]
+          target_project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_push_requests_source_note_id_fkey"
+            columns: ["source_note_id"]
+            isOneToOne: false
+            referencedRelation: "notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_push_requests_source_project_id_fkey"
+            columns: ["source_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_push_requests_target_project_id_fkey"
+            columns: ["target_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           content: string | null
@@ -351,6 +456,79 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          active_project_id: string | null
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          is_super_admin: boolean
+          updated_at: string
+        }
+        Insert: {
+          active_project_id?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id: string
+          is_super_admin?: boolean
+          updated_at?: string
+        }
+        Update: {
+          active_project_id?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_super_admin?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_active_project_id_fkey"
+            columns: ["active_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_memberships: {
+        Row: {
+          id: string
+          invited_by: string | null
+          joined_at: string
+          project_id: string
+          role: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          project_id: string
+          role?: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          invited_by?: string | null
+          joined_at?: string
+          project_id?: string
+          role?: Database["public"]["Enums"]["project_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_memberships_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           contact_enabled: boolean
@@ -364,7 +542,6 @@ export type Database = {
           owner_id: string
           slug: string | null
           thumbnail_url: string | null
-          type: string
           updated_at: string | null
         }
         Insert: {
@@ -379,7 +556,6 @@ export type Database = {
           owner_id: string
           slug?: string | null
           thumbnail_url?: string | null
-          type: string
           updated_at?: string | null
         }
         Update: {
@@ -394,7 +570,6 @@ export type Database = {
           owner_id?: string
           slug?: string | null
           thumbnail_url?: string | null
-          type?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -750,7 +925,7 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "tags_project_id_fkey"
-            columns: ["tag_id"]
+            columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
@@ -762,14 +937,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      community_project_id: { Args: never; Returns: string }
       get_active_public_library_project_ids: { Args: never; Returns: string[] }
-      increment_song_popularity: { Args: { song_id: string }; Returns: undefined }
       immutable_unaccent: { Args: { "": string }; Returns: string }
       unaccent: { Args: { "": string }; Returns: string }
       update_list_item_positions: {
         Args: { item_positions: Json }
         Returns: undefined
       }
+      user_admin_project_ids: { Args: never; Returns: string[] }
+      user_editor_project_ids: { Args: never; Returns: string[] }
+      user_project_ids: { Args: never; Returns: string[] }
     }
     Enums: {
       note_type:
@@ -784,6 +962,8 @@ export type Database = {
         | "lyrics"
         | "chords"
         | "looper"
+      project_role: "reader" | "editor" | "administrator"
+      push_request_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -924,6 +1104,8 @@ export const Constants = {
         "chords",
         "looper",
       ],
+      project_role: ["reader", "editor", "administrator"],
+      push_request_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

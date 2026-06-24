@@ -18,27 +18,53 @@
       <!-- Center: Title -->
       <h1 class="text-xl font-bold text-white">{{ title }}</h1>
 
-      <!-- Right: Action Button Slot -->
-      <div class="w-10">
+      <!-- Right: Action slot + Project avatar -->
+      <div class="flex items-center gap-1 -mr-1">
         <slot name="action" />
+        <button
+          @click="openProjectMenu"
+          class="p-1 rounded-full hover:ring-2 hover:ring-gray-600 transition-all"
+          aria-label="Project menu"
+        >
+          <ProjectAvatarIcon
+            :name="avatarName"
+            :thumbnail-url="authStore.activeProject?.thumbnail_url ?? null"
+            :size="32"
+          />
+        </button>
       </div>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
+import { useDrawerStore } from '@/stores/drawer'
 import { I18N } from '@/constants/i18n'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
+import ProjectAvatarIcon from './ProjectAvatarIcon.vue'
+import ProjectMenuDrawer from './ProjectMenuDrawer.vue'
 
 defineProps<{
   title: string
 }>()
 
 const uiStore = useUiStore()
+const authStore = useAuthStore()
+const drawerStore = useDrawerStore()
 const { isOnline } = useOnlineStatus()
+
+const avatarName = computed(() =>
+  authStore.activeProject?.name ?? authStore.displayName ?? '?'
+)
 
 function openMenu() {
   uiStore.openHamburgerMenu()
+}
+
+function openProjectMenu() {
+  drawerStore.push(ProjectMenuDrawer, {})
 }
 </script>

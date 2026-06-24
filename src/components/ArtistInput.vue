@@ -157,7 +157,7 @@ async function handleCreateNewArtist() {
   // Get project ID from auth store
   const { useAuthStore } = await import('@/stores/auth')
   const authStore = useAuthStore()
-  const projectId = await authStore.getPersonalProjectId()
+  const projectId = authStore.activeProjectId
   
   if (!projectId) return
   

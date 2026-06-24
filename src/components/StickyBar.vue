@@ -83,6 +83,7 @@
 
         <!-- Bulk selection button -->
         <button
+          v-if="authStore.isEditor"
           @click="toggleBulkMode"
           class="flex-shrink-0 p-2.5 rounded-lg border transition-colors"
           :class="uiStore.selectionMode
@@ -98,6 +99,7 @@
 
         <!-- New button -->
         <button
+          v-if="authStore.isEditor"
           @click="emit('newClicked')"
           class="flex-shrink-0 p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
           aria-label="Create new"
@@ -115,6 +117,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
   searchQuery: string
@@ -131,6 +134,7 @@ const emit = defineEmits<{
 }>()
 
 const uiStore = useUiStore()
+const authStore = useAuthStore()
 
 const localQuery = computed({
   get: () => props.searchQuery,

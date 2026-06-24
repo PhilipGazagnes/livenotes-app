@@ -35,6 +35,12 @@ export const useDrawerStore = defineStore('drawer', () => {
     history.go(-count)
   }
 
+  // Clear the stack without touching browser history — use when immediately
+  // navigating via router.push(), which manages history on its own.
+  function clearForNavigation() {
+    stack.value = []
+  }
+
   function handlePopstate() {
     if (suppressPopstate > 0) {
       suppressPopstate--
@@ -45,5 +51,5 @@ export const useDrawerStore = defineStore('drawer', () => {
     }
   }
 
-  return { stack, push, pop, popAll, handlePopstate }
+  return { stack, push, pop, popAll, clearForNavigation, handlePopstate }
 })

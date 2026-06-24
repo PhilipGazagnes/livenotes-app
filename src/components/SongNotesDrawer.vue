@@ -109,7 +109,7 @@
   </div>
 
   <!-- Footer -->
-  <div class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4">
+  <div v-if="authStore.isEditor" class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4">
     <button
       @click="openNoteCreation"
       class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
@@ -125,6 +125,7 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from 'vue'
 import { useDrawerStore } from '@/stores/drawer'
+import { useAuthStore } from '@/stores/auth'
 import { fetchLibrarySongWithDetails } from '@/services/libraryService'
 import type { LibrarySongWithDetails, LivenotesJson, Note, SongcodeNoteData, LooperContent } from '@/types/database'
 import NoteContentDrawer from './NoteContentDrawer.vue'
@@ -137,6 +138,7 @@ const props = defineProps<{
 }>()
 
 const drawerStore = useDrawerStore()
+const authStore = useAuthStore()
 
 const librarySong = ref<LibrarySongWithDetails | null>(null)
 const isLoading = ref(true)

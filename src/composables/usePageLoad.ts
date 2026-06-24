@@ -39,7 +39,7 @@ export interface PageLoadOptions {
  * 
  * onMounted(() => {
  *   execute(async () => {
- *     const projectId = await authStore.getPersonalProjectId()
+ *     const projectId = authStore.activeProjectId
  *     if (projectId) {
  *       await songsStore.fetchSongs(projectId)
  *     }

@@ -206,7 +206,7 @@ onMounted(async () => {
   loadTimeoutId = setTimeout(() => { loadTimedOut.value = true }, 12000)
 
   try {
-    const projectId = await authStore.getPersonalProjectId()
+    const projectId = authStore.activeProjectId
     if (!projectId) return
 
     await Promise.all([
@@ -226,6 +226,16 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (loadTimeoutId) clearTimeout(loadTimeoutId)
+})
+
+watch(() => authStore.activeProjectId, async (newId) => {
+  if (!newId) return
+  await Promise.all([
+    libraryStore.loadLibrary(),
+    tagsStore.fetchTags(newId),
+    listsStore.fetchLists(newId),
+  ])
+  applyQueryFilters()
 })
 
 // Watch for query parameter changes

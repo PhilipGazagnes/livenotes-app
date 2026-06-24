@@ -188,7 +188,7 @@ async function handleCreateList() {
   }
   
   isCreatingList.value = true
-  const personalProjectId = await authStore.getPersonalProjectId()
+  const personalProjectId = authStore.activeProjectId
   
   if (!personalProjectId) {
     createError.value = I18N.VALIDATION.PROJECT_NOT_FOUND

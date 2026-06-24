@@ -109,7 +109,7 @@ const availableLists = computed(() =>
 )
 
 onMounted(async () => {
-  const projectId = await authStore.getPersonalProjectId()
+  const projectId = authStore.activeProjectId
   if (projectId) await listsStore.fetchLists(projectId)
 })
 
@@ -134,7 +134,7 @@ async function handleCreateList() {
     createError.value = I18N.VALIDATION.LIST_ALREADY_EXISTS; return
   }
   isCreatingList.value = true
-  const projectId = await authStore.getPersonalProjectId()
+  const projectId = authStore.activeProjectId
   if (!projectId) { isCreatingList.value = false; return }
   const result = await listsStore.createList(projectId, name)
   if (result.success && result.data) {

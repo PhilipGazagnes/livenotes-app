@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Fuse from 'fuse.js'
 import type { FuseResultMatch } from 'fuse.js'
 import type { LibrarySong, LibrarySongWithDetails, Tag } from '@/types/database'
@@ -42,7 +42,7 @@ export const useLibraryStore = defineStore('library', () => {
   const authStore = useAuthStore()
 
   // Getters
-  const currentProjectId = computed(() => authStore.personalProjectId || '')
+  const currentProjectId = computed(() => authStore.activeProjectId || '')
 
   const fuseInstance = computed(() => new Fuse(librarySongs.value, FUSE_OPTIONS))
 
@@ -162,6 +162,14 @@ export const useLibraryStore = defineStore('library', () => {
     searchQuery.value = ''
     selectedTagIds.value = []
   }
+
+  // Clear cached data when the active project changes so stale songs are never shown
+  watch(currentProjectId, () => {
+    librarySongs.value = []
+    currentLibrarySong.value = null
+    searchQuery.value = ''
+    selectedTagIds.value = []
+  })
 
   return {
     librarySongs,

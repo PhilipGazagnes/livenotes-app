@@ -232,7 +232,7 @@ const { execute } = usePageLoad()
 
 onMounted(() => {
   execute(async () => {
-    const personalProjectId = await authStore.getPersonalProjectId()
+    const personalProjectId = authStore.activeProjectId
     if (!personalProjectId) return
 
     await listsStore.fetchLists(personalProjectId)
@@ -266,7 +266,7 @@ function handleBulkDelete() {
     confirmVariant: 'danger',
     confirmCallback: async () => {
       try {
-        const projectId = await authStore.getPersonalProjectId()
+        const projectId = authStore.activeProjectId
         if (!projectId) throw new Error('Project not found')
         await listsStore.bulkDeleteLists(ids, projectId)
         uiStore.showToast(I18N.TOAST.BULK_DELETED_LISTS(count), 'success')
@@ -304,7 +304,7 @@ async function handleCreateSubmit() {
   
   isCreating.value = true
   
-  const personalProjectId = await authStore.getPersonalProjectId()
+  const personalProjectId = authStore.activeProjectId
   
   if (!personalProjectId) {
     createError.value = I18N.VALIDATION.PROJECT_NOT_FOUND

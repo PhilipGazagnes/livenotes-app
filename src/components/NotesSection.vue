@@ -3,6 +3,7 @@
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">Notes</h2>
       <button
+        v-if="authStore.isEditor"
         @click="showAddNoteMenu = !showAddNoteMenu"
         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
       >
@@ -59,7 +60,7 @@
       v-else
       :title="MESSAGES.EMPTY_NO_NOTES"
       :subtitle="MESSAGES.EMPTY_NO_NOTES_SUBTITLE"
-      ctaText="Add Note"
+      :ctaText="authStore.isEditor ? 'Add Note' : undefined"
       iconPath="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       @create="showAddNoteMenu = true"
     />
@@ -80,6 +81,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useNotesStore } from '@/stores/notes'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import type { Note, NoteType } from '@/types/database'
 import { NOTE_TYPES } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
@@ -97,6 +99,7 @@ const props = defineProps<Props>()
 
 const notesStore = useNotesStore()
 const uiStore = useUiStore()
+const authStore = useAuthStore()
 
 const showAddNoteMenu = ref(false)
 const showEditor = ref(false)

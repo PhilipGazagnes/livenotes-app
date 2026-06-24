@@ -118,7 +118,7 @@ function openCreateTagDrawer() {
       return ''
     },
     submitCallback: async (name: string) => {
-      const personalProjectId = await authStore.getPersonalProjectId()
+      const personalProjectId = authStore.activeProjectId
       if (!personalProjectId) return { success: false, error: 'Project not found' }
       return await tagsStore.createTag(personalProjectId, name)
     },
@@ -188,7 +188,7 @@ const {
     return tagsStore.tags.some(t => t.name === name && t.id !== excludeId)
   },
   onCreate: async (name) => {
-    const personalProjectId = await authStore.getPersonalProjectId()
+    const personalProjectId = authStore.activeProjectId
     if (!personalProjectId) {
       return { success: false, error: 'Project not found' }
     }
@@ -222,7 +222,7 @@ const { execute } = usePageLoad()
 
 onMounted(() => {
   execute(async () => {
-    const personalProjectId = await authStore.getPersonalProjectId()
+    const personalProjectId = authStore.activeProjectId
     if (!personalProjectId) return
 
     await tagsStore.fetchTags(personalProjectId)

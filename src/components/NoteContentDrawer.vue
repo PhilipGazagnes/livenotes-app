@@ -113,26 +113,39 @@
 
   <!-- Footer -->
   <div class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4 flex gap-3">
+    <template v-if="authStore.isEditor">
+      <button
+        @click="handleEdit"
+        :aria-label="I18N.ARIA.EDIT_NOTE"
+        class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+        {{ I18N.BUTTONS.EDIT }}
+      </button>
+      <button
+        @click="handleDelete"
+        :disabled="isDeleting"
+        :aria-label="I18N.ARIA.DELETE_NOTE"
+        class="px-4 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-600 text-red-400 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+        {{ isDeleting ? '...' : I18N.BUTTONS.DELETE }}
+      </button>
+    </template>
     <button
-      @click="handleEdit"
-      :aria-label="I18N.ARIA.EDIT_NOTE"
-      class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+      @click="handlePush"
+      class="px-4 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+      :class="authStore.isEditor ? '' : 'flex-1'"
+      aria-label="Push note to another project"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
       </svg>
-      {{ I18N.BUTTONS.EDIT }}
-    </button>
-    <button
-      @click="handleDelete"
-      :disabled="isDeleting"
-      :aria-label="I18N.ARIA.DELETE_NOTE"
-      class="px-4 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-600 text-red-400 font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-    >
-      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-      </svg>
-      {{ isDeleting ? '...' : I18N.BUTTONS.DELETE }}
+      Push
     </button>
   </div>
 </template>
@@ -142,10 +155,12 @@ import { computed, h, ref } from 'vue'
 import { useDrawerStore } from '@/stores/drawer'
 import { useNotesStore } from '@/stores/notes'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import type { Note, LooperContent } from '@/types/database'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import NoteEditor from './NoteEditor.vue'
+import PushNoteDrawer from './PushNoteDrawer.vue'
 
 const props = defineProps<{
   note: Note
@@ -156,6 +171,7 @@ const props = defineProps<{
 const drawerStore = useDrawerStore()
 const notesStore = useNotesStore()
 const uiStore = useUiStore()
+const authStore = useAuthStore()
 
 const localNote = ref<Note>(props.note)
 const isDeleting = ref(false)
@@ -166,6 +182,14 @@ const looperContent = computed(() => {
   }
   return null
 })
+
+function handlePush() {
+  if (!localNote.value) return
+  drawerStore.push(PushNoteDrawer, {
+    noteId: localNote.value.id,
+    noteTitle: localNote.value.title || 'Untitled note',
+  })
+}
 
 function handleEdit() {
   if (!localNote.value) return

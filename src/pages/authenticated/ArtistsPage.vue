@@ -142,7 +142,7 @@ function handleBulkDeleteArtists() {
     confirmVariant: 'danger',
     confirmCallback: async () => {
       try {
-        const personalProjectId = await authStore.getPersonalProjectId()
+        const personalProjectId = authStore.activeProjectId
         if (!personalProjectId) throw new Error('Project not found')
 
         const { data: songArtists } = await supabase
@@ -230,7 +230,7 @@ const {
     )
   },
   onCreate: async (name) => {
-    const personalProjectId = await authStore.getPersonalProjectId()
+    const personalProjectId = authStore.activeProjectId
     if (!personalProjectId) {
       return { success: false, error: I18N.VALIDATION.PROJECT_NOT_FOUND }
     }
@@ -243,7 +243,7 @@ const {
   onUpdate: async (id, name) => {
     const result = await artistsStore.updateArtist(id, name)
     if (result.success) {
-      const personalProjectId = await authStore.getPersonalProjectId()
+      const personalProjectId = authStore.activeProjectId
       if (personalProjectId) {
         artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
       }
@@ -253,7 +253,7 @@ const {
   onDelete: async (id) => {
     const result = await artistsStore.deleteArtist(id)
     if (result.success) {
-      const personalProjectId = await authStore.getPersonalProjectId()
+      const personalProjectId = authStore.activeProjectId
       if (personalProjectId) {
         artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
       }
@@ -291,7 +291,7 @@ const { execute } = usePageLoad()
 
 onMounted(() => {
   execute(async () => {
-    const personalProjectId = await authStore.getPersonalProjectId()
+    const personalProjectId = authStore.activeProjectId
 
     if (personalProjectId) {
       artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)

@@ -46,19 +46,10 @@ const router = createRouter({
       component: () => import('@/pages/authenticated/ArtistsPage.vue'),
     },
     {
-      path: ROUTES.SETTINGS,
-      name: 'Settings',
-      component: () => import('@/pages/authenticated/SettingsPage.vue'),
-    },
-    {
-      path: ROUTES.PROJECT_SETTINGS,
-      name: 'ProjectSettings',
-      component: () => import('@/pages/authenticated/ProjectSettingsPage.vue'),
-    },
-    {
       path: ROUTES.PUBLIC_LIBRARIES,
       name: 'PublicLibraries',
       component: () => import('@/pages/authenticated/PublicLibrariesPage.vue'),
+      meta: { requiresAdmin: true },
     },
     // Public route — must be last to avoid shadowing /project/* paths
     {
@@ -99,6 +90,10 @@ router.beforeEach(async (to, _from, next) => {
     uiStore.hideOperationOverlay()
     next(ROUTES.LOGIN)
   } else if (to.meta.authRedirect && isAuthenticated) {
+    uiStore.hideOperationOverlay()
+    const redirect = to.query.redirect as string | undefined
+    next(redirect || ROUTES.LIBRARY)
+  } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
     uiStore.hideOperationOverlay()
     next(ROUTES.LIBRARY)
   } else {

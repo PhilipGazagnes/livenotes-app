@@ -213,7 +213,7 @@ function getItemDropdownItems(item: ListItem & { song: SongWithTags }) {
 }
 
 async function openSongManageTags(item: ListItem & { song: SongWithTags }) {
-  const personalProjectId = await authStore.getPersonalProjectId()
+  const personalProjectId = authStore.activeProjectId
   if (personalProjectId) await tagsStore.fetchTags(personalProjectId)
   if (!item.library_song_id) { uiStore.showToast(I18N.TOAST.MANAGE_TAGS_ERROR, 'error'); return }
   selectedSongItem.value = item
@@ -221,7 +221,7 @@ async function openSongManageTags(item: ListItem & { song: SongWithTags }) {
 }
 
 async function openSongManageLists(item: ListItem & { song: SongWithTags }) {
-  const personalProjectId = await authStore.getPersonalProjectId()
+  const personalProjectId = authStore.activeProjectId
   if (personalProjectId) await listsStore.fetchLists(personalProjectId)
   if (!item.library_song_id) { uiStore.showToast(I18N.TOAST.MANAGE_LISTS_ERROR, 'error'); return }
   selectedSongItem.value = item
@@ -347,7 +347,7 @@ onMounted(async () => {
     }
     
     // Fetch tags for filtering
-    const personalProjectId = await authStore.getPersonalProjectId()
+    const personalProjectId = authStore.activeProjectId
     if (personalProjectId) {
       await tagsStore.fetchTags(personalProjectId)
     }

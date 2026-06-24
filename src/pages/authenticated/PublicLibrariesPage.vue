@@ -8,9 +8,7 @@
         <!-- No slug warning -->
         <div v-if="!settingsStore.projectSlug" class="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
           <p class="text-yellow-300 text-sm">
-            You need to set a project URL slug in
-            <router-link :to="ROUTES.SETTINGS" class="underline font-medium">{{ I18N.NAVIGATION.SETTINGS }}</router-link>
-            before your public library URLs will work.
+            You need to set a project URL slug in Project settings (avatar menu) before your public library URLs will work.
           </p>
         </div>
 
@@ -162,7 +160,6 @@ import StickyBar from '@/components/StickyBar.vue'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
 import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
-import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 import { usePublicLibrariesStore } from '@/stores/publicLibraries'
 import { useSettingsStore } from '@/stores/settings'
@@ -203,7 +200,7 @@ const editingId = ref<string | null>(null)
 const form = ref({ name: '', slug: '', tagIds: [] as string[], isActive: true, headerImageMobile: '', headerImageDesktop: '' })
 
 onMounted(async () => {
-  const projectId = await authStore.getPersonalProjectId()
+  const projectId = authStore.activeProjectId
   if (!projectId) return
   await Promise.all([
     store.loadLibraries(),
