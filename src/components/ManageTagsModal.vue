@@ -123,7 +123,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  close: []
+  closed: []
   saved: []
 }>()
 
@@ -254,13 +254,13 @@ async function handleSave() {
       onSuccess: () => {
         logger.debug('ManageTagsModal: Tags saved successfully, emitting saved event')
         emit('saved')
-        emit('close')
+        emit('closed')
       },
     }
   )
 }
 
 function handleCancel() {
-  emit('close')
+  emit('closed')
 }
 </script>

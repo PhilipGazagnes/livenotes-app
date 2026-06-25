@@ -207,6 +207,19 @@ export async function fetchListItemCount(listId: string): Promise<number> {
   return data?.length ?? 0
 }
 
+export async function fetchListSongCounts(listIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map(listIds.map(id => [id, 0]))
+  const { data } = await supabase
+    .from('list_items')
+    .select('list_id')
+    .eq('type', 'song')
+    .in('list_id', listIds)
+  data?.forEach((row: { list_id: string }) => {
+    counts.set(row.list_id, (counts.get(row.list_id) ?? 0) + 1)
+  })
+  return counts
+}
+
 export async function reorderListItems(itemPositions: { id: string; position: number }[]): Promise<void> {
   const { error } = await supabase.rpc('update_list_item_positions', {
     item_positions: itemPositions,

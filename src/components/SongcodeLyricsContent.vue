@@ -6,7 +6,7 @@
         <p class="text-gray-400 text-sm">{{ I18N.EMPTY_STATES.NO_LYRICS }}</p>
       </div>
       <div v-else class="space-y-7 pt-5">
-        <div v-for="({ section, pattern }, index) in sections" :key="index">
+        <div v-for="({ section, pattern }, index) in sections" :key="section.name ?? index">
           <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800">
             {{ section.name }}
           </h3>
@@ -14,13 +14,13 @@
           <div :class="['space-y-1', showPattern && pattern ? 'mt-2' : '']">
             <p
               v-for="(lyric, lineIndex) in section.lyrics"
-              :key="lineIndex"
+              :key="`${section.name}-${lineIndex}`"
               :class="lyricClass(lyric.style)"
               :style="{ fontSize: `${fontSize}rem`, lineHeight: '1.7' }"
             >
               <span
                 v-for="(segment, segIndex) in parseVocalSegments(lyric.text)"
-                :key="segIndex"
+                :key="`${segIndex}-${segment.vocal}`"
                 :class="vocalClass(segment.vocal)"
               >{{ segment.text }}</span>
             </p>
@@ -55,7 +55,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import type { LivenotesJson } from '@/types/database'
+import type { LivenotesJson, LivenotesPatternDef, LivenotesPatternRef } from '@/types/database'
 import PatternDisplay from './PatternDisplay.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { I18N } from '@/constants/i18n'
@@ -107,13 +107,12 @@ function zoomOut() {
 
 const sections = computed(() => {
   if (!props.livenotesJson?.sections) return []
-  const lj = props.livenotesJson as any
   return props.livenotesJson.sections
     .filter(s => s.lyrics?.length > 0)
     .map(section => {
-      const ref = (section as any).pattern
-      if (!ref?.id || !lj?.patterns?.[ref.id]?.json) return { section, pattern: null }
-      const def = lj.patterns[ref.id]
+      const ref: LivenotesPatternRef | undefined = section.pattern
+      if (!ref?.id || !props.livenotesJson?.patterns?.[ref.id]?.json) return { section, pattern: null }
+      const def: LivenotesPatternDef = props.livenotesJson.patterns![ref.id]
       return {
         section,
         pattern: {

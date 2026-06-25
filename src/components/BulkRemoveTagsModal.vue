@@ -1,10 +1,10 @@
 <template>
-  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" @click.self="$emit('close')">
+  <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" @click.self="$emit('closed')">
     <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
       <!-- Header -->
       <div class="flex items-center justify-between p-4 border-b border-gray-700">
         <h2 class="text-xl font-semibold text-white">{{ I18N.MODAL_CONTENT.BULK_REMOVE_TAGS_TITLE }}</h2>
-        <button @click="$emit('close')" class="p-1 text-gray-400 hover:text-white transition-colors">
+        <button @click="$emit('closed')" class="p-1 text-gray-400 hover:text-white transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
@@ -45,7 +45,7 @@
       <!-- Footer -->
       <div class="flex gap-3 p-4 border-t border-gray-700">
         <button
-          @click="$emit('close')"
+          @click="$emit('closed')"
           class="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
         >
           {{ I18N.BUTTONS.CANCEL }}
@@ -72,8 +72,8 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  close: []
-  apply: [tagIds: string[]]
+  closed: []
+  applied: [tagIds: string[]]
 }>()
 
 const tagsStore = useTagsStore()
@@ -89,8 +89,8 @@ function toggleTag(tagId: string) {
 }
 
 function handleApply() {
-  emit('apply', selectedTagIds.value)
+  emit('applied', selectedTagIds.value)
   selectedTagIds.value = []
-  emit('close')
+  emit('closed')
 }
 </script>

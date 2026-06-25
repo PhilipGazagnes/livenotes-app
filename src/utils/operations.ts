@@ -9,6 +9,7 @@
 
 import { useUiStore } from '@/stores/ui'
 import { withTimeout, TimeoutError, TIMEOUTS } from './timeout'
+import { logger } from '@/utils/logger'
 
 /**
  * Configuration options for executeOperation
@@ -139,7 +140,7 @@ export async function executeOperation<T = void>(
       try {
         uiStore.hideOperationOverlay()
       } catch (e) {
-        console.error('Failed to hide overlay:', e)
+        logger.error('Failed to hide overlay:', e)
       }
     }
   }
@@ -212,7 +213,7 @@ export async function executeConfirmedOperation<T = void>(
       uiStore.setConfirmDialogLoading(false)
       uiStore.hideOperationOverlay()
     } catch (e) {
-      console.error('Failed to reset dialog loading state:', e)
+      logger.error('Failed to reset dialog loading state:', e)
     }
   }
 }

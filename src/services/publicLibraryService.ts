@@ -1,15 +1,18 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyQuery = any
-
 import { supabase } from '@/lib/supabase'
 import type { PublicLibrary, PublicLibraryWithTags, LibrarySongWithDetails, Note } from '@/types/database'
 
 // Supabase TypeScript types are generated from the deployed schema.
 // public_libraries / public_library_tags don't exist there yet (pending migration),
-// so we cast through `any` for those tables.
-const db = supabase as AnyQuery
+// so we use an untyped client reference for those tables only.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as unknown as any
 
 // ── Management (authenticated) ──────────────────────────────────────────────
+
+type PartialTag = { id: string; name: string; project_id: string; created_at: string | null }
+interface LibraryRow extends PublicLibrary {
+  tags: { tag: PartialTag | null }[]
+}
 
 export async function fetchPublicLibraries(projectId: string): Promise<PublicLibraryWithTags[]> {
   const { data, error } = await db
@@ -18,12 +21,10 @@ export async function fetchPublicLibraries(projectId: string): Promise<PublicLib
     .eq('project_id', projectId)
     .order('created_at', { ascending: false })
   if (error) throw error
-  return ((data as AnyQuery[]) || []).map((row: AnyQuery) => ({
+  return ((data as LibraryRow[]) || []).map((row) => ({
     ...row,
-    tags: (row.tags as { tag: { id: string; name: string } | null }[])
-      .map(t => t.tag)
-      .filter(Boolean),
-  })) as PublicLibraryWithTags[]
+    tags: row.tags.map(t => t.tag).filter((t): t is PartialTag => t !== null),
+  }))
 }
 
 export async function createPublicLibrary(
@@ -97,7 +98,7 @@ export async function fetchPublicLibraryBySlug(
   projectSlug: string,
   librarySlug: string
 ): Promise<PublicLibraryWithTags | null> {
-  const { data: project, error: projectError } = await (supabase as AnyQuery)
+  const { data: project, error: projectError } = await supabase
     .from('projects')
     .select('id')
     .eq('slug', projectSlug)
@@ -107,18 +108,17 @@ export async function fetchPublicLibraryBySlug(
   const { data: library, error: libraryError } = await db
     .from('public_libraries')
     .select(`*, tags:public_library_tags(tag:tags(id, name))`)
-    .eq('project_id', (project as AnyQuery).id)
+    .eq('project_id', project.id)
     .eq('slug', librarySlug)
     .eq('is_active', true)
     .single()
   if (libraryError || !library) return null
 
+  const row = library as LibraryRow
   return {
-    ...(library as AnyQuery),
-    tags: ((library as AnyQuery).tags as { tag: { id: string; name: string } | null }[])
-      .map(t => t.tag)
-      .filter(Boolean),
-  } as PublicLibraryWithTags
+    ...row,
+    tags: row.tags.map(t => t.tag).filter((t): t is PartialTag => t !== null),
+  }
 }
 
 export async function fetchPublicLibrarySongs(
@@ -143,19 +143,29 @@ export async function fetchPublicLibrarySongs(
     .in('id', songIds)
   if (error) throw error
 
-  return ((data as AnyQuery[]) || []).map((row: AnyQuery) => ({
+  interface SongRow {
+    song?: {
+      id: string
+      title: string
+      artists: Array<{ artist: { id: string; name: string } | null; position: number }>
+    }
+    tags: Array<{ tag: PartialTag | null }>
+    [key: string]: unknown
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data as unknown as SongRow[]) || []).map((row) => ({
     ...row,
     song: {
       ...row.song,
       artists: (row.song?.artists || [])
-        .filter((sa: AnyQuery) => sa.artist != null)
-        .map((sa: AnyQuery) => ({ ...sa.artist, position: sa.position }))
-        .sort((a: AnyQuery, b: AnyQuery) => a.position - b.position),
+        .filter((sa) => sa.artist != null)
+        .map((sa) => ({ ...sa.artist!, position: sa.position }))
+        .sort((a, b) => a.position - b.position),
     },
-    tags: (row.tags || []).map((t: AnyQuery) => t.tag).filter(Boolean),
+    tags: (row.tags || []).map((t) => t.tag).filter((t): t is PartialTag => t !== null),
     notes: [],
     lists: [],
-  })) as LibrarySongWithDetails[]
+  })) as unknown as LibrarySongWithDetails[]
 }
 
 export async function fetchFirstLyricsNote(librarySongId: string): Promise<Note | null> {

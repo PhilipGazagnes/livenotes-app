@@ -72,6 +72,7 @@ import { ref, computed, watch } from 'vue'
 import { useGlobalSongsStore } from '@/stores/globalSongs'
 import type { ArtistV2 } from '@/types/database'
 import { I18N } from '@/constants/i18n'
+import { logger } from '@/utils/logger'
 
 interface Props {
   modelValue: string[] // Array of artist IDs
@@ -149,7 +150,7 @@ async function performArtistSearch() {
       a => !props.modelValue.includes(a.id)
     )
   } catch (err) {
-    console.error('Artist search error:', err)
+    logger.error('Artist search error:', err)
     artistSearchResults.value = []
   } finally {
     isSearching.value = false
@@ -178,7 +179,7 @@ async function createNewArtist() {
     const newArtist = await globalSongsStore.createArtist(name)
     selectArtist(newArtist)
   } catch (err) {
-    console.error('Create artist error:', err)
+    logger.error('Create artist error:', err)
   }
 }
 

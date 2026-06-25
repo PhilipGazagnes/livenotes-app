@@ -16,7 +16,7 @@
         </h3>
       </div>
 
-      <DropdownMenu v-if="authStore.isEditor && !uiStore.selectionMode" :items="dropdownItems" />
+      <BaseDropdownMenu v-if="authStore.isEditor && !uiStore.selectionMode" :items="dropdownItems" />
     </div>
 
     <!-- Drag handle zone (only in draggable contexts, not in selection mode) -->
@@ -42,7 +42,7 @@
 import type { ListItem } from '@/types/database'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
-import DropdownMenu from '@/components/DropdownMenu.vue'
+import BaseDropdownMenu from '@/components/BaseDropdownMenu.vue'
 
 defineProps<{
   item: ListItem
@@ -50,15 +50,15 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  edit: []
-  delete: []
+  edited: []
+  deleted: []
 }>()
 
 const uiStore = useUiStore()
 const authStore = useAuthStore()
 
 const dropdownItems = [
-  { label: 'Edit', callback: () => emit('edit') },
-  { label: 'Delete', variant: 'danger' as const, callback: () => emit('delete') },
+  { label: 'Edit', callback: () => emit('edited') },
+  { label: 'Delete', variant: 'danger' as const, callback: () => emit('deleted') },
 ]
 </script>

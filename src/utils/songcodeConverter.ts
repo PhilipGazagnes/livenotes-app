@@ -1,10 +1,11 @@
 /**
  * Wrapper for @livenotes/songcode-converter
  */
+import type { LivenotesJson } from '@/types/database'
 
 interface ConversionSuccess {
   success: true
-  json: any
+  json: LivenotesJson
 }
 
 interface ConversionFailure {
@@ -28,7 +29,7 @@ export async function generateLivenotesJson(songcode: string): Promise<Conversio
     
     return {
       success: true,
-      json: result
+      json: result as unknown as LivenotesJson
     }
   } catch (error) {
     // Extract error message
@@ -39,7 +40,7 @@ export async function generateLivenotesJson(songcode: string): Promise<Conversio
       
       // Check if it's a SongCodeError with more details
       if ('line' in error && 'column' in error) {
-        const scError = error as any
+        const scError = error as unknown as { line: number; column: number; message: string }
         errorMessage = `Line ${scError.line}, Column ${scError.column}: ${scError.message}`
       }
     }

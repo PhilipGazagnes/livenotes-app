@@ -24,7 +24,7 @@ interface RawLibrarySongForCount {
 export async function fetchArtists(projectId: string): Promise<Artist[]> {
   const { data, error } = await supabase
     .from('artists')
-    .select('*')
+    .select('id, project_id, name, created_at, updated_at')
     .eq('project_id', projectId)
     .order('name', { ascending: true })
   if (error) throw error
@@ -81,7 +81,7 @@ export async function fetchArtistsWithCount(projectId: string): Promise<ArtistWi
 export async function findArtistByFingerprint(fingerprint: string): Promise<ArtistV2 | null> {
   const { data, error } = await supabase
     .from('artists_v2')
-    .select('*')
+    .select('id, name, fingerprint, is_verified, verified_by, verified_at, bio, image_url, external_links, created_by, created_at, updated_at, merged_into_id, merge_reason')
     .eq('fingerprint', fingerprint)
     .maybeSingle()
   if (error) throw error
@@ -134,6 +134,28 @@ export async function fetchProjectLibrarySongIds(projectId: string): Promise<str
     .select('song_id')
     .eq('project_id', projectId)
   return (data || []).map(ls => ls.song_id)
+}
+
+export async function bulkDeleteArtistSongs(artistIds: string[], projectId: string): Promise<void> {
+  const { data: songArtists } = await supabase
+    .from('song_artists_v2')
+    .select('song_id')
+    .in('artist_id', artistIds)
+
+  const songIds = [...new Set((songArtists ?? []).map((sa: { song_id: string }) => sa.song_id))]
+  if (songIds.length === 0) return
+
+  const { data: libSongs } = await supabase
+    .from('library_songs')
+    .select('id')
+    .eq('project_id', projectId)
+    .in('song_id', songIds)
+
+  const libraryIds = (libSongs ?? []).map((ls: { id: string }) => ls.id)
+  if (libraryIds.length === 0) return
+
+  const { error } = await supabase.from('library_songs').delete().in('id', libraryIds)
+  if (error) throw error
 }
 
 export async function checkArtistUsedInSongs(artistId: string, songIds: string[]): Promise<boolean> {

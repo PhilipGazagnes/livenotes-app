@@ -78,7 +78,7 @@ export async function createInvitationLink(
   const { data, error } = await supabase
     .from('invitation_links')
     .insert({ project_id: projectId, role, created_by: userId })
-    .select('*')
+    .select('id, project_id, token, role, created_by, created_at, expires_at, used_by, used_at, is_revoked')
     .single()
   if (error) throw error
   return data as InvitationLink
@@ -95,7 +95,7 @@ export async function revokeInvitationLink(id: string): Promise<void> {
 export async function fetchActiveInvitationLinks(projectId: string): Promise<InvitationLink[]> {
   const { data, error } = await supabase
     .from('invitation_links')
-    .select('*')
+    .select('id, project_id, token, role, created_by, created_at, expires_at, used_by, used_at, is_revoked')
     .eq('project_id', projectId)
     .eq('is_revoked', false)
     .gt('expires_at', new Date().toISOString())
@@ -117,9 +117,10 @@ export async function fetchInvitationByToken(token: string): Promise<InvitationW
   return data as unknown as InvitationWithProject
 }
 
+type RpcFn = (fn: string, args?: Record<string, unknown>) => Promise<{ data: unknown; error: Error | null }>
+
 export async function joinViaToken(token: string): Promise<{ project_id: string; already_member: boolean }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase.rpc as any)('join_project_via_invitation', { p_token: token })
+  const { data, error } = await (supabase.rpc as unknown as RpcFn)('join_project_via_invitation', { p_token: token })
   if (error) throw error
   return data as { project_id: string; already_member: boolean }
 }

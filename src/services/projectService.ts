@@ -12,9 +12,8 @@ export async function fetchUserProjects(userId: string): Promise<ProjectWithRole
     .eq('user_id', userId)
 
   if (error) throw error
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data ?? []).map((m: any) => ({
-    ...(m.project as Project),
+  return (data ?? []).map((m) => ({
+    ...(m.project as unknown as Project),
     membership_role: m.role as ProjectRole,
   }))
 }
@@ -22,7 +21,7 @@ export async function fetchUserProjects(userId: string): Promise<ProjectWithRole
 export async function fetchCommunityProject(): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
-    .select('*')
+    .select('id, name, slug, owner_id, created_at, updated_at, notes_field_label, notes_field_enabled, description, thumbnail_url, contact_enabled, contact_info')
     .eq('slug', 'community')
     .single()
 
@@ -33,7 +32,7 @@ export async function fetchCommunityProject(): Promise<Project | null> {
 export async function fetchProjectById(projectId: string): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
-    .select('*')
+    .select('id, name, slug, owner_id, created_at, updated_at, notes_field_label, notes_field_enabled, description, thumbnail_url, contact_enabled, contact_info')
     .eq('id', projectId)
     .single()
 
@@ -45,7 +44,7 @@ export async function createProject(name: string, userId: string): Promise<Proje
   const { data, error } = await supabase
     .from('projects')
     .insert({ name, owner_id: userId })
-    .select('*')
+    .select('id, name, slug, owner_id, created_at, updated_at, notes_field_label, notes_field_enabled, description, thumbnail_url, contact_enabled, contact_info')
     .single()
 
   if (error) throw error

@@ -123,8 +123,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  close: []
-  apply: [tagIds: string[]]
+  closed: []
+  applied: [tagIds: string[]]
 }>()
 
 const tagsStore = useTagsStore()
@@ -160,11 +160,11 @@ function getTagName(tagId: string): string {
 }
 
 function handleCancel() {
-  emit('close')
+  emit('closed')
 }
 
 function handleApply() {
-  emit('apply', selectedTagIds.value)
-  emit('close')
+  emit('applied', selectedTagIds.value)
+  emit('closed')
 }
 </script>

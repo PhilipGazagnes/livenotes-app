@@ -6,6 +6,10 @@
 
 import { logger } from './logger'
 
+interface LCPEntry extends PerformanceEntry { renderTime: number; loadTime: number }
+interface FIDEntry extends PerformanceEntry { processingStart: number }
+interface CLSEntry extends PerformanceEntry { hadRecentInput: boolean; value: number }
+
 /**
  * Debounce function to limit how often a function can be called
  * Useful for search inputs, scroll handlers, etc.
@@ -141,14 +145,14 @@ export function logWebVitals() {
 
   // Largest Contentful Paint (LCP)
   new PerformanceObserver((list) => {
-    const entries = list.getEntries()
-    const lastEntry = entries[entries.length - 1] as any
+    const entries = list.getEntries() as LCPEntry[]
+    const lastEntry = entries[entries.length - 1]
     logger.debug('Web Vitals LCP:', lastEntry.renderTime || lastEntry.loadTime)
   }).observe({ entryTypes: ['largest-contentful-paint'] })
 
   // First Input Delay (FID)
   new PerformanceObserver((list) => {
-    const entries = list.getEntries() as any[]
+    const entries = list.getEntries() as FIDEntry[]
     entries.forEach((entry) => {
       logger.debug('Web Vitals FID:', entry.processingStart - entry.startTime)
     })
@@ -157,7 +161,7 @@ export function logWebVitals() {
   // Cumulative Layout Shift (CLS)
   let clsScore = 0
   new PerformanceObserver((list) => {
-    const entries = list.getEntries() as any[]
+    const entries = list.getEntries() as CLSEntry[]
     entries.forEach((entry) => {
       if (!entry.hadRecentInput) {
         clsScore += entry.value

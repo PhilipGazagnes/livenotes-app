@@ -7,7 +7,7 @@
 
       <!-- Loading State -->
       <div v-if="libraryStore.isLoading && !loadTimedOut" class="flex items-center justify-center py-24">
-        <LoadingSpinner />
+        <BaseLoadingSpinner />
       </div>
 
       <!-- Empty State -->
@@ -38,7 +38,7 @@
           <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SONGS_MATCH_FILTERS }}</p>
         </div>
         <div v-else class="p-4 space-y-4">
-          <Card
+          <BaseCard
             v-for="librarySong in displayedSongs"
             :key="librarySong.id"
             :title="librarySong.custom_title || librarySong.song?.title || ''"
@@ -54,7 +54,7 @@
         </div>
       </div>
 
-      <StickyBar
+      <BaseStickyBar
         v-model:search-query="searchQuery"
         :all-item-ids="displayedSongs.map(s => s.id)"
         :filters-enabled="true"
@@ -78,7 +78,7 @@
         :librarySongId="selectedLibrarySong.id"
         :songTitle="selectedLibrarySong.custom_title || selectedLibrarySong.song?.title || 'Song'"
         :initialTagIds="selectedLibrarySong.tags?.map(t => t.id) || []"
-        @close="showManageTagsModal = false"
+        @closed="showManageTagsModal = false"
         @saved="handleTagsUpdated"
       />
 
@@ -88,7 +88,7 @@
         :library-song-id="selectedLibrarySong.id"
         :song-title="selectedLibrarySong.custom_title || selectedLibrarySong.song?.title || 'Song'"
         :initial-list-ids="selectedLibrarySong.lists?.map(l => l.id) || []"
-        @close="showManageListsModal = false"
+        @closed="showManageListsModal = false"
         @saved="handleListsUpdated"
       />
 
@@ -117,13 +117,13 @@ import { I18N } from '@/constants/i18n'
 import { getSegments } from '@/utils/highlight'
 import type { TextSegment } from '@/utils/highlight'
 import AppHeader from '@/components/AppHeader.vue'
-import Card from '@/components/Card.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import BaseCard from '@/components/BaseCard.vue'
+import BaseLoadingSpinner from '@/components/BaseLoadingSpinner.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
-import StickyBar from '@/components/StickyBar.vue'
+import BaseStickyBar from '@/components/BaseStickyBar.vue'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
-import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/types/bulkAction'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 
 const route = useRoute()

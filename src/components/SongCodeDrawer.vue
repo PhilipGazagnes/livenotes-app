@@ -127,7 +127,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  close: []
+  closed: []
 }>()
 
 const songcodeStore = useSongcodeStore()
@@ -185,7 +185,7 @@ function handleCancel() {
   // Discard changes and close without saving
   songcodeText.value = originalSongcode.value
   songcodeStore.clearCurrentSongcode()
-  emit('close')
+  emit('closed')
 }
 
 function formatDate(dateString: string | null): string {

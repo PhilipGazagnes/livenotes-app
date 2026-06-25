@@ -44,13 +44,9 @@
 import { computed } from 'vue'
 import { useDrawerStore } from '@/stores/drawer'
 import { useUiStore } from '@/stores/ui'
+import type { BulkAction } from '@/types/bulkAction'
 
-export interface BulkAction {
-  label: string
-  variant?: 'default' | 'danger' | 'warning'
-  keepDrawerOpen?: boolean
-  onClick: () => void
-}
+export type { BulkAction }
 
 defineProps<{
   actions: BulkAction[]

@@ -37,38 +37,38 @@ export const logger = {
    * @param message - Debug message
    * @param args - Additional data to log
    */
-  debug: (message: string, ...args: any[]) => {
+  debug: (message: string, ...args: unknown[]) => {
     if (isDev) {
       console.log(`[DEBUG] ${message}`, ...args)
     }
   },
-  
+
   /**
    * Log informational messages (development only)
    * @param message - Info message
    * @param args - Additional data to log
    */
-  info: (message: string, ...args: any[]) => {
+  info: (message: string, ...args: unknown[]) => {
     if (isDev) {
       console.info(`[INFO] ${message}`, ...args)
     }
   },
-  
+
   /**
    * Log warnings (always logged)
    * @param message - Warning message
    * @param args - Additional context
    */
-  warn: (message: string, ...args: any[]) => {
+  warn: (message: string, ...args: unknown[]) => {
     console.warn(`[WARN] ${message}`, ...args)
   },
-  
+
   /**
    * Log errors (always logged)
    * @param message - Error message
    * @param error - Error object or additional context
    */
-  error: (message: string, error?: Error | any) => {
+  error: (message: string, error?: unknown) => {
     console.error(`[ERROR] ${message}`, error)
   },
   

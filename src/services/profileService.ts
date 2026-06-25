@@ -4,7 +4,7 @@ import type { Profile } from '@/types/database'
 export async function fetchProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id, display_name, avatar_url, active_project_id, is_super_admin, created_at, updated_at')
     .eq('id', userId)
     .single()
 

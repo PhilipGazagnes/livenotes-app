@@ -18,7 +18,7 @@
   <!-- Content -->
   <div class="flex-1 overflow-y-auto">
     <div v-if="isLoading" class="flex items-center justify-center py-12">
-      <LoadingSpinner />
+      <BaseLoadingSpinner />
     </div>
 
     <div v-else-if="targets.length === 0" class="text-center py-12 px-6">
@@ -57,7 +57,7 @@ import { fetchCommunityProject } from '@/services/projectService'
 import { pushNoteToProject } from '@/services/notePushService'
 import type { Project } from '@/types/database'
 import ProjectAvatarIcon from './ProjectAvatarIcon.vue'
-import LoadingSpinner from './LoadingSpinner.vue'
+import BaseLoadingSpinner from './BaseLoadingSpinner.vue'
 
 const props = defineProps<{
   noteId: string

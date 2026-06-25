@@ -1,7 +1,7 @@
 <template>
   <div v-if="project.contact_enabled" class="bg-gray-800 border-b border-gray-700 px-4 py-3">
     <button
-      @click="$emit('open')"
+      @click="$emit('opened')"
       class="flex items-center gap-3 w-full text-left"
     >
       <!-- Thumbnail -->
@@ -46,5 +46,5 @@ interface ProjectPublicInfo {
 }
 
 defineProps<{ project: ProjectPublicInfo }>()
-defineEmits<{ open: [] }>()
+defineEmits<{ opened: [] }>()
 </script>

@@ -1,10 +1,14 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { supabase } from '@/lib/supabase'
 import type { SongCode } from '@/types/database'
 import { useAuthStore } from './auth'
 import { generateLivenotesJson } from '@/utils/songcodeConverter'
 import { useUiStore } from './ui'
+import {
+  fetchSongcode as serviceFetchSongcode,
+  upsertSongcode as serviceUpsertSongcode,
+  upsertLivenotesJson as serviceUpsertLivenotesJson,
+} from '@/services/songcodeService'
 
 export const useSongcodeStore = defineStore('songcode', () => {
   // State
@@ -22,17 +26,8 @@ export const useSongcodeStore = defineStore('songcode', () => {
     error.value = null
     
     try {
-      const { data, error: fetchError } = await supabase
-        .from('songcode')
-        .select('*')
-        .eq('song_id', songId)
-        .maybeSingle()
-      
-      if (fetchError) {
-        throw fetchError
-      }
-      
-      currentSongcode.value = data as unknown as SongCode | null
+      const data = await serviceFetchSongcode(songId)
+      currentSongcode.value = data
       return { success: true, data }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch songcode'
@@ -56,22 +51,8 @@ export const useSongcodeStore = defineStore('songcode', () => {
     error.value = null
     
     try {
-      const payload = {
-        song_id: songId,
-        songcode: songcodeText.trim(),
-        songcode_updated_at: new Date().toISOString(),
-        songcode_updated_by: authStore.userId,
-      }
-
-      const { data, error: upsertError } = await supabase
-        .from('songcode')
-        .upsert(payload)
-        .select()
-        .single()
-      
-      if (upsertError) throw upsertError
-      
-      currentSongcode.value = data as unknown as SongCode
+      const data = await serviceUpsertSongcode(songId, songcodeText, authStore.userId)
+      currentSongcode.value = data
       return { success: true, data }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update songcode'
@@ -109,23 +90,8 @@ export const useSongcodeStore = defineStore('songcode', () => {
         throw new Error(conversionResult.error)
       }
 
-      // Save to database
-      const payload = {
-        song_id: songId,
-        livenotes_json: conversionResult.json,
-        livenotes_json_updated_at: new Date().toISOString(),
-        livenotes_json_updated_by: authStore.userId,
-      }
-
-      const { data, error: updateError } = await supabase
-        .from('songcode')
-        .upsert(payload)
-        .select()
-        .single()
-      
-      if (updateError) throw updateError
-      
-      currentSongcode.value = data as unknown as SongCode
+      const data = await serviceUpsertLivenotesJson(songId, conversionResult.json, authStore.userId)
+      currentSongcode.value = data
       uiStore.showToast('Livenotes JSON generated successfully', 'success')
       return { success: true, data }
     } catch (err) {

@@ -121,7 +121,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  close: []
+  closed: []
   saved: []
 }>()
 
@@ -251,6 +251,6 @@ async function handleSave() {
 }
 
 function handleCancel() {
-  emit('close')
+  emit('closed')
 }
 </script>

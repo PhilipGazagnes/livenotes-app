@@ -1,7 +1,7 @@
 <template>
   <div class="sticky top-0 z-10 py-1.5 bg-gray-900">
     <div v-if="beforeSegs.length" :class="['flex flex-wrap mb-0.5', TEXT_BEFORE_AFTER_CLASS]">
-      <span v-for="(seg, i) in beforeSegs" :key="i" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-500'">{{ seg.t }}</span>
+      <span v-for="(seg, i) in beforeSegs" :key="`${i}-${seg.t}`" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-500'">{{ seg.t }}</span>
     </div>
 
     <div :class="['flex items-center flex-wrap', TEXT_MAIN_CLASS]">
@@ -10,7 +10,7 @@
         v-if="cutStartVal !== null"
         :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded mr-1' + SEPARATOR_CLASS"
       >{{ cutStartVal }}</span>
-      <span v-for="(seg, i) in mainSegs" :key="i" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-300'">{{ seg.t }}</span>
+      <span v-for="(seg, i) in mainSegs" :key="`${i}-${seg.t}`" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-300'">{{ seg.t }}</span>
       <span
         v-if="cutEndVal !== null"
         :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded ml-1' + SEPARATOR_CLASS"
@@ -19,7 +19,7 @@
     </div>
 
     <div v-if="afterSegs.length" :class="['flex flex-wrap mt-0.5', TEXT_BEFORE_AFTER_CLASS]">
-      <span v-for="(seg, i) in afterSegs" :key="i" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-500'">{{ seg.t }}</span>
+      <span v-for="(seg, i) in afterSegs" :key="`${i}-${seg.t}`" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-500'">{{ seg.t }}</span>
     </div>
   </div>
 </template>
@@ -38,9 +38,9 @@ type PatternToken = Chord[] | (Chord | string)[] | string
 interface Seg { t: string; hi?: true; sep?: true }
 
 const props = withDefaults(defineProps<{
-  mainJson: PatternToken[] | null
-  beforeJson?: PatternToken[] | null
-  afterJson?: PatternToken[] | null
+  mainJson: unknown[] | null
+  beforeJson?: unknown[] | null
+  afterJson?: unknown[] | null
   repeat?: number
   cutStart?: number[] | null
   cutEnd?: number[] | null
@@ -55,9 +55,9 @@ const props = withDefaults(defineProps<{
 const cutStartVal = computed(() => props.cutStart?.[0] ?? null)
 const cutEndVal = computed(() => props.cutEnd?.[0] ?? null)
 
-const mainSegs = computed(() => props.mainJson ? renderSegs(props.mainJson) : [])
-const beforeSegs = computed(() => props.beforeJson ? renderSegs(props.beforeJson) : [])
-const afterSegs = computed(() => props.afterJson ? renderSegs(props.afterJson) : [])
+const mainSegs = computed(() => props.mainJson ? renderSegs(props.mainJson as PatternToken[]) : [])
+const beforeSegs = computed(() => props.beforeJson ? renderSegs(props.beforeJson as PatternToken[]) : [])
+const afterSegs = computed(() => props.afterJson ? renderSegs(props.afterJson as PatternToken[]) : [])
 
 function renderSegs(items: PatternToken[]): Seg[] {
   const segs: Seg[] = []

@@ -4,7 +4,7 @@ import type { Tag } from '@/types/database'
 export async function fetchTags(projectId: string): Promise<Tag[]> {
   const { data, error } = await supabase
     .from('tags')
-    .select('*')
+    .select('id, project_id, name, created_at')
     .eq('project_id', projectId)
     .order('name', { ascending: true })
   if (error) throw error
@@ -59,6 +59,18 @@ export async function bulkAssignTags(librarySongIds: string[], tagIds: string[])
   )
   const { error } = await supabase.from('library_song_tags').insert(inserts)
   if (error) throw error
+}
+
+export async function fetchTagSongCounts(tagIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map(tagIds.map(id => [id, 0]))
+  const { data } = await supabase
+    .from('library_song_tags')
+    .select('tag_id')
+    .in('tag_id', tagIds)
+  data?.forEach((row: { tag_id: string }) => {
+    counts.set(row.tag_id, (counts.get(row.tag_id) ?? 0) + 1)
+  })
+  return counts
 }
 
 export async function bulkRemoveTags(librarySongIds: string[], tagIds: string[]): Promise<void> {

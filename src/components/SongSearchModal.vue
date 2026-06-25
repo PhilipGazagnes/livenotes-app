@@ -94,7 +94,7 @@
 
       <!-- Loading State -->
       <div v-if="isSearching" class="flex items-center justify-center py-8">
-        <LoadingSpinner />
+        <BaseLoadingSpinner />
       </div>
 
       <!-- Error Message -->
@@ -124,7 +124,8 @@ import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { useUiStore } from '@/stores/ui'
 import ArtistSelector from './ArtistSelector.vue'
-import LoadingSpinner from './LoadingSpinner.vue'
+import BaseLoadingSpinner from './BaseLoadingSpinner.vue'
+import { logger } from '@/utils/logger'
 
 interface Props {
   isOpen: boolean
@@ -206,7 +207,7 @@ async function performSearch() {
     searchResults.value = results
   } catch (err) {
     errorMessage.value = I18N.TOAST.SEARCH_SONGS_FAILED
-    console.error('Search error:', err)
+    logger.error('Search error:', err)
   } finally {
     isSearching.value = false
   }
@@ -221,13 +222,14 @@ async function addExistingSong(song: SongV2WithArtists) {
     uiStore.showToast(MESSAGES.SUCCESS.SONG_ADDED_TO_LIBRARY, 'success')
     emit('songAdded')
     emit('close')
-  } catch (err: any) {
-    if (err?.message?.includes('unique') || err?.code === '23505') {
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string }
+    if (e?.message?.includes('unique') || e?.code === '23505') {
       errorMessage.value = MESSAGES.ERROR.SONG_ALREADY_IN_LIBRARY
     } else {
       errorMessage.value = I18N.TOAST.ADD_TO_LIBRARY_FAILED
     }
-    console.error('Add to library error:', err)
+    logger.error('Add to library error:', e)
   } finally {
     isLoading.value = false
   }
@@ -256,7 +258,7 @@ async function createAndAddNewSong() {
     emit('close')
   } catch (err) {
     errorMessage.value = I18N.TOAST.CREATE_SONG_FAILED
-    console.error('Create song error:', err)
+    logger.error('Create song error:', err)
   } finally {
     isLoading.value = false
   }

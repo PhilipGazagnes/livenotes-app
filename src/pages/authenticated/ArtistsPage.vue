@@ -16,13 +16,13 @@
         :subtitle="I18N.EMPTY_STATES.NO_ARTISTS_SUBTITLE"
         :ctaText="I18N.MODALS.CREATE_ARTIST"
         iconPath="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-        @create="showCreateModal = true"
+        @created="showCreateModal = true"
       />
 
       <!-- Artists List -->
       <div v-else-if="filteredArtists.length > 0" class="pb-24">
         <div class="p-4 space-y-3">
-          <Card
+          <BaseCard
             v-for="artist in filteredArtists"
             :key="artist.id"
             :id="artist.id"
@@ -44,7 +44,7 @@
         <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SEARCH_RESULTS }}</p>
       </div>
 
-      <StickyBar
+      <BaseStickyBar
         v-model:search-query="searchQuery"
         :all-item-ids="filteredArtists.map(a => a.id)"
         :filters-enabled="false"
@@ -64,8 +64,8 @@
         :isSubmitting="isCreating"
         :submitText="I18N.BUTTONS.CREATE"
         :loadingText="I18N.LOADING.CREATING"
-        @close="showCreateModal = false"
-        @submit="handleCreate"
+        @closed="showCreateModal = false"
+        @submitted="handleCreate"
       />
 
       <!-- Rename Modal -->
@@ -78,8 +78,8 @@
         :placeholder="I18N.PLACEHOLDERS.ARTIST_NAME"
         :maxLength="100"
         :isSubmitting="isRenaming"
-        @close="showRenameModal = false"
-        @submit="handleRenameSubmit"
+        @closed="showRenameModal = false"
+        @submitted="handleRenameSubmit"
       />
     </ion-content>
   </ion-page>
@@ -90,12 +90,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import Card from '@/components/Card.vue'
+import BaseCard from '@/components/BaseCard.vue'
 import CRUDModal from '@/components/CRUDModal.vue'
 import CRUDEmptyState from '@/components/CRUDEmptyState.vue'
-import StickyBar from '@/components/StickyBar.vue'
+import BaseStickyBar from '@/components/BaseStickyBar.vue'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
-import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/types/bulkAction'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import { useArtistsStore } from '@/stores/artists'
 import { useAuthStore } from '@/stores/auth'
@@ -106,7 +106,7 @@ import { I18N } from '@/constants/i18n'
 import { MESSAGES } from '@/constants/messages'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
-import { supabase } from '@/lib/supabase'
+import { bulkDeleteArtistSongs } from '@/services/artistService'
 import { foldAccents } from '@/utils/validation'
 import type { ArtistWithCount } from '@/types/database'
 
@@ -145,26 +145,7 @@ function handleBulkDeleteArtists() {
         const personalProjectId = authStore.activeProjectId
         if (!personalProjectId) throw new Error('Project not found')
 
-        const { data: songArtists } = await supabase
-          .from('song_artists_v2')
-          .select('song_id')
-          .in('artist_id', ids)
-
-        const songIds = [...new Set((songArtists ?? []).map((sa: { song_id: string }) => sa.song_id))]
-
-        if (songIds.length > 0) {
-          const { data: libSongs } = await supabase
-            .from('library_songs')
-            .select('id')
-            .eq('project_id', personalProjectId)
-            .in('song_id', songIds)
-
-          const libraryIds = (libSongs ?? []).map((ls: { id: string }) => ls.id)
-          if (libraryIds.length > 0) {
-            const { error } = await supabase.from('library_songs').delete().in('id', libraryIds)
-            if (error) throw error
-          }
-        }
+        await bulkDeleteArtistSongs(ids, personalProjectId)
 
         artistsWithCount.value = await artistsStore.fetchArtistsWithCount(personalProjectId)
         uiStore.showToast(`Deleted ${artistLabel(artistCount)} and ${songLabel(songCount)}`, 'success')

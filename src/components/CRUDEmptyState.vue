@@ -32,7 +32,7 @@
     
     <button
       v-if="ctaText"
-      @click="emit('create')"
+      @click="emit('created')"
       class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,6 +52,6 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  create: []
+  created: []
 }>()
 </script>

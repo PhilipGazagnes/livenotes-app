@@ -11,7 +11,7 @@
 
       <div class="flex items-center gap-2 ml-3">
         <button
-          @click="$emit('edit', note)"
+          @click="$emit('edited', note)"
           class="p-2 text-gray-400 hover:text-blue-400 transition-colors"
           :title="I18N.ARIA.EDIT_NOTE"
         >
@@ -22,7 +22,7 @@
         </button>
 
         <button
-          @click="$emit('delete', note)"
+          @click="$emit('deleted', note)"
           class="p-2 text-gray-400 hover:text-red-400 transition-colors"
           :title="I18N.ARIA.DELETE_NOTE"
         >
@@ -96,8 +96,8 @@ interface Props {
 const props = defineProps<Props>()
 
 defineEmits<{
-  edit: [note: Note]
-  delete: [note: Note]
+  edited: [note: Note]
+  deleted: [note: Note]
 }>()
 
 // Computed

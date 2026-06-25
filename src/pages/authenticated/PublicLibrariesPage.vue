@@ -14,7 +14,7 @@
 
         <!-- Library list -->
         <div v-if="store.isLoading" class="flex justify-center py-12">
-          <LoadingSpinner />
+          <BaseLoadingSpinner />
         </div>
 
         <div v-else-if="store.libraries.length === 0" class="text-center py-12">
@@ -26,7 +26,7 @@
         </div>
 
         <div v-else class="space-y-3">
-          <Card
+          <BaseCard
             v-for="lib in filteredLibraries"
             :key="lib.id"
             :id="lib.id"
@@ -40,7 +40,7 @@
 
       </div>
 
-      <StickyBar
+      <BaseStickyBar
         v-model:search-query="searchQuery"
         :all-item-ids="filteredLibraries.map(l => l.id)"
         :filters-enabled="false"
@@ -154,11 +154,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import Card from '@/components/Card.vue'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import StickyBar from '@/components/StickyBar.vue'
+import BaseCard from '@/components/BaseCard.vue'
+import BaseLoadingSpinner from '@/components/BaseLoadingSpinner.vue'
+import BaseStickyBar from '@/components/BaseStickyBar.vue'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
-import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/types/bulkAction'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import { I18N } from '@/constants/i18n'
 import { usePublicLibrariesStore } from '@/stores/publicLibraries'

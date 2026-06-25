@@ -1,6 +1,18 @@
 import { supabase } from '@/lib/supabase'
 import type { SongV2, SongV2WithArtists, ArtistV2 } from '@/types/database'
 
+interface RawSongArtistJoin {
+  position: number
+  artist: ArtistV2 | null
+}
+
+function mapArtists(rows: RawSongArtistJoin[]): (ArtistV2 & { position: number })[] {
+  return rows
+    .map(sa => (sa.artist ? { ...sa.artist, position: sa.position } : null))
+    .filter((a): a is ArtistV2 & { position: number } => a !== null)
+    .sort((a, b) => a.position - b.position)
+}
+
 export async function searchSongs(query: string): Promise<SongV2WithArtists[]> {
   const fingerprint = query.toLowerCase().replace(/[^a-z0-9]/g, '')
   const { data, error } = await supabase
@@ -18,10 +30,7 @@ export async function searchSongs(query: string): Promise<SongV2WithArtists[]> {
   if (error) throw error
   return (data || []).map(song => ({
     ...song,
-    artists: song.artists
-      ?.map((sa: any) => ({ ...sa.artist, position: sa.position }))
-      .filter(Boolean)
-      .sort((a: any, b: any) => a.position - b.position) ?? [],
+    artists: mapArtists((song.artists ?? []) as RawSongArtistJoin[]),
   }))
 }
 
@@ -63,17 +72,14 @@ export async function getSongById(songId: string): Promise<SongV2WithArtists | n
   if (!data) return null
   return {
     ...data,
-    artists: data.artists
-      ?.map((sa: any) => ({ ...sa.artist, position: sa.position }))
-      .filter(Boolean)
-      .sort((a: any, b: any) => a.position - b.position) ?? [],
+    artists: mapArtists((data.artists ?? []) as RawSongArtistJoin[]),
   }
 }
 
 export async function searchArtists(query: string): Promise<ArtistV2[]> {
   const { data, error } = await supabase
     .from('artists_v2')
-    .select('*')
+    .select('id, name, fingerprint, is_verified, verified_by, verified_at, bio, image_url, external_links, created_by, created_at, updated_at, merged_into_id, merge_reason')
     .ilike('name', `%${query}%`)
     .order('name')
     .limit(20)

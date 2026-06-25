@@ -6,6 +6,7 @@ import * as authService from '@/services/authService'
 import { fetchProfile, updateProfile } from '@/services/profileService'
 import { fetchProjectById } from '@/services/projectService'
 import { fetchUserRoleInProject } from '@/services/membershipService'
+import { logger } from '@/utils/logger'
 import type { ProjectRole } from '@/types/database'
 
 const ACTIVE_PROJECT_CACHE_KEY = 'livenotes-project-id'
@@ -72,7 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
     } catch (err) {
-      console.error('Failed to refresh profile:', err)
+      logger.error('Failed to refresh profile:', err)
     }
   }
 

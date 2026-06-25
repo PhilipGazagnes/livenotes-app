@@ -4,6 +4,7 @@ import type { Song, SongWithTags, ArtistWithPosition } from '@/types/database'
 import type { Tag } from '@/types/database'
 import { useAuthStore } from './auth'
 import * as songService from '@/services/songService'
+import { logger } from '@/utils/logger'
 
 export const useSongsStore = defineStore('songs', () => {
   // State
@@ -174,7 +175,7 @@ export const useSongsStore = defineStore('songs', () => {
       const songIndex = songs.value.findIndex(s => s.id === songId)
       if (songIndex !== -1) songs.value[songIndex].tags = tags
     } catch (err) {
-      console.error('Failed to refresh song tags:', err)
+      logger.error('Failed to refresh song tags:', err)
     }
   }
 
@@ -184,7 +185,7 @@ export const useSongsStore = defineStore('songs', () => {
       const songIndex = songs.value.findIndex(s => s.id === songId)
       if (songIndex !== -1) songs.value[songIndex].lists = lists
     } catch (err) {
-      console.error('Failed to refresh song lists:', err)
+      logger.error('Failed to refresh song lists:', err)
     }
   }
 
@@ -194,7 +195,7 @@ export const useSongsStore = defineStore('songs', () => {
       const songIndex = songs.value.findIndex(s => s.id === songId)
       if (songIndex !== -1) songs.value[songIndex].artists = artists as ArtistWithPosition[]
     } catch (err) {
-      console.error('Failed to refresh song artists:', err)
+      logger.error('Failed to refresh song artists:', err)
     }
   }
 

@@ -43,7 +43,7 @@
 
         <!-- Loading -->
         <div v-if="isLoading" class="flex justify-center py-24">
-          <LoadingSpinner />
+          <BaseLoadingSpinner />
         </div>
 
         <div v-else class="pb-24">
@@ -51,7 +51,7 @@
           <ProjectContactBanner
             v-if="projectInfo"
             :project="projectInfo"
-            @open="openContactDrawer"
+            @opened="openContactDrawer"
           />
 
           <!-- Empty state -->
@@ -61,7 +61,7 @@
 
           <!-- Song list -->
           <div v-else class="p-4 space-y-3">
-            <Card
+            <BaseCard
               v-for="song in displayedSongs"
               :key="song.id"
               :title="song.custom_title || song.song?.title || ''"
@@ -114,8 +114,8 @@ import { useRoute } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import Fuse from 'fuse.js'
 import type { FuseResultMatch } from 'fuse.js'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import Card from '@/components/Card.vue'
+import BaseLoadingSpinner from '@/components/BaseLoadingSpinner.vue'
+import BaseCard from '@/components/BaseCard.vue'
 import PublicLyricDrawer from '@/components/PublicLyricDrawer.vue'
 import ProjectContactBanner from '@/components/ProjectContactBanner.vue'
 import ProjectContactDrawer from '@/components/ProjectContactDrawer.vue'

@@ -76,7 +76,7 @@
         </div>
 
         <!-- Dropdown -->
-        <DropdownMenu
+        <BaseDropdownMenu
           v-if="authStore.isEditor && dropdownItems && dropdownItems.length > 0 && !(id && uiStore.selectionMode)"
           :items="dropdownItems"
         />
@@ -105,8 +105,8 @@
 import { computed } from 'vue'
 import type { TextSegment } from '@/utils/highlight'
 import { getSegmentsFromQuery } from '@/utils/highlight'
-import type { DropdownMenuItem } from '@/components/DropdownMenu.vue'
-import DropdownMenu from '@/components/DropdownMenu.vue'
+import type { DropdownMenuItem } from '@/components/BaseDropdownMenu.vue'
+import BaseDropdownMenu from '@/components/BaseDropdownMenu.vue'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 

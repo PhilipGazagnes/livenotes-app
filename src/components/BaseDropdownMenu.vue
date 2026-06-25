@@ -23,7 +23,7 @@
       :style="position"
     >
       <div class="py-1">
-        <template v-for="(item, index) in items" :key="index">
+        <template v-for="(item, index) in items" :key="item.label">
           <div
             v-if="index > 0 && (item.variant ?? 'default') !== (items[index - 1].variant ?? 'default')"
             class="border-t border-gray-700 my-1"

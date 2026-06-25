@@ -16,12 +16,12 @@
         :subtitle="MESSAGES.EMPTY_NO_TAGS_SUBTITLE"
         :ctaText="I18N.EMPTY_STATES.NO_TAGS.CTA"
         iconPath="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-        @create="openCreateTagDrawer"
+        @created="openCreateTagDrawer"
       />
 
       <!-- Tags List -->
       <div v-else class="p-4 space-y-3 pb-24">
-        <Card
+        <BaseCard
           v-for="tag in filteredTags"
           :key="tag.id"
           :id="tag.id"
@@ -33,7 +33,7 @@
         />
       </div>
 
-      <StickyBar
+      <BaseStickyBar
         v-model:search-query="searchQuery"
         :all-item-ids="filteredTags.map(t => t.id)"
         :filters-enabled="false"
@@ -54,8 +54,8 @@
         :submitText="I18N.BUTTONS.SAVE"
         :loadingText="I18N.LOADING.SAVING"
         :cancelText="I18N.BUTTONS.CANCEL"
-        @close="showRenameModal = false"
-        @submit="handleRenameSubmit"
+        @closed="showRenameModal = false"
+        @submitted="handleRenameSubmit"
       />
     </ion-content>
   </ion-page>
@@ -66,12 +66,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
-import Card from '@/components/Card.vue'
+import BaseCard from '@/components/BaseCard.vue'
 import CRUDModal from '@/components/CRUDModal.vue'
 import CRUDEmptyState from '@/components/CRUDEmptyState.vue'
-import StickyBar from '@/components/StickyBar.vue'
+import BaseStickyBar from '@/components/BaseStickyBar.vue'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
-import type { BulkAction } from '@/components/BulkActionsDrawer.vue'
+import type { BulkAction } from '@/types/bulkAction'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import CreateItemDrawer from '@/components/CreateItemDrawer.vue'
 import { useTagsStore } from '@/stores/tags'
@@ -83,7 +83,7 @@ import { I18N } from '@/constants/i18n'
 import { ROUTES } from '@/constants/routes'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
-import { supabase } from '@/lib/supabase'
+import { fetchTagSongCounts } from '@/services/tagService'
 import { foldAccents } from '@/utils/validation'
 import type { Tag } from '@/types/database'
 
@@ -229,15 +229,7 @@ onMounted(() => {
 
     const tagIds = tagsStore.tags.map(t => t.id)
     if (tagIds.length) {
-      const { data } = await supabase
-        .from('library_song_tags')
-        .select('tag_id')
-        .in('tag_id', tagIds)
-      const counts = new Map(tagIds.map(id => [id, 0]))
-      data?.forEach((row: { tag_id: string }) => {
-        counts.set(row.tag_id, (counts.get(row.tag_id) ?? 0) + 1)
-      })
-      tagSongCounts.value = counts
+      tagSongCounts.value = await fetchTagSongCounts(tagIds)
     }
   }, {
     errorMessage: 'Failed to load tags'
