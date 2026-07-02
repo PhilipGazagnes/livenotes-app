@@ -1,12 +1,8 @@
 # Dev Guidelines
 
-Welcome to the Livenotes App project! This document defines the standards we follow to keep the codebase clean, consistent, and enjoyable to work in. These aren't arbitrary rules — each one exists to save us time and reduce friction as the project grows. Please read it before contributing, and refer back to it when in doubt.
-
----
-
 ## Table of Contents
 
-1. [Core Principles](#core-principles)
+1. [State Management](#state-management)
 2. [Components](#components)
 3. [Composables](#composables)
 4. [TypeScript](#typescript)
@@ -15,73 +11,25 @@ Welcome to the Livenotes App project! This document defines the standards we fol
 
 ---
 
-## Core Principles
+## State Management
 
-These four principles are the backbone of every decision in this codebase. When you're unsure how to approach something, come back here first.
+Three layers — pick the right one:
 
-### DRY — Don't Repeat Yourself
+**Pinia store** — when state is shared across components or pages, or needs to survive navigation:
+- Server data fetched once and reused: `library`, `lists`, `tags`, `artists`, `notes`, `settings`
+- Auth session: user, profile, active project, role (`auth` store)
+- Global UI state: toasts, overlays, selection mode, drawer stack (`ui`, `drawer` stores)
 
-If you find yourself writing the same logic, markup, or query more than once, stop and extract it. Duplication is the root of many bugs: when something changes, it tends to get updated in one place but not another.
+**Composable** — when logic is complex enough to extract but doesn't need to be globally shared:
+- Page-specific behaviour that would make a component hard to read: `useListReorder`, `useListBulkActions`
+- Reusable CRUD patterns across similar pages: `useListCRUD`, `useCRUD`
+- Infrastructure utilities: `useOnlineStatus`, `usePageLoad`
+- Composables use stores internally when they need data — they don't hold persistent state themselves
 
-**Do:**
-- Extract repeated logic into a composable
-- Extract repeated markup into a component
-- Extract repeated Supabase queries into a service function
+**Local `ref`** — when nothing outside the component needs it:
+- Form inputs, modal open/close flags, local search queries
 
-**Don't:**
-```ts
-// ❌ Same fetch logic duplicated across two components
-const { data } = await supabase.from('projects').select('*').eq('user_id', userId)
-// ... repeated elsewhere
-```
-
-```ts
-// ✅ Extracted once, used everywhere
-const { projects } = useUserProjects(userId)
-```
-
----
-
-### KISS — Keep It Simple, Stupid
-
-The simplest solution that works is almost always the right one. Resist the urge to over-engineer. Complex code is harder to read, harder to test, and harder to debug.
-
-**Do:**
-- Write code that a new contributor could understand within a few minutes
-- Prefer flat logic over deeply nested conditions
-- Split complex functions into smaller, named steps
-
-**Don't:**
-```ts
-// ❌ Over-engineered for no benefit
-const getLabel = (status: string) =>
-  ({ active: 'Active', inactive: 'Inactive', pending: 'Pending' }[status] ?? 'Unknown')
-  
-// (fine here, but not when a simple if/switch reads better in context)
-```
-
-> If you feel the need to write a long comment explaining what your code does, consider rewriting the code instead.
-
----
-
-### YAGNI — You Aren't Gonna Need It
-
-Don't build features, abstractions, or configuration options for hypothetical future needs. Build what is required today, and refactor when the need actually arises.
-
-**Do:**
-- Implement only what the current ticket or feature requires
-- Leave extension points out until there's a concrete reason for them
-
-**Don't:**
-```ts
-// ❌ Premature abstraction "just in case"
-function fetchData(source: 'supabase' | 'firebase' | 'rest' | 'graphql', ...) { ... }
-
-// ✅ We only use Supabase — keep it focused
-function fetchProjects() { ... }
-```
-
-> YAGNI and DRY are complementary, not contradictory. DRY removes duplication that *exists*. YAGNI prevents abstraction of duplication that *doesn't exist yet*.
+Decision rule: does anything outside this component need this state? → store. Is the logic complex enough to make the component hard to read? → composable. Otherwise → local ref.
 
 ---
 
@@ -219,15 +167,7 @@ src/types/
 
 ### Avoid `any`
 
-```ts
-// ❌
-function handleResponse(data: any) { ... }
-
-// ✅
-function handleResponse(data: Project[]) { ... }
-```
-
-If you genuinely don't know the type (e.g. from an external source), use `unknown` and narrow it explicitly.
+Use `unknown` and narrow it explicitly when the type is genuinely uncertain.
 
 ### Supabase types
 

@@ -21,7 +21,7 @@ export async function fetchUserProjects(userId: string): Promise<ProjectWithRole
 export async function fetchCommunityProject(): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
-    .select('id, name, slug, owner_id, created_at, updated_at, notes_field_label, notes_field_enabled, description, thumbnail_url, contact_enabled, contact_info')
+    .select('id, name, slug, owner_id, created_at, updated_at, description, thumbnail_url, contact_enabled, contact_info')
     .eq('slug', 'community')
     .single()
 
@@ -32,7 +32,7 @@ export async function fetchCommunityProject(): Promise<Project | null> {
 export async function fetchProjectById(projectId: string): Promise<Project | null> {
   const { data, error } = await supabase
     .from('projects')
-    .select('id, name, slug, owner_id, created_at, updated_at, notes_field_label, notes_field_enabled, description, thumbnail_url, contact_enabled, contact_info')
+    .select('id, name, slug, owner_id, created_at, updated_at, description, thumbnail_url, contact_enabled, contact_info')
     .eq('id', projectId)
     .single()
 
@@ -40,11 +40,19 @@ export async function fetchProjectById(projectId: string): Promise<Project | nul
   return data as unknown as Project
 }
 
+export async function deleteProject(projectId: string): Promise<void> {
+  const { error } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+  if (error) throw error
+}
+
 export async function createProject(name: string, userId: string): Promise<Project> {
   const { data, error } = await supabase
     .from('projects')
     .insert({ name, owner_id: userId })
-    .select('id, name, slug, owner_id, created_at, updated_at, notes_field_label, notes_field_enabled, description, thumbnail_url, contact_enabled, contact_info')
+    .select('id, name, slug, owner_id, created_at, updated_at, description, thumbnail_url, contact_enabled, contact_info')
     .single()
 
   if (error) throw error

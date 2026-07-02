@@ -56,8 +56,6 @@ export interface Project {
   owner_id: string
   created_at: string | null
   updated_at: string | null
-  notes_field_label: string | null
-  notes_field_enabled: boolean | null
   description: string | null
   thumbnail_url: string | null
   contact_enabled: boolean

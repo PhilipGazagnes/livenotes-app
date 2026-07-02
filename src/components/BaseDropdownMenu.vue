@@ -1,5 +1,6 @@
 <template>
   <button
+    data-testid="card-menu-btn"
     @click.stop.prevent="toggle"
     @mousedown.stop
     @touchstart.stop
@@ -29,6 +30,7 @@
             class="border-t border-gray-700 my-1"
           />
           <button
+            data-testid="dropdown-item"
             @click="handleClick(item)"
             class="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors"
             :class="item.variant === 'danger' ? 'text-red-400 hover:text-red-300' : item.variant === 'warning' ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-300 hover:text-white'"

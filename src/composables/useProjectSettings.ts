@@ -1,7 +1,11 @@
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
+import { useDrawerStore } from '@/stores/drawer'
+import { deleteProject, fetchCommunityProject } from '@/services/projectService'
+import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 
 export const contactFields = [
@@ -18,15 +22,16 @@ export const contactFields = [
 type ContactKey = typeof contactFields[number]['key']
 
 export function useProjectSettings() {
+  const router = useRouter()
   const authStore = useAuthStore()
   const settingsStore = useSettingsStore()
   const uiStore = useUiStore()
+  const drawerStore = useDrawerStore()
 
   const isSaving = ref(false)
   const projectNameInput = ref('')
   const descriptionInput = ref('')
   const thumbnailInput = ref('')
-  const notesLabelInput = ref('')
   const slugInput = ref('')
   const contactForm = reactive<Record<ContactKey, string>>({
     phone: '', email: '', location: '', website: '',
@@ -40,7 +45,6 @@ export function useProjectSettings() {
     projectNameInput.value = settingsStore.projectName
     descriptionInput.value = settingsStore.projectDescription ?? ''
     thumbnailInput.value = settingsStore.thumbnailUrl ?? ''
-    notesLabelInput.value = settingsStore.notesFieldLabel
     slugInput.value = settingsStore.projectSlug ?? ''
     const ci = settingsStore.contactInfo as Record<string, string> | null
     if (ci) Object.assign(contactForm, ci)
@@ -76,26 +80,6 @@ export function useProjectSettings() {
     } finally { isSaving.value = false }
   }
 
-  async function handleToggleNotesField() {
-    const projectId = authStore.activeProjectId
-    if (!projectId) return
-    isSaving.value = true
-    try {
-      const result = await settingsStore.updateNotesFieldEnabled(projectId, !settingsStore.notesFieldEnabled)
-      if (!result.success) uiStore.showToast(result.error ?? I18N.TOAST.SETTING_UPDATE_FAILED, 'error')
-    } finally { isSaving.value = false }
-  }
-
-  async function handleSaveNotesLabel() {
-    const projectId = authStore.activeProjectId
-    if (!projectId || !notesLabelInput.value.trim()) return
-    isSaving.value = true
-    try {
-      const result = await settingsStore.updateNotesFieldLabel(projectId, notesLabelInput.value)
-      uiStore.showToast(result.success ? I18N.TOAST.LABEL_UPDATED : (result.error ?? I18N.TOAST.SETTING_UPDATE_FAILED), result.success ? 'success' : 'error')
-    } finally { isSaving.value = false }
-  }
-
   async function handleSaveSlug() {
     const projectId = authStore.activeProjectId
     if (!projectId) return
@@ -126,13 +110,41 @@ export function useProjectSettings() {
     } finally { isSaving.value = false }
   }
 
+  async function handleDeleteProject() {
+    const projectId = authStore.activeProjectId
+    const projectName = authStore.activeProject?.name ?? 'this project'
+    if (!projectId) return
+
+    const confirmed = await uiStore.showConfirm(
+      'Delete project',
+      `Delete "${projectName}"? All songs, notes, lists, and tags in this project will be permanently deleted. This cannot be undone.`,
+      'Delete',
+      'Cancel',
+    )
+    if (!confirmed) return
+
+    isSaving.value = true
+    try {
+      const community = await fetchCommunityProject()
+      if (community) await authStore.setActiveProject(community.id)
+      await deleteProject(projectId)
+      drawerStore.popAll()
+      await router.push(ROUTES.LIBRARY)
+      uiStore.showToast('Project deleted', 'success')
+    } catch (error) {
+      uiStore.showToast(error instanceof Error ? error.message : 'Failed to delete project', 'error')
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   return {
     isSaving,
     projectNameInput, handleSaveProjectName,
     descriptionInput, handleSaveDescription,
     thumbnailInput, handleSaveThumbnail,
-    notesLabelInput, handleToggleNotesField, handleSaveNotesLabel,
     slugInput, handleSaveSlug,
     contactForm, handleToggleContact, handleSaveContact,
+    handleDeleteProject,
   }
 }

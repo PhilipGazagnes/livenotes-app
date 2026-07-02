@@ -44,8 +44,6 @@ export const useSettingsStore = defineStore('settings', () => {
   // Project Settings (database)
   const projectName = ref('')
   const projectDescription = ref<string | null>(null)
-  const notesFieldLabel = ref('Notes')
-  const notesFieldEnabled = ref(true)
   const projectSlug = ref<string | null>(null)
   const thumbnailUrl = ref<string | null>(null)
   const contactEnabled = ref(false)
@@ -135,8 +133,6 @@ export const useSettingsStore = defineStore('settings', () => {
       if (data) {
         projectName.value = data.name || ''
         projectDescription.value = data.description ?? null
-        notesFieldLabel.value = data.notes_field_label || 'Notes'
-        notesFieldEnabled.value = data.notes_field_enabled ?? true
         projectSlug.value = data.slug ?? null
         thumbnailUrl.value = data.thumbnail_url ?? null
         contactEnabled.value = data.contact_enabled ?? false
@@ -144,8 +140,6 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     } catch (error) {
       logger.error('Failed to load project settings', error)
-      notesFieldLabel.value = 'Notes'
-      notesFieldEnabled.value = true
     } finally {
       isLoadingProjectSettings.value = false
     }
@@ -176,24 +170,6 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  async function updateNotesFieldLabel(projectId: string, label: string) {
-    try {
-      const trimmedLabel = label.trim()
-      if (trimmedLabel.length === 0 || trimmedLabel.length > 30) {
-        throw new Error('Label must be between 1 and 30 characters')
-      }
-      await updateProjectSettings(projectId, { notes_field_label: trimmedLabel })
-      notesFieldLabel.value = trimmedLabel
-      return { success: true }
-    } catch (error) {
-      logger.error('Failed to update notes field label', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update label',
-      }
-    }
-  }
-
   async function updateProjectSlug(projectId: string, slug: string) {
     try {
       const trimmed = slug.trim()
@@ -205,20 +181,6 @@ export const useSettingsStore = defineStore('settings', () => {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update project slug',
-      }
-    }
-  }
-
-  async function updateNotesFieldEnabled(projectId: string, enabled: boolean) {
-    try {
-      await updateProjectSettings(projectId, { notes_field_enabled: enabled })
-      notesFieldEnabled.value = enabled
-      return { success: true }
-    } catch (error) {
-      logger.error('Failed to update notes field enabled', error)
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update setting',
       }
     }
   }
@@ -289,8 +251,6 @@ export const useSettingsStore = defineStore('settings', () => {
     // Project Settings (database)
     projectName,
     projectDescription,
-    notesFieldLabel,
-    notesFieldEnabled,
     projectSlug,
     thumbnailUrl,
     contactEnabled,
@@ -310,8 +270,6 @@ export const useSettingsStore = defineStore('settings', () => {
     loadProjectSettings,
     updateProjectName,
     updateProjectDescription,
-    updateNotesFieldLabel,
-    updateNotesFieldEnabled,
     updateProjectSlug,
     updateThumbnailUrl,
     updateContactEnabled,

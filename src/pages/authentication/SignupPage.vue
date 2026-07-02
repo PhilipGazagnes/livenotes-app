@@ -3,6 +3,26 @@
     <ion-content>
       <div class="flex items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-md">
+
+          <!-- Email sent confirmation screen -->
+          <div v-if="emailSent" class="text-center space-y-6">
+            <h1 class="text-4xl font-bold text-white">{{ I18N.APP.NAME }}</h1>
+            <div class="p-6 bg-gray-800 border border-gray-700 rounded-xl space-y-4">
+              <div class="text-4xl">📬</div>
+              <h2 class="text-xl font-semibold text-white">Check your inbox</h2>
+              <p class="text-gray-400 text-sm leading-relaxed">
+                We sent a confirmation link to <span class="text-white font-medium">{{ submittedEmail }}</span>.
+                Click the link in the email to activate your account.
+              </p>
+              <p class="text-gray-500 text-xs">Didn't receive it? Check your spam folder.</p>
+            </div>
+            <router-link to="/login" class="block text-blue-400 hover:text-blue-300 text-sm">
+              Back to login
+            </router-link>
+          </div>
+
+          <!-- Signup form -->
+          <template v-else>
           <!-- Header -->
           <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-white mb-2">{{ I18N.APP.NAME }}</h1>
@@ -130,6 +150,7 @@
               </router-link>
             </p>
           </div>
+          </template>
         </div>
       </div>
     </ion-content>
@@ -153,6 +174,8 @@ const uiStore = useUiStore()
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const emailSent = ref(false)
+const submittedEmail = ref('')
 
 const validationError = computed(() => {
   if (password.value && confirmPassword.value && password.value !== confirmPassword.value) {
@@ -171,11 +194,16 @@ async function handleSignup() {
   }
 
   const result = await authStore.signup(email.value, password.value)
-  
+
   if (result.success) {
-    uiStore.showToast(MESSAGES.SUCCESS.SIGNUP, 'success')
-    uiStore.showOperationOverlay('Loading songs...')
-    router.push(ROUTES.LIBRARY)
+    if (result.requiresEmailConfirmation) {
+      submittedEmail.value = email.value
+      emailSent.value = true
+    } else {
+      uiStore.showToast(MESSAGES.SUCCESS.SIGNUP, 'success')
+      uiStore.showOperationOverlay('Loading songs...')
+      router.push(ROUTES.LIBRARY)
+    }
   } else {
     uiStore.showToast(result.error || MESSAGES.ERROR.SIGNUP_FAILED, 'error')
   }

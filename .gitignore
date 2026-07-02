@@ -9,6 +9,7 @@ coverage/
 
 # Production
 dist/
+dev-dist/
 build/
 
 # Environment variables
@@ -63,3 +64,9 @@ ios/
 
 # Local Netlify folder
 .netlify
+
+# Playwright
+e2e/.auth/
+playwright-report/
+test-results/
+.env.test

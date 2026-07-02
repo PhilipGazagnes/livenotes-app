@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="card"
     class="bg-gray-800 rounded-lg border transition-colors flex items-stretch"
     :class="{
       'border-blue-500 bg-gray-700': id && uiStore.selectionMode && isSelected,

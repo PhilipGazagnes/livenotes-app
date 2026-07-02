@@ -2,9 +2,16 @@
   <div class="flex flex-col h-full bg-gray-900 overflow-y-auto">
 
     <!-- User info -->
-    <div class="px-4 pt-5 pb-3">
-      <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Logged in as</p>
-      <p class="text-white font-semibold truncate">{{ authStore.displayName }}</p>
+    <div class="flex items-start justify-between px-4 pt-5 pb-3">
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">Logged in as</p>
+        <p class="text-white font-semibold truncate">{{ authStore.displayName }}</p>
+      </div>
+      <button @click="drawerStore.popAll()" class="p-1 text-gray-500 hover:text-white transition-colors" aria-label="Close">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
 
     <button
@@ -45,6 +52,14 @@
         class="flex items-center gap-3 px-6 py-2.5 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-sm"
       >
         Members
+      </button>
+      <button
+        v-if="!isCommunityActive"
+        @click="openOfflineSync"
+        class="flex items-center justify-between px-6 py-2.5 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-sm w-full"
+      >
+        <span>Sync for offline use</span>
+        <span v-if="lastSyncedAt" class="text-xs text-gray-600">synced {{ formatSyncDate(lastSyncedAt) }}</span>
       </button>
 
       <div class="border-t border-gray-800 mx-4 my-1" />
@@ -127,6 +142,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useDrawerStore } from '@/stores/drawer'
 import { useUiStore } from '@/stores/ui'
@@ -135,13 +151,16 @@ import type { ProjectWithRole } from '@/services/projectService'
 import type { Project } from '@/types/database'
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
+import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
 import ProjectAvatarIcon from './ProjectAvatarIcon.vue'
 import CreateProjectDrawer from './CreateProjectDrawer.vue'
 import ProjectSettingsDrawer from './ProjectSettingsDrawer.vue'
 import MembersDrawer from './MembersDrawer.vue'
 import JoinProjectDrawer from './JoinProjectDrawer.vue'
 import UserSettingsDrawer from './UserSettingsDrawer.vue'
+import OfflineSyncDrawer from './OfflineSyncDrawer.vue'
 
+const router = useRouter()
 const authStore = useAuthStore()
 const drawerStore = useDrawerStore()
 const uiStore = useUiStore()
@@ -152,6 +171,9 @@ const communityProject = ref<Project | null>(null)
 const otherProjects = computed(() =>
   allProjects.value.filter(p => p.id !== authStore.activeProjectId && p.slug !== 'community')
 )
+
+const isCommunityActive = computed(() => authStore.activeProject?.slug === 'community')
+const { lastSyncedAt } = useOfflineSync(authStore.activeProjectId ?? '')
 
 function isActiveProject(id: string) {
   return authStore.activeProjectId === id
@@ -170,6 +192,7 @@ async function switchProject(projectId: string) {
   drawerStore.popAll()
   uiStore.showOperationOverlay('Loading project...')
   await authStore.setActiveProject(projectId)
+  await router.push(ROUTES.LIBRARY)
   uiStore.hideOperationOverlay()
 }
 
@@ -187,6 +210,10 @@ function openCreateProject() {
 
 function openMembers() {
   drawerStore.push(MembersDrawer, {})
+}
+
+function openOfflineSync() {
+  drawerStore.push(OfflineSyncDrawer, {})
 }
 
 function showJoinInfo() {

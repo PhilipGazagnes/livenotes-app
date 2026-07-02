@@ -52,25 +52,6 @@
       </section>
 
       <section>
-        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Notes field</h3>
-        <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 mb-3">
-          <div class="flex items-center justify-between">
-            <div class="flex-1">
-              <p class="text-white text-sm font-medium">Show notes field</p>
-              <p class="text-xs text-gray-400 mt-0.5">Display a freeform text field on each song</p>
-            </div>
-            <button @click="handleToggleNotesField" :disabled="isSaving" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 shrink-0" :class="settingsStore.notesFieldEnabled ? 'bg-blue-600' : 'bg-gray-600'" role="switch" :aria-checked="settingsStore.notesFieldEnabled">
-              <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" :class="settingsStore.notesFieldEnabled ? 'translate-x-6' : 'translate-x-1'" />
-            </button>
-          </div>
-        </div>
-        <div class="flex gap-2">
-          <input v-model="notesLabelInput" type="text" maxlength="30" placeholder="Notes" class="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" @keyup.enter="handleSaveNotesLabel" />
-          <button @click="handleSaveNotesLabel" :disabled="isSaving || !notesLabelInput.trim()" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm">Save</button>
-        </div>
-      </section>
-
-      <section>
         <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">URL slug</h3>
         <p class="text-xs text-gray-400 mb-2">Used for public library URLs. Lowercase letters and hyphens only.</p>
         <div class="flex gap-2">
@@ -100,6 +81,17 @@
         </div>
       </section>
 
+      <section>
+        <h3 class="text-sm font-semibold text-red-500 uppercase tracking-wider mb-3">Danger zone</h3>
+        <button
+          @click="handleDeleteProject"
+          :disabled="isSaving"
+          class="w-full py-2.5 bg-transparent border border-red-700 text-red-400 hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-colors"
+        >
+          Delete project
+        </button>
+      </section>
+
     </div>
   </div>
 </template>
@@ -117,8 +109,8 @@ const {
   projectNameInput, handleSaveProjectName,
   descriptionInput, handleSaveDescription,
   thumbnailInput, handleSaveThumbnail,
-  notesLabelInput, handleToggleNotesField, handleSaveNotesLabel,
   slugInput, handleSaveSlug,
   contactForm, handleToggleContact, handleSaveContact,
+  handleDeleteProject,
 } = useProjectSettings()
 </script>

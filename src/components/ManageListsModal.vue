@@ -12,7 +12,7 @@
       v-if="isOpen"
       class="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none"
     >
-      <div class="bg-gray-800 rounded-lg w-full max-w-md max-h-[80vh] flex flex-col pointer-events-auto">
+      <div data-testid="manage-lists-modal" class="bg-gray-800 rounded-lg w-full max-w-md max-h-[80vh] flex flex-col pointer-events-auto">
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 class="text-xl font-semibold text-white truncate pr-4">
@@ -35,6 +35,7 @@
           </label>
           <div class="flex gap-2">
             <input
+              data-testid="new-list-name-input"
               v-model="newListName"
               type="text"
               maxlength="50"
@@ -44,6 +45,7 @@
               @keyup.enter="handleCreateList"
             />
             <button
+              data-testid="create-list-btn"
               @click="handleCreateList"
               :disabled="isCreatingList"
               class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -70,6 +72,7 @@
             <label
               v-for="list in sortedLists"
               :key="`${list.id}-${selectedListIds.includes(list.id)}`"
+              data-testid="list-checkbox-item"
               class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-700 cursor-pointer transition-colors"
             >
               <input
@@ -92,6 +95,7 @@
             {{ I18N.BUTTONS.CANCEL }}
           </button>
           <button
+            data-testid="manage-lists-save"
             @click="handleSave"
             :disabled="isSaving"
             class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

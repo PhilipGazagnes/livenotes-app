@@ -4,7 +4,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js'
 import type { Profile, Project } from '@/types/database'
 import * as authService from '@/services/authService'
 import { fetchProfile, updateProfile } from '@/services/profileService'
-import { fetchProjectById } from '@/services/projectService'
+import { fetchProjectById, fetchCommunityProject } from '@/services/projectService'
 import { fetchUserRoleInProject } from '@/services/membershipService'
 import { logger } from '@/utils/logger'
 import type { ProjectRole } from '@/types/database'
@@ -67,9 +67,15 @@ export const useAuthStore = defineStore('auth', () => {
           activeProject.value = project
           activeProjectRole.value = role
         } else {
-          localStorage.removeItem(ACTIVE_PROJECT_CACHE_KEY)
-          activeProject.value = null
-          activeProjectRole.value = null
+          // No active project set — fall back to the community project
+          const community = await fetchCommunityProject()
+          if (community) {
+            await setActiveProject(community.id)
+          } else {
+            localStorage.removeItem(ACTIVE_PROJECT_CACHE_KEY)
+            activeProject.value = null
+            activeProjectRole.value = null
+          }
         }
       }
     } catch (err) {
@@ -137,7 +143,7 @@ export const useAuthStore = defineStore('auth', () => {
     return initPromise
   }
 
-  async function signup(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+  async function signup(email: string, password: string): Promise<{ success: boolean; requiresEmailConfirmation?: boolean; error?: string }> {
     isLoading.value = true
     error.value = null
 
@@ -145,10 +151,13 @@ export const useAuthStore = defineStore('auth', () => {
       const { data, error: signupError } = await authService.signUp(email, password)
       if (signupError) throw signupError
 
-      user.value = data.user
+      const requiresEmailConfirmation = data.session === null
+      if (!requiresEmailConfirmation) {
+        user.value = data.user
+      }
       // Profile is auto-created by the DB trigger; no project is set on signup.
 
-      return { success: true }
+      return { success: true, requiresEmailConfirmation }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Signup failed'
       return { success: false, error: error.value }

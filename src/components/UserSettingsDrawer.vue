@@ -78,48 +78,6 @@
       </div>
     </section>
 
-    <!-- Offline -->
-    <section>
-      <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Offline</h3>
-      <div class="space-y-2">
-        <div class="bg-gray-800 rounded-lg p-3 border border-gray-700">
-          <div class="flex items-center justify-between">
-            <div class="flex-1">
-              <p class="text-white text-sm font-medium">{{ I18N.SETTINGS.FORCE_OFFLINE }}</p>
-              <p class="text-xs text-gray-400 mt-0.5">{{ I18N.SETTINGS.FORCE_OFFLINE_DESC }}</p>
-            </div>
-            <button @click="settingsStore.toggleForceOfflineMode()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0" :class="settingsStore.forceOfflineMode ? 'bg-orange-500' : 'bg-gray-600'" role="switch" :aria-checked="settingsStore.forceOfflineMode">
-              <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" :class="settingsStore.forceOfflineMode ? 'translate-x-6' : 'translate-x-1'" />
-            </button>
-          </div>
-        </div>
-
-        <div class="bg-gray-800 rounded-lg p-3 border border-gray-700">
-          <p class="text-white text-sm font-medium mb-1">{{ I18N.SETTINGS.SYNC_FOR_OFFLINE }}</p>
-          <div v-if="isSyncing && progress" class="mb-2">
-            <div class="flex items-center justify-between text-xs text-gray-400 mb-1">
-              <span>{{ progress.step }}</span>
-              <span v-if="progress.total > 1">{{ progress.current }} / {{ progress.total }}</span>
-            </div>
-            <div class="w-full bg-gray-700 rounded-full h-1.5">
-              <div class="bg-blue-500 h-1.5 rounded-full transition-all" :style="{ width: progress.total > 1 ? `${(progress.current / progress.total) * 100}%` : '100%' }" />
-            </div>
-          </div>
-          <div class="flex items-center justify-between">
-            <p class="text-xs text-gray-500">{{ lastSyncedAt ? I18N.SETTINGS.LAST_SYNCED(formatSyncDate(lastSyncedAt)) : I18N.SETTINGS.NEVER_SYNCED }}</p>
-            <button @click="handleWarmUp" :disabled="isSyncing || !isOnline" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5">
-              <svg v-if="isSyncing" class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-              {{ isSyncing ? I18N.LOADING.SYNCING : I18N.BUTTONS.SYNC_NOW }}
-            </button>
-          </div>
-          <p v-if="!isOnline" class="text-xs text-orange-400 mt-1">{{ I18N.VALIDATION.SYNC_REQUIRES_ONLINE }}</p>
-        </div>
-      </div>
-    </section>
-
     <!-- Control -->
     <section>
       <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Control</h3>
@@ -165,8 +123,6 @@ import { useDrawerStore } from '@/stores/drawer'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
 import { useUiStore } from '@/stores/ui'
-import { useOnlineStatus } from '@/composables/useOnlineStatus'
-import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
 import { useUserAccountSettings } from '@/composables/useUserAccountSettings'
 import { I18N } from '@/constants/i18n'
 
@@ -174,9 +130,6 @@ const drawerStore = useDrawerStore()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 const uiStore = useUiStore()
-const { isOnline } = useOnlineStatus()
-const { isSyncing, progress, lastSyncedAt, warmUp } = useOfflineSync()
-
 const {
   emailInput, isSavingEmail, emailError, emailSent, handleUpdateEmail,
   displayNameInput, isSavingName, handleSaveDisplayName,
@@ -194,15 +147,6 @@ const displayToggles = [
   { key: 'artists', label: I18N.SETTINGS.SHOW_ARTISTS, desc: I18N.SETTINGS.SHOW_ARTISTS_DESC, value: () => settingsStore.showArtistsInLists, toggle: () => settingsStore.toggleShowArtistsInLists() },
   { key: 'lyrics', label: I18N.SETTINGS.SHOW_LYRICS_ON_TAP, desc: I18N.SETTINGS.SHOW_LYRICS_ON_TAP_DESC, value: () => settingsStore.songClickShowsLyrics, toggle: () => { settingsStore.songClickShowsLyrics = !settingsStore.songClickShowsLyrics } },
 ]
-
-async function handleWarmUp() {
-  try {
-    await warmUp()
-    uiStore.showToast(I18N.TOAST.SYNCED_OFFLINE, 'success')
-  } catch {
-    uiStore.showToast(I18N.TOAST.SYNC_FAILED, 'error')
-  }
-}
 
 function handleSaveScrollSettings() {
   settingsStore.saveScrollControlSettings(localScrollChar.value, localScrollAmount.value, localScrollDuration.value)

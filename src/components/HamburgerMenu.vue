@@ -46,7 +46,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
                 </svg>
-                <span class="font-medium">My Library</span>
+                <span class="font-medium">{{ I18N.PAGE_TITLES.MY_LIBRARY }}</span>
               </router-link>
 
               <router-link
@@ -74,6 +74,7 @@
               <router-link
                 :to="ROUTES.LISTS"
                 @click="handleNavigate(ROUTES.LISTS, 'Loading lists...')"
+                data-testid="nav-lists"
                 class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,6 +95,30 @@
                 <span class="font-medium">Public Libraries</span>
               </router-link>
 
+              <!-- Force offline mode -->
+              <div class="border-t border-gray-800 mx-0 mt-2 pt-2">
+                <button
+                  @click="settingsStore.toggleForceOfflineMode()"
+                  class="flex items-center justify-between w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728M15.536 8.464a5 5 0 010 7.072M12 12h.01M8.464 15.536a5 5 0 010-7.072M5.636 18.364a9 9 0 010-12.728"/>
+                    </svg>
+                    <span class="font-medium">Force offline</span>
+                  </div>
+                  <div
+                    class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0"
+                    :class="settingsStore.forceOfflineMode ? 'bg-orange-500' : 'bg-gray-600'"
+                  >
+                    <span
+                      class="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform"
+                      :class="settingsStore.forceOfflineMode ? 'translate-x-4' : 'translate-x-1'"
+                    />
+                  </div>
+                </button>
+              </div>
+
             </nav>
           </div>
         </Transition>
@@ -106,12 +131,14 @@
 import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useSettingsStore } from '@/stores/settings'
 import { ROUTES } from '@/constants/routes'
 import { I18N } from '@/constants/i18n'
 
 const route = useRoute()
 const uiStore = useUiStore()
 const authStore = useAuthStore()
+const settingsStore = useSettingsStore()
 
 function closeMenu() {
   uiStore.closeHamburgerMenu()

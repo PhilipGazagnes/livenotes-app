@@ -1,0 +1,215 @@
+- Authentication
+  - Signup with email/password
+    - Redirected to info page "please confirm email"
+      - link "return to login page"
+    - Email is sent to user
+      - click on link : redirects to authenticated page with the community project activated (TODO : welcome page)
+  - Login with email/password
+  - Logout
+  - Redirect to login when unauthenticated
+- Authenticated
+  - Header
+    - Has main title active_project - page_name
+    - "offline" badge under the hamburger button when offline mode activated or truely no network
+    - Hamburger menu (on the left) : this menu is scoped to the project
+      - Link to Library
+      - Link to Tags
+      - Link to Artists
+      - Link to Lists
+      - Link to Public libraries (only if user is admin on the project)
+      - Force offline mode
+        - The synced content must be readable with no network request
+    - Avatar menu (on the right) : this menu is scoped to the user
+      - close the menu
+      - Displays user name
+      - User settings
+        - User settings
+          - Edit user name
+          - Change email
+            - sends an email to both old and new email
+            - need to click on both confirmation links
+          - Edit password
+          - Delete account (not yet implemented)
+            - Only possible once the user is not admin of any projects
+            - Confirmation step
+        - User preferences
+          - Lists
+            - Show tag tags on song cards
+            - Show list tags on song cards
+            - Show artists on song cards
+          - Default lyrics size
+          - Only lyrics mode : when a song is clicked, show the lyrics drawer directly, without showing the song notes drawer previousely
+          - Controls
+            - Scroll behavior (handy to work in combination with bluetooth footswitch)
+      - Active project
+        - Thumbnail and name of the project
+        - Project settings (only admins can see this)
+          - Edit name
+          - Edit description
+          - Edit thumbnail (URL, no file hosting yet)
+          - Edit url slug basis for public library (livenotes.tv/url_basis/name_of_the_public_library)
+          - Show contact info on public libraries (displays button + drawer, download vcard button)
+          - Edit contact info (phone, email, location, website, facebook, intagram, x, youtube)
+          - Delete project
+        - Members (only admins can see this)
+          - Edit role of each user (administrator, editor, reader)
+          - Revoke membership
+          - Invite user
+            - Chose role and generate key
+            - Delete key
+          - See active invitation keys
+            - expire after 1 week
+            - if a key is used, it disapears from the list
+        - Sync for offline (+ last synced information)
+          - opens drawer
+          - last sync info
+          - sync button
+      - Available projects
+        - Clicking on a project activates it
+        - navigates to the "library" page of the project
+      - Community project
+        - Each user is automatically member of this project as "reader"
+      - Create a project
+        - Choose project name
+        - once created, navigates to empty library page
+      - Join a project
+        - Enter invitation key
+        - If invitation succeeds, navigates to the "library" page of the targeted project
+      - Log out
+  - Library page <---------------------------------------------
+    - View all songs of the project
+      - Cards contain at least the song name and the artist
+      - Optional : tags and lists
+    - Filter songs by title / artist (text fiter)
+    - Filter songs by tags (and / or)
+    - Create a song (just creates a container that can contain notes)
+      - User sees suggestions for song and artist (if existant in app, user should use them)
+    - Remove song from library
+    - Open song drawer
+      - See dedicated song drawer section below
+    - Card menu opens dropdown
+      - Manage tags (affected to song)
+        - Opens a drawer with tags displayed in a checkbox list
+        - Can create a new tag
+        - User checks / unchecks tags and validates
+      - Manage lists (in which song is referenced)
+        - Opens a drawer with lists displayed in a checkbox list
+        - Can create a new list
+        - User can check / uncheck lists 
+      - Remove song from library
+        - Requires confirmation
+    - Bulk actions
+      - Click on the button shows a checkbox on each song card
+      - Clicking the song card checks / unchecks the checkbox
+      - User chooses the songs on which to apply the same action
+      - User can select all / deselect all
+      - Once the songs are selected, possible actions are
+        - Remove songs from library
+          - Requires confirmation
+        - Add to lists (in which songs are referenced)
+          - Opens a drawer with lists displayed in a checkbox list
+          - Can create a new list
+          - User can check / uncheck lists
+        - Assign tags (affected to songs)
+          - Opens a drawer with tags displayed in a checkbox list
+          - Can create a new tag
+          - User checks / unchecks tags and validates
+        - Remove tags (affected to songs)
+          - Opens a drawer with tags displayed in a checkbox list
+          - User checks / unchecks tags and validates
+  - Tags page
+    - See all tags in cards
+    - See the number of songs per tag
+    - filter tags by name (text input)
+    - bulk actions
+      - delete tags
+        - requires confirmation
+    - Add a new tag
+      - choose tag name and validate
+    - card dropdown menu
+      - rename tag
+      - delete tag
+    - click on tag shows songs with the tag
+      - click on song opens song drawer
+  - Artists page
+    - See the artists associated to songs in the library
+    - See the number of songs per artist
+    - filter artists by name (text input)
+    - bulk actions
+      - delete artists (and associated songs)
+        - requires confirmation
+    - card dropdown menu
+      - rename artist
+      - delete artist
+    - Add a new artist
+  - Lists page
+    - See the lists and the number of songs in them
+    - filter the lists (text input)
+    - bulk actions
+      - delete lists (requires confirmation)
+    - create a new list (enter list lane and validate)
+    - card dropdown menu
+      - rename list
+      - delete list (requires confirmation)
+    - click on list : navigate to list page
+  - List page
+    - See songs in the list (ordered) and section titles
+    - filter songs (text input)
+    - bulk actions
+      - Remove from list
+      - Remove from library
+      - Add to lists
+        - drawer with other lists checkboxes
+        - it's possible to create a new list from here
+      - assign tags
+        - drawer with available tags
+      - remove tags
+        - drawer with available tags
+      - add a section title
+        - choose name
+      - cards dropdown menu
+        - song cards
+          - remove from list
+          - manage tags
+          - manage lists
+          - Remove from library
+        - section title
+          - rename
+          - delete
+      - drag n drop cards vertically to modify order
+      - click on song card opens song drawer
+  - Public libraries page
+    - see public libraries (name, url, associated tag)
+    - filter public libraries (text input)
+    - bulk actions
+      - Delete
+    - Add a new public library
+    - card dropdown menu
+      - edit public library
+      - delete
+    - click on card : edit drawer
+  - Song drawer
+    - View notes
+      - Songcode
+        - edit
+        - delete
+        - push to orther project
+          - list of projects appear (to which th user is enroled)
+          - click project : note is copied to project
+      - Lyrics (view from songcode)
+      - Plain text
+        - edit
+        - delete
+        - push to orther project
+          - list of projects appear (to which th user is enroled)
+          - click project : note is copied to project
+      - Looper
+        - edit
+        - delete
+        - push to orther project
+          - list of projects appear (to which th user is enroled)
+          - click project : note is copied to project
+      - add note
+        - looper
+        - plain text
+        - songcode

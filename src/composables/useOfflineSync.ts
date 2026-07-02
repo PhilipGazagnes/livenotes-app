@@ -1,12 +1,10 @@
-import { ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { ref } from 'vue'
 import { fetchSongs } from '@/services/songService'
 import { fetchLists, fetchListWithItems, fetchListItemCount } from '@/services/listService'
 import { fetchTags } from '@/services/tagService'
 import { fetchArtistsWithCount } from '@/services/artistService'
 import { fetchLibrarySongs, fetchLibrarySongWithDetails } from '@/services/libraryService'
 
-const STORAGE_KEY = 'livenotes-last-synced'
 const CONCURRENCY = 3
 
 export interface SyncProgress {
@@ -26,55 +24,56 @@ export function formatSyncDate(date: Date): string {
   return date.toLocaleDateString()
 }
 
-export function useOfflineSync() {
+// Module-level cache — shared across components so ProjectMenuDrawer and
+// OfflineSyncDrawer see the same lastSyncedAt ref for a given project.
+const lastSyncedCache: Record<string, ReturnType<typeof ref<Date | null>>> = {}
+
+function getLastSyncedRef(projectId: string) {
+  if (!lastSyncedCache[projectId]) {
+    const stored = localStorage.getItem(`livenotes-last-synced-${projectId}`)
+    lastSyncedCache[projectId] = ref<Date | null>(stored ? new Date(stored) : null)
+  }
+  return lastSyncedCache[projectId]
+}
+
+export function useOfflineSync(projectId: string) {
   const isSyncing = ref(false)
   const progress = ref<SyncProgress | null>(null)
-  const lastSyncedAt = ref<Date | null>(null)
-
-  function loadPersistedSyncDate(): void {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) lastSyncedAt.value = new Date(stored)
-  }
-
-  onMounted(loadPersistedSyncDate)
+  const lastSyncedAt = getLastSyncedRef(projectId)
 
   async function warmUp() {
     if (isSyncing.value) return
     isSyncing.value = true
 
     try {
-      const authStore = useAuthStore()
-      const projectId = authStore.activeProjectId
-      if (!projectId) throw new Error('No project found')
-
-      // Library songs — the Library page main query (already includes notes inline)
       progress.value = { step: 'Library', current: 0, total: 1 }
       const librarySongs = await fetchLibrarySongs(projectId)
 
-      // Per-song detail — what SongNotesDrawer fetches when a card is tapped
       for (let i = 0; i < librarySongs.length; i += CONCURRENCY) {
-        progress.value = { step: 'Song details', current: Math.min(i + CONCURRENCY, librarySongs.length), total: librarySongs.length }
+        progress.value = {
+          step: 'Song details',
+          current: Math.min(i + CONCURRENCY, librarySongs.length),
+          total: librarySongs.length,
+        }
         await Promise.all(
-          librarySongs.slice(i, i + CONCURRENCY).map(ls => fetchLibrarySongWithDetails(ls.id).catch(() => null))
+          librarySongs.slice(i, i + CONCURRENCY).map(ls =>
+            fetchLibrarySongWithDetails(ls.id).catch(() => null)
+          )
         )
       }
 
-      // V1 songs (Songs page)
       progress.value = { step: 'Songs', current: 0, total: 1 }
       await fetchSongs(projectId).catch(() => null)
 
-      // Tags and artists
       progress.value = { step: 'Tags & Artists', current: 0, total: 1 }
       await Promise.all([
         fetchTags(projectId).catch(() => null),
         fetchArtistsWithCount(projectId).catch(() => null),
       ])
 
-      // Lists metadata
       progress.value = { step: 'Setlists', current: 0, total: 1 }
       const lists = await fetchLists(projectId)
 
-      // Per-list: full detail (items + songs) + song count (used by ListCard)
       for (let i = 0; i < lists.length; i++) {
         progress.value = { step: 'Setlist details', current: i + 1, total: lists.length }
         await Promise.all([
@@ -83,8 +82,9 @@ export function useOfflineSync() {
         ])
       }
 
-      lastSyncedAt.value = new Date()
-      localStorage.setItem(STORAGE_KEY, lastSyncedAt.value.toISOString())
+      const now = new Date()
+      lastSyncedAt.value = now
+      localStorage.setItem(`livenotes-last-synced-${projectId}`, now.toISOString())
     } finally {
       isSyncing.value = false
       progress.value = null

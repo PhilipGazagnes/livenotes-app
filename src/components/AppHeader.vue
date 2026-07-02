@@ -5,6 +5,7 @@
       <div class="relative -ml-2">
         <button
           @click="openMenu"
+          data-testid="hamburger-menu-btn"
           class="p-2 text-gray-300 hover:text-white transition-colors"
           :aria-label="I18N.ARIA.MENU"
         >
@@ -16,7 +17,12 @@
       </div>
 
       <!-- Center: Title -->
-      <h1 class="text-xl font-bold text-white">{{ title }}</h1>
+      <div class="flex flex-col items-center leading-tight truncate px-2">
+        <span v-if="authStore.activeProject" class="text-[10px] font-medium text-indigo-400 uppercase tracking-wider truncate">
+          {{ authStore.activeProject.name }}
+        </span>
+        <span class="text-base font-bold text-white truncate">{{ props.title }}</span>
+      </div>
 
       <!-- Right: Action slot + Project avatar -->
       <div class="flex items-center gap-1 -mr-1">
@@ -47,7 +53,7 @@ import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import ProjectAvatarIcon from './ProjectAvatarIcon.vue'
 import ProjectMenuDrawer from './ProjectMenuDrawer.vue'
 
-defineProps<{
+const props = defineProps<{
   title: string
 }>()
 
@@ -59,6 +65,7 @@ const { isOnline } = useOnlineStatus()
 const avatarName = computed(() =>
   authStore.activeProject?.name ?? authStore.displayName ?? '?'
 )
+
 
 function openMenu() {
   uiStore.openHamburgerMenu()

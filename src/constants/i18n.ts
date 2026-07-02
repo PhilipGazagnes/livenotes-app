@@ -84,7 +84,7 @@ export const I18N = {
     ARTISTS: 'Artists',
     PUBLIC_LIBRARIES: 'Public Libraries',
     PROJECT_SETTINGS: 'Project Settings',
-    MY_LIBRARY: 'My Library',
+    MY_LIBRARY: 'Library',
     SONGS_WITH_TAG: (tagName: string) => `Songs with tag "${tagName}"`,
     SONGS_BY_ARTIST: (artistName: string) => `Songs by ${artistName}`,
   },
