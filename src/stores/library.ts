@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import Fuse from 'fuse.js'
-import type { FuseResultMatch } from 'fuse.js'
 import type { LibrarySong, LibrarySongWithDetails, Tag } from '@/types/database'
 import { useAuthStore } from './auth'
+import { useFuseSearch } from '@/composables/useFuseSearch'
 import {
   fetchLibrarySongs,
   fetchLibrarySongWithDetails,
@@ -12,17 +11,14 @@ import {
   updateLibrarySong as serviceUpdateLibrarySong,
 } from '@/services/libraryService'
 
-const FUSE_OPTIONS = {
-  keys: [
-    { name: 'custom_title', weight: 2 },
-    { name: 'song.title', weight: 2 },
-    { name: 'song.artists.name', weight: 1 },
-  ],
-  includeMatches: true,
-  threshold: 0.3,
-  minMatchCharLength: 2,
-  ignoreLocation: true,
-  ignoreDiacritics: true,
+function getTitle(librarySong: LibrarySongWithDetails): string {
+  return librarySong.custom_title || librarySong.song.title
+}
+
+function getSubtitle(librarySong: LibrarySongWithDetails): string | undefined {
+  const artists = librarySong.song?.artists
+  if (!artists?.length) return undefined
+  return artists.map(a => a.name).join(', ')
 }
 
 /**
@@ -44,23 +40,11 @@ export const useLibraryStore = defineStore('library', () => {
   // Getters
   const currentProjectId = computed(() => authStore.activeProjectId || '')
 
-  const fuseInstance = computed(() => new Fuse(librarySongs.value, FUSE_OPTIONS))
-
-  const searchResult = computed(() => {
-    if (!searchQuery.value.trim()) return { songs: librarySongs.value, matchMap: new Map<string, FuseResultMatch[]>() }
-    const results = fuseInstance.value.search(searchQuery.value)
-    const matchMap = new Map<string, FuseResultMatch[]>()
-    const songs = results.map(r => {
-      matchMap.set(r.item.id, (r.matches as FuseResultMatch[]) ?? [])
-      return r.item
-    })
-    return { songs, matchMap }
-  })
-
-  const matchMap = computed(() => searchResult.value.matchMap)
+  const { filteredItems, getTitleSegments, getSubtitleSegments } =
+    useFuseSearch(librarySongs, searchQuery, getTitle, getSubtitle)
 
   const filteredLibrarySongs = computed(() => {
-    let result = searchResult.value.songs
+    let result = filteredItems.value
 
     if (selectedTagIds.value.length > 0) {
       const check = tagFilterMode.value === 'or' ? 'some' : 'every'
@@ -180,7 +164,10 @@ export const useLibraryStore = defineStore('library', () => {
     selectedTagIds,
     tagFilterMode,
     currentProjectId,
-    matchMap,
+    getTitle,
+    getSubtitle,
+    getTitleSegments,
+    getSubtitleSegments,
     filteredLibrarySongs,
     librarySongCount,
     filteredSongCount,

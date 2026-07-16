@@ -3,13 +3,20 @@ import type { ComputedRef, Ref } from 'vue'
 import type { IonContent } from '@ionic/vue'
 import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
-import { foldAccents } from '@/utils/validation'
+import { useFuseSearch } from '@/composables/useFuseSearch'
 import { I18N } from '@/constants/i18n'
-import type { ListWithItems } from '@/types/database'
+import type { ListWithItems, ListItem, SongWithTags } from '@/types/database'
+
+type SongItem = ListItem & { song: SongWithTags }
+
+function getTitle(item: SongItem): string {
+  return item.song?.title || ''
+}
 
 export function useListReorder(
   currentList: ComputedRef<ListWithItems | null>,
   searchQuery: Ref<string>,
+  getSubtitle: (item: SongItem) => string | undefined,
 ) {
   const listsStore = useListsStore()
   const uiStore = useUiStore()
@@ -28,26 +35,20 @@ export function useListReorder(
     }
   }
 
+  const allSongItems = computed(
+    () => (currentList.value?.items ?? []).filter((item): item is SongItem => item.type === 'song' && !!item.song)
+  )
+
+  const { filteredItems: filteredSongItems, getTitleSegments, getSubtitleSegments } =
+    useFuseSearch(allSongItems, searchQuery, getTitle, getSubtitle)
+
   const displayedItems = computed({
     get() {
       const all = currentList.value?.items ?? []
-      let songs = all.filter(item => item.type === 'song')
-
-      if (searchQuery.value.trim()) {
-        const query = foldAccents(searchQuery.value)
-        songs = songs.filter(item => {
-          if (!item.song) return false
-          const song = item.song
-          return foldAccents(song.title).includes(query) ||
-            (song.artist && foldAccents(song.artist).includes(query)) ||
-            song.livenotes_poc_id?.toLowerCase().includes(query) ||
-            (song.notes && foldAccents(song.notes).includes(query))
-        })
-      }
-
+      const songs = filteredSongItems.value
       const result: typeof all = []
       for (const item of all) {
-        if (item.type === 'title' || songs.includes(item)) result.push(item)
+        if (item.type === 'title' || songs.includes(item as SongItem)) result.push(item)
       }
       return result
     },
@@ -68,5 +69,13 @@ export function useListReorder(
     }
   }
 
-  return { ionContentRef, scrollElement, initScrollElement, displayedItems, handleDragEnd }
+  return {
+    ionContentRef,
+    scrollElement,
+    initScrollElement,
+    displayedItems,
+    handleDragEnd,
+    getTitleSegments,
+    getSubtitleSegments,
+  }
 }

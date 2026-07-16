@@ -31,8 +31,8 @@
             :key="lib.id"
             :id="lib.id"
             :title="lib.name"
+            :title-segments="getTitleSegments(lib)"
             :text="settingsStore.projectSlug ? `/${settingsStore.projectSlug}/${lib.slug}` : undefined"
-            :highlight-text="searchQuery"
             :tags="lib.tags"
             :dropdown-items="getLibraryMenuItems(lib)"
           />
@@ -168,7 +168,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useDrawerStore } from '@/stores/drawer'
 import { slugify } from '@/utils/slugify'
-import { foldAccents } from '@/utils/validation'
+import { useFuseSearch } from '@/composables/useFuseSearch'
 import PublicLibraryFormDrawer from '@/components/PublicLibraryFormDrawer.vue'
 import type { PublicLibraryWithTags } from '@/types/database'
 
@@ -181,11 +181,8 @@ const drawerStore = useDrawerStore()
 
 const searchQuery = ref('')
 
-const filteredLibraries = computed(() => {
-  const q = foldAccents(searchQuery.value.trim())
-  if (!q) return store.libraries
-  return store.libraries.filter(l => foldAccents(l.name).includes(q))
-})
+const { filteredItems: filteredLibraries, getTitleSegments } =
+  useFuseSearch(computed(() => store.libraries), searchQuery, l => l.name, () => undefined)
 
 
 function getLibraryMenuItems(lib: PublicLibraryWithTags) {

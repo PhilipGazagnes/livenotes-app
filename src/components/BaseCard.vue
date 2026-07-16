@@ -105,7 +105,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TextSegment } from '@/utils/highlight'
-import { getSegmentsFromQuery } from '@/utils/highlight'
 import type { DropdownMenuItem } from '@/components/BaseDropdownMenu.vue'
 import BaseDropdownMenu from '@/components/BaseDropdownMenu.vue'
 import { useUiStore } from '@/stores/ui'
@@ -116,7 +115,6 @@ const props = defineProps<{
   titleSegments?: TextSegment[]
   text?: string
   textSegments?: TextSegment[]
-  highlightText?: string
   tags?: { id: string; name: string }[]
   lists?: { id: string; name: string }[]
   dropdownItems?: DropdownMenuItem[]
@@ -125,15 +123,11 @@ const props = defineProps<{
 }>()
 
 const effectiveTitleSegments = computed<TextSegment[] | undefined>(() => {
-  if (props.titleSegments?.length) return props.titleSegments
-  if (props.highlightText && props.title) return getSegmentsFromQuery(props.title, props.highlightText)
-  return undefined
+  return props.titleSegments?.length ? props.titleSegments : undefined
 })
 
 const effectiveTextSegments = computed<TextSegment[] | undefined>(() => {
-  if (props.textSegments?.length) return props.textSegments
-  if (props.highlightText && props.text) return getSegmentsFromQuery(props.text, props.highlightText)
-  return undefined
+  return props.textSegments?.length ? props.textSegments : undefined
 })
 
 const emit = defineEmits<{

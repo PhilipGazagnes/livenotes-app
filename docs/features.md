@@ -76,7 +76,7 @@
         - Enter invitation key
         - If invitation succeeds, navigates to the "library" page of the targeted project
       - Log out
-  - Library page <---------------------------------------------
+  - Library page
     - View all songs of the project
       - Cards contain at least the song name and the artist
       - Optional : tags and lists

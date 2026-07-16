@@ -26,8 +26,8 @@
           :key="tag.id"
           :id="tag.id"
           :title="tag.name"
+          :title-segments="getTitleSegments(tag)"
           :text="getTagText(tag)"
-          :highlight-text="searchQuery"
           :dropdown-items="getTagDropdownItems(tag)"
           @click="navigateToTag(tag)"
         />
@@ -83,8 +83,8 @@ import { I18N } from '@/constants/i18n'
 import { ROUTES } from '@/constants/routes'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
+import { useFuseSearch } from '@/composables/useFuseSearch'
 import { fetchTagSongCounts } from '@/services/tagService'
-import { foldAccents } from '@/utils/validation'
 import type { Tag } from '@/types/database'
 
 const router = useRouter()
@@ -95,11 +95,8 @@ const drawerStore = useDrawerStore()
 
 const searchQuery = ref('')
 
-const filteredTags = computed(() => {
-  const q = foldAccents(searchQuery.value.trim())
-  if (!q) return tagsStore.tagsByName
-  return tagsStore.tagsByName.filter(t => foldAccents(t.name).includes(q))
-})
+const { filteredItems: filteredTags, getTitleSegments } =
+  useFuseSearch(computed(() => tagsStore.tagsByName), searchQuery, t => t.name, () => undefined)
 
 const tagSongCounts = ref<Map<string, number>>(new Map())
 

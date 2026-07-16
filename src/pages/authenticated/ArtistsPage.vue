@@ -27,8 +27,8 @@
             :key="artist.id"
             :id="artist.id"
             :title="artist.name"
+            :title-segments="getTitleSegments(artist)"
             :text="getArtistText(artist)"
-            :highlight-text="searchQuery"
             :dropdown-items="getArtistDropdownItems(artist)"
             @click="navigateToArtist(artist)"
           />
@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
 import AppHeader from '@/components/AppHeader.vue'
@@ -106,8 +106,8 @@ import { I18N } from '@/constants/i18n'
 import { MESSAGES } from '@/constants/messages'
 import { useCRUD } from '@/composables/useCRUD'
 import { usePageLoad } from '@/composables/usePageLoad'
+import { useFuseSearch } from '@/composables/useFuseSearch'
 import { bulkDeleteArtistSongs } from '@/services/artistService'
-import { foldAccents } from '@/utils/validation'
 import type { ArtistWithCount } from '@/types/database'
 
 const router = useRouter()
@@ -178,16 +178,8 @@ function navigateToArtist(artist: ArtistWithCount) {
 const artistsWithCount = ref<ArtistWithCount[]>([])
 const searchQuery = ref('')
 
-const filteredArtists = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return artistsWithCount.value
-  }
-
-  const query = foldAccents(searchQuery.value)
-  return artistsWithCount.value.filter(artist =>
-    foldAccents(artist.name).includes(query)
-  )
-})
+const { filteredItems: filteredArtists, getTitleSegments } =
+  useFuseSearch(artistsWithCount, searchQuery, a => a.name, () => undefined)
 
 const {
   showCreateModal,

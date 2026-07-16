@@ -65,9 +65,9 @@
               v-for="song in displayedSongs"
               :key="song.id"
               :title="song.custom_title || song.song?.title || ''"
-              :title-segments="getCardTitleSegments(song)"
-              :text="getCardText(song)"
-              :text-segments="getCardTextSegments(song)"
+              :title-segments="getTitleSegments(song)"
+              :text="getSubtitle(song)"
+              :text-segments="getSubtitleSegments(song)"
               @click="openDrawer(song)"
             />
           </div>
@@ -112,8 +112,6 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonPage, IonContent } from '@ionic/vue'
-import Fuse from 'fuse.js'
-import type { FuseResultMatch } from 'fuse.js'
 import BaseLoadingSpinner from '@/components/BaseLoadingSpinner.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import PublicLyricDrawer from '@/components/PublicLyricDrawer.vue'
@@ -122,8 +120,7 @@ import ProjectContactDrawer from '@/components/ProjectContactDrawer.vue'
 import { useDrawerStore } from '@/stores/drawer'
 import { fetchPublicLibraryBySlug, fetchPublicLibrarySongs } from '@/services/publicLibraryService'
 import { fetchProjectPublicInfo } from '@/services/settingsService'
-import { getSegments } from '@/utils/highlight'
-import type { TextSegment } from '@/utils/highlight'
+import { useFuseSearch } from '@/composables/useFuseSearch'
 import type { LibrarySongWithDetails, PublicLibraryWithTags, ContactInfo } from '@/types/database'
 import { I18N } from '@/constants/i18n'
 
@@ -163,71 +160,26 @@ onMounted(async () => {
   isLoading.value = false
 })
 
-const fuseInstance = computed(() => new Fuse(songs.value, {
-  keys: [
-    { name: 'custom_title', weight: 2 },
-    { name: 'song.title', weight: 2 },
-    { name: 'song.artists.name', weight: 1 },
-  ],
-  includeMatches: true,
-  threshold: 0.3,
-  minMatchCharLength: 2,
-  ignoreLocation: true,
-}))
-
-const searchResult = computed(() => {
-  if (!searchQuery.value.trim()) return { songs: songs.value, matchMap: new Map<string, FuseResultMatch[]>() }
-  const results = fuseInstance.value.search(searchQuery.value)
-  const matchMap = new Map<string, FuseResultMatch[]>()
-  const filtered = results.map(r => {
-    matchMap.set(r.item.id, (r.matches as FuseResultMatch[]) ?? [])
-    return r.item
-  })
-  return { songs: filtered, matchMap }
-})
-
-const matchMap = computed(() => searchResult.value.matchMap)
-
-const displayedSongs = computed(() =>
-  [...searchResult.value.songs].sort((a, b) => {
-    const titleA = (a.custom_title || a.song.title).toLowerCase()
-    const titleB = (b.custom_title || b.song.title).toLowerCase()
-    return titleA.localeCompare(titleB)
-  })
-)
-
-function getCardTitleSegments(song: LibrarySongWithDetails): TextSegment[] | undefined {
-  const displayTitle = song.custom_title || song.song?.title || ''
-  const titleKey = song.custom_title ? 'custom_title' : 'song.title'
-  const matches = matchMap.value.get(song.id)
-  const match = matches?.find((m: FuseResultMatch) => m.key === titleKey)
-  return match ? getSegments(displayTitle, match.indices as ReadonlyArray<[number, number]>) : undefined
+function getTitle(song: LibrarySongWithDetails): string {
+  return song.custom_title || song.song.title
 }
 
-function getCardText(song: LibrarySongWithDetails): string | undefined {
+function getSubtitle(song: LibrarySongWithDetails): string | undefined {
   const artists = song.song?.artists
   if (!artists?.length) return undefined
   return artists.map(a => a.name).join(', ')
 }
 
-function getCardTextSegments(song: LibrarySongWithDetails): TextSegment[] | undefined {
-  const artists = song.song?.artists
-  if (!artists?.length) return undefined
-  const matches = matchMap.value.get(song.id)
-  if (!matches) return undefined
-  const segments: TextSegment[] = []
-  for (let i = 0; i < artists.length; i++) {
-    const artist = artists[i]
-    const match = matches.find((m: FuseResultMatch) => m.key === 'song.artists.name' && m.value === artist.name)
-    if (match) {
-      segments.push(...getSegments(artist.name, match.indices as ReadonlyArray<[number, number]>))
-    } else {
-      segments.push({ text: artist.name, highlighted: false })
-    }
-    if (i < artists.length - 1) segments.push({ text: ', ', highlighted: false })
-  }
-  return segments
-}
+const { filteredItems, getTitleSegments, getSubtitleSegments } =
+  useFuseSearch(songs, searchQuery, getTitle, getSubtitle)
+
+const displayedSongs = computed(() =>
+  [...filteredItems.value].sort((a, b) => {
+    const titleA = (a.custom_title || a.song.title).toLowerCase()
+    const titleB = (b.custom_title || b.song.title).toLowerCase()
+    return titleA.localeCompare(titleB)
+  })
+)
 
 function openDrawer(song: LibrarySongWithDetails) {
   drawerStore.push(PublicLyricDrawer, { song })

@@ -55,8 +55,9 @@
               <BaseCard
                 v-else
                 :title="item.song?.title || ''"
+                :title-segments="getTitleSegments(item as any)"
                 :text="getItemText(item as any)"
-                :highlight-text="searchQuery"
+                :text-segments="getSubtitleSegments(item as any)"
                 :tags="getItemTags(item as any)"
                 :lists="getItemLists(item as any)"
                 :dropdown-items="getItemDropdownItems(item as any)"
@@ -147,9 +148,6 @@ const currentList = computed(() => listsStore.currentList)
 const listItems = computed(() => currentList.value?.items || [])
 const listName = computed(() => currentList.value?.name || '')
 
-const { ionContentRef, scrollElement, initScrollElement, displayedItems, handleDragEnd } =
-  useListReorder(currentList, searchQuery)
-
 const { handleChooseAction } = useListBulkActions(listId, listItems, listName, handleRefresh)
 
 const {
@@ -164,6 +162,9 @@ const {
   handleSongListsSaved,
   handleOpenNotes,
 } = useListSongActions(handleRefresh)
+
+const { ionContentRef, scrollElement, initScrollElement, displayedItems, handleDragEnd, getTitleSegments, getSubtitleSegments } =
+  useListReorder(currentList, searchQuery, getItemText)
 
 onMounted(async () => {
   try {

@@ -25,9 +25,9 @@
           v-for="list in filteredLists"
           :key="list.id"
           :title="list.name"
+          :title-segments="getTitleSegments(list)"
           :text="getListText(list)"
           :id="list.id"
-          :highlight-text="searchQuery"
           :dropdown-items="getListDropdownItems(list)"
           @click="handleListClick(list)"
         />
@@ -115,7 +115,7 @@ import { useAuthStore } from '@/stores/auth'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { ROUTES } from '@/constants/routes'
-import { foldAccents } from '@/utils/validation'
+import { useFuseSearch } from '@/composables/useFuseSearch'
 import { usePageLoad } from '@/composables/usePageLoad'
 import { useListCRUD } from '@/composables/useListCRUD'
 import { fetchListSongCounts } from '@/services/listService'
@@ -131,11 +131,8 @@ const authStore = useAuthStore()
 const searchQuery = ref('')
 const listSongCounts = ref<Map<string, number>>(new Map())
 
-const filteredLists = computed(() => {
-  const q = foldAccents(searchQuery.value.trim())
-  if (!q) return listsStore.listsByName
-  return listsStore.listsByName.filter(l => foldAccents(l.name).includes(q))
-})
+const { filteredItems: filteredLists, getTitleSegments } =
+  useFuseSearch(computed(() => listsStore.listsByName), searchQuery, l => l.name, () => undefined)
 
 const {
   showCreateModal, newListName, createError, isCreating, handleCreateSubmit,
