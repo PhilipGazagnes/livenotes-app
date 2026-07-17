@@ -33,7 +33,7 @@ export async function updateProjectSettings(
 ): Promise<void> {
   const { error } = await supabase
     .from('projects')
-    .update(updates as Record<string, unknown>)
+    .update(updates)
     .eq('id', projectId)
   if (error) throw error
 }
