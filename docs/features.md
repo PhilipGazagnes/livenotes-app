@@ -83,7 +83,15 @@
     - Filter songs by title / artist (text fiter)
     - Filter songs by tags (and / or)
     - Create a song (just creates a container that can contain notes)
-      - User sees suggestions for song and artist (if existant in app, user should use them)
+      - Choose song name
+        - Opens song selecton drawer
+        - start typing song name
+        - suggestions appear, choose suggestion
+      - Choose artist name
+        - Opens artist(s) selecton drawer
+        - start typing artist name
+        - suggestions appear, choose suggestion
+      - Validate : creates empty song in library
     - Remove song from library
     - Open song drawer
       - See dedicated song drawer section below

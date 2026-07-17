@@ -42,6 +42,10 @@ export const I18N = {
     RESET: 'Reset',
     DOWNLOAD_CONTACT_CARD: 'Download Contact Card',
     SAVE_CONTACT: 'Save Contact Info',
+    OK: 'Ok',
+    CHOOSE_ANOTHER_ARTIST: 'Choose another artist',
+    CONTINUE_WITH: (query: string) => `Continue with "${query}"`,
+    KEEP_ARTISTS: (current: string) => `Keep ${current}`,
   },
 
   // Loading states for buttons
@@ -108,6 +112,8 @@ export const I18N = {
     LABEL: 'Field Label',
     TAGS_FILTER: 'Tags (songs with any of these tags will appear)',
     SONG_TITLE: 'Song Title',
+    SONG_NAME: 'Song name',
+    ARTISTS: 'Artist(s)',
   },
 
   // ============================================================================
@@ -244,6 +250,7 @@ export const I18N = {
     DELETE_LIBRARY: 'Delete library',
     ADD_TITLE_SECTION: 'Add Title Section',
     EDIT_TITLE_SECTION: 'Edit Title',
+    SONG_NAME: 'Song name',
   },
 
   // ============================================================================
@@ -266,6 +273,8 @@ export const I18N = {
     BULK_ADD_TO_LISTS_TITLE: 'Add Songs to Lists',
     DELETE_LIBRARY_CONFIRM: 'This will remove the public library. The URL will stop working.',
     DELETE_ARTIST_CONFIRM: (name: string) => `Are you sure you want to delete "${name}"? This cannot be undone.`,
+    ARTIST_DEDUCTION_SINGLE: (artist: string) => `This song seems to be interpreted by ${artist}. Continue with this artist?`,
+    ARTIST_DEDUCTION_MULTIPLE: 'This song is interpreted by several artists:',
   },
 
   // ============================================================================

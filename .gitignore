@@ -33,6 +33,9 @@ build/
 # Supabase
 .supabase/
 
+# DB backups (contains prod data)
+db-backups/
+
 # Logs
 logs
 *.log
@@ -64,6 +67,7 @@ ios/
 
 # Local Netlify folder
 .netlify
+deno.lock
 
 # Playwright
 e2e/.auth/

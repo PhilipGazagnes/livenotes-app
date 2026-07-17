@@ -101,6 +101,7 @@
         <button
           v-if="authStore.isEditor"
           @click="emit('newClicked')"
+          data-testid="sticky-bar-new-btn"
           class="flex-shrink-0 p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
           aria-label="Create new"
         >

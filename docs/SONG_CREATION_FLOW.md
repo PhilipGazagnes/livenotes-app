@@ -86,7 +86,17 @@ Opened either directly from the main drawer's Artist(s) button, or via
 - **Multi-select via chips.** Already-selected artists show as removable
   chips (× to remove) above the input.
 - One live text input for the artist currently being typed, debounced search
-  (300ms), matching existing artist names.
+  (300ms). Matches against Spotify (`artist-search` Netlify Function, same
+  provider seam as song title search — see `SongSearchProvider.searchArtists`
+  in `netlify/functions/lib/songSearchProvider.ts`), not the app's own
+  catalog. This was a deliberate correction: it initially searched only the
+  internal `artists_v2` table (matching the older `ArtistSelector.vue` it
+  replaced), which meant any real artist not already in that catalog
+  (e.g. "Iron Maiden" before anyone had added it) was simply unfindable —
+  inconsistent with the song-name drawer's typo-tolerant Spotify search.
+  Chips are still plain name strings regardless of source; resolution
+  against the internal catalog (existing vs. get-or-create) only happens at
+  "Add to library" commit time, same as before.
 - Last suggestion row is always **"Continue with `<raw typed query>`"** —
   adds the raw text as a new (to-be-created) artist chip.
 - Tapping any suggestion or "Continue with X" **adds a chip and keeps the
@@ -126,15 +136,79 @@ combination isn't already in the library. On tap:
 - The whole flow's only entry point is the Library page's sticky-bar "+"
   button.
 
+## Search data source: Spotify, behind a swappable provider
+
+**Decided.** Search is backed by Spotify's Search API via the Client
+Credentials flow (no user OAuth — verified against Spotify's Developer
+Terms as a Non-Streaming SDA, so the Data Protection Appendix / Personal
+Data rules don't apply). This was validated against live Spotify data
+before committing to it: typo tolerance holds up for realistic multi-word
+queries, and co-credited artists (duets) already arrive as one combined
+credit (e.g. `"Ike & Tina Turner"`), matching this doc's "one combined row"
+requirement with no extra merge logic needed.
+
+Spotify is treated as swappable, not load-bearing — provider is chosen
+behind one interface so a future switch doesn't touch calling code:
+
+- `netlify/functions/lib/songSearchProvider.ts` — the `SongSearchProvider`
+  contract (`searchTitles(query, limit) -> { title, artistSets }[]`).
+- `netlify/functions/lib/providers/spotifySongSearchProvider.ts` — the
+  Spotify implementation.
+- `netlify/functions/lib/providers/index.ts` — factory picking the active
+  provider from `SONG_SEARCH_PROVIDER` (env var, defaults to `spotify`).
+  Swapping providers later means adding a new class + a case here, nothing
+  else.
+
+**Hosting: Netlify Functions**, not Supabase Edge Functions —
+`netlify/functions/song-search.mts` is the HTTP entry point the frontend
+will call. Chosen because this proxy does no DB work (no cache table, see
+below), so Supabase Edge Functions' main advantage — colocation with
+Postgres — doesn't apply; Netlify Functions instead share the frontend's
+existing deploy pipeline and origin (no CORS setup needed).
+
+**No cache table for now.** The Developer-Terms-driven cache design
+(fingerprinted key, 24–72h TTL, cleanup job, operational-only) discussed
+earlier is shelved, not deleted — revisit it if/when caching is needed.
+
+**No Spotify-specific data in the project's tables.** This is enforced by
+the shapes involved, not just convention: `SongTitleSuggestion` never
+carries a Spotify track/artist ID, and the "Add to library" step (above)
+already only ever resolves title+artist **text** into `songs_v2`/
+`artists_v2` via get-or-create — there is nothing Spotify-specific for
+that step to persist even by accident. If Spotify is ever dropped, no
+migration/backfill is needed.
+
+**Title dedup and ranking, validated against live search results:**
+- Raw track titles carry derivative-version suffixes a plain accent/case
+  fold won't touch, e.g. `Bohemian Rhapsody` vs.
+  `Bohemian Rhapsody - Live Aid` vs. `Wonderwall` vs.
+  `Wonderwall - Remastered` vs. `Wonderwall (Live from Dublin, 16 August
+  '25)`. Spotify's track object has no `is_original`/`is_canonical` flag,
+  and neither `album_type` nor `popularity` reliably separate the original
+  from a derivative (a remaster can outrank the original in popularity).
+  The working signal is the title text itself: strip a trailing
+  `- <suffix>` / `(<suffix>)` segment when it matches a known
+  derivative-marker keyword (live, remaster, remix, acoustic, demo, edit,
+  version, mix, instrumental, karaoke, session, extended, deluxe,
+  re-recorded, unplugged, tribute, cover, spotify singles, revisited, ...)
+  before computing the dedup key. Implemented in
+  `src/utils/spotifyTitleNormalization.ts` (`normalizeSpotifyTitle`) — the
+  keyword list is a living heuristic, meant to be extended as new
+  derivative markers turn up in practice, not a closed set.
+- **Don't re-rank by popularity.** First attempt sorted deduped titles by
+  Spotify's `popularity` field and it actively broke relevance — for query
+  `"bohemian rhapsody"`, generically massive hits like `Billie Jean` and
+  `Dancing Queen` (both present somewhere in Spotify's own top-50 matches)
+  outranked `Bohemian Rhapsody` itself once sorted by popularity. Fixed by
+  keeping Spotify's own relevance order for which titles make the top N,
+  and using popularity/derivative-status only to pick each group's display
+  title (prefer the non-derivative hit), never to reorder groups.
+
 ## Open questions (not yet decided)
 
-- **Search data source.** Currently assumed to be the app's own
-  `songs_v2`/`artists_v2` catalog. Using an external API (e.g. Spotify) for
-  richer, typo-tolerant matching was discussed but not decided. If pursued,
-  needs: a normalized/fingerprinted cache key (not raw query text), a
-  DB-backed cache table (doubles as search analytics), a short TTL for
-  empty/error results vs. a longer one (~1 week) for real results, and a
-  check of Spotify's current Developer Terms on caching/storing API results
-  before committing to that design.
-- **Exact server-side query shape** for "songs matching name and/or artist,
-  deduped by title" — to be finalized at implementation time.
+- **Exact server-side query shape.** Current default: free-text query
+  against Spotify's `/v1/search?type=track` with `limit=50` raw candidates,
+  deduped per above. Not yet finalized — revisit with concrete suggestions
+  (e.g. field-scoped queries, market parameter) when this is picked up.
+- **Spotify Branding Guidelines** (attribution requirements, e.g. "search
+  powered by Spotify") — not yet checked; deferred for now.

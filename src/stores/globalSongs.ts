@@ -89,6 +89,26 @@ export const useGlobalSongsStore = defineStore('globalSongs', () => {
     return createArtist(name)
   }
 
+  async function getOrCreateSong(
+    title: string,
+    artistIds: string[]
+  ): Promise<{ song: SongV2WithArtists; created: boolean }> {
+    const trimmedTitle = title.trim()
+    const sortedIds = [...artistIds].sort()
+
+    const candidates = await searchSongs(trimmedTitle)
+    const exactMatch = candidates.find(s => {
+      if (s.title.trim().toLowerCase() !== trimmedTitle.toLowerCase()) return false
+      const existingIds = s.artists.map(a => a.id).sort()
+      return existingIds.length === sortedIds.length && existingIds.every((id, i) => id === sortedIds[i])
+    })
+    if (exactMatch) return { song: exactMatch, created: false }
+
+    const created = await createSong(trimmedTitle, artistIds)
+    const withArtists = await getSongById(created.id)
+    return { song: withArtists ?? { ...created, artists: [] }, created: true }
+  }
+
   return {
     songs,
     artists,
@@ -100,5 +120,6 @@ export const useGlobalSongsStore = defineStore('globalSongs', () => {
     searchArtists,
     createArtist,
     getOrCreateArtist,
+    getOrCreateSong,
   }
 })

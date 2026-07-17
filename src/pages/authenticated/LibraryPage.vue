@@ -19,7 +19,7 @@
         <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIBRARY_EMPTY_SUBTITLE }}</p>
         
         <button
-          @click="showAddSongModal = true"
+          @click="openAddSongDrawer"
           class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,18 +60,11 @@
         :filters-enabled="true"
         :filters-active="selectedTagIds.length > 0"
         @filters-clicked="handleFiltersClicked"
-        @new-clicked="showAddSongModal = true"
+        @new-clicked="openAddSongDrawer"
         @choose-action-clicked="handleChooseAction"
       />
 
       <!-- Modals -->
-      <SongSearchModal
-        v-if="showAddSongModal"
-        :isOpen="showAddSongModal"
-        @close="showAddSongModal = false"
-        @songAdded="handleSongAdded"
-      />
-
       <ManageTagsModal
         v-if="showManageTagsModal && selectedLibrarySong"
         :isOpen="true"
@@ -122,11 +115,11 @@ import BaseStickyBar from '@/components/BaseStickyBar.vue'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
 import type { BulkAction } from '@/types/bulkAction'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
+import AddSongToLibraryDrawer from '@/components/AddSongToLibraryDrawer.vue'
 
 const route = useRoute()
 
 // Async components
-const SongSearchModal = defineAsyncComponent(() => import('@/components/SongSearchModal.vue'))
 const ManageTagsModal = defineAsyncComponent(() => import('@/components/ManageTagsModal.vue'))
 const ManageListsModal = defineAsyncComponent(() => import('@/components/ManageListsModal.vue'))
 import FilterByTagsDrawer from '@/components/FilterByTagsDrawer.vue'
@@ -154,7 +147,6 @@ async function restoreScroll() {
 }
 
 // State
-const showAddSongModal = ref(false)
 const showManageTagsModal = ref(false)
 const showManageListsModal = ref(false)
 const selectedLibrarySong = ref<LibrarySongWithDetails | null>(null)
@@ -325,9 +317,8 @@ async function handleRemoveFromLibrary(librarySong: LibrarySongWithDetails) {
   }
 }
 
-function handleSongAdded() {
-  // Library store already reloaded by SongSearchModal
-  showAddSongModal.value = false
+function openAddSongDrawer() {
+  drawerStore.push(AddSongToLibraryDrawer, {})
 }
 
 function handleTagsUpdated() {
