@@ -6,7 +6,7 @@
     <ion-page class="bg-gray-900">
       <ion-header class="bg-gray-800">
         <ion-toolbar class="bg-gray-800" style="--padding-top: 0.5rem; --padding-bottom: 0.5rem; --padding-start: 1rem;">
-          <ion-title class="text-white text-base">{{ songTitle }}</ion-title>
+          <ion-title class="text-white text-base notranslate" translate="no">{{ songTitle }}</ion-title>
           <ion-buttons slot="end">
             <ion-button @click="handleCancel" class="text-gray-300" :aria-label="I18N.ARIA.CLOSE">
               <ion-icon :icon="closeOutline" slot="icon-only" />

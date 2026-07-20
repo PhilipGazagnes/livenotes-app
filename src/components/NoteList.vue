@@ -78,7 +78,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
           </div>
-          <p class="text-sm text-gray-400 line-clamp-2">{{ getLyricsPreview(note) }}</p>
+          <p class="text-sm text-gray-400 line-clamp-2 notranslate" translate="no">{{ getLyricsPreview(note) }}</p>
         </div>
       </template>
     </div>

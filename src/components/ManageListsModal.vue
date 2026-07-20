@@ -16,7 +16,7 @@
         <!-- Header -->
         <div class="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 class="text-xl font-semibold text-white truncate pr-4">
-            {{ I18N.MODAL_CONTENT.MANAGE_LISTS_TITLE(songTitle) }}
+            {{ I18N.MODAL_CONTENT.MANAGE_LISTS_TITLE_PREFIX }} <span class="notranslate" translate="no">{{ songTitle }}</span>
           </h2>
           <button
             @click="handleCancel"
