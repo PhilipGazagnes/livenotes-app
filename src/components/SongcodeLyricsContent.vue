@@ -17,6 +17,8 @@
               :key="`${section.name}-${lineIndex}`"
               :class="lyricClass(lyric.style)"
               :style="{ fontSize: `${fontSize}rem`, lineHeight: '1.7' }"
+              class="notranslate"
+              translate="no"
             >
               <span
                 v-for="(segment, segIndex) in parseVocalSegments(lyric.text)"

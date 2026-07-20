@@ -3,10 +3,10 @@
   <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-start justify-between">
       <div class="flex-1 min-w-0 mr-3">
-        <h2 class="text-xl font-semibold text-white truncate mb-1">
+        <h2 class="text-xl font-semibold text-white truncate mb-1 notranslate" translate="no">
           {{ librarySong?.custom_title || librarySong?.song?.title || 'Song Notes' }}
         </h2>
-        <p v-if="librarySong?.song?.artists && librarySong.song.artists.length > 0" class="text-sm text-gray-400 truncate">
+        <p v-if="librarySong?.song?.artists && librarySong.song.artists.length > 0" class="text-sm text-gray-400 truncate notranslate" translate="no">
           {{ librarySong.song.artists.map(a => a.name).join(', ') }}
         </p>
       </div>

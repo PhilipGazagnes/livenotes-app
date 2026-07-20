@@ -96,7 +96,7 @@
           <p class="text-sm text-gray-400 break-all">{{ localNote.content }}</p>
         </div>
 
-        <p v-else class="text-gray-200 whitespace-pre-wrap break-words">{{ localNote.content }}</p>
+        <p v-else class="text-gray-200 whitespace-pre-wrap break-words notranslate" translate="no">{{ localNote.content }}</p>
       </div>
 
       <!-- Metadata -->

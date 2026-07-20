@@ -26,7 +26,7 @@
         <!-- Content -->
         <div class="flex-1 min-w-0">
           <!-- Title -->
-          <h3 class="text-lg font-semibold text-white mb-1 truncate">
+          <h3 class="text-lg font-semibold text-white mb-1 truncate notranslate" translate="no">
             <template v-if="effectiveTitleSegments && effectiveTitleSegments.length > 0">
               <template v-for="seg in effectiveTitleSegments" :key="seg.text + seg.highlighted">
                 <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>
@@ -37,7 +37,7 @@
           </h3>
 
           <!-- Text -->
-          <p v-if="text || (effectiveTextSegments && effectiveTextSegments.length > 0)" class="text-gray-400 text-sm mb-2 truncate">
+          <p v-if="text || (effectiveTextSegments && effectiveTextSegments.length > 0)" class="text-gray-400 text-sm mb-2 truncate notranslate" translate="no">
             <template v-if="effectiveTextSegments && effectiveTextSegments.length > 0">
               <template v-for="seg in effectiveTextSegments" :key="seg.text + seg.highlighted">
                 <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>

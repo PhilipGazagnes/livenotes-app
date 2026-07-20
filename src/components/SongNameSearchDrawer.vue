@@ -36,7 +36,8 @@
         type="button"
         data-testid="song-suggestion"
         @click="selectSuggestion(suggestion)"
-        class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors text-white"
+        class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors text-white notranslate"
+        translate="no"
       >
         {{ suggestion.title }}
       </button>

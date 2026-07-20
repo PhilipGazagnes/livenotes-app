@@ -77,7 +77,7 @@
       </div>
 
       <!-- Text-based content: show preview -->
-      <p v-else class="line-clamp-3">
+      <p v-else class="line-clamp-3 notranslate" translate="no">
         {{ contentPreview }}
       </p>
     </div>
