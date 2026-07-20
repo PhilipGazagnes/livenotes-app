@@ -7,7 +7,7 @@
       </div>
       <div v-else class="space-y-7 pt-5">
         <div v-for="({ section, pattern }, index) in sections" :key="section.name ?? index">
-          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800">
+          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2.5 pb-1.5 border-b border-gray-800 notranslate" translate="no">
             {{ section.name }}
           </h3>
           <PatternDisplay v-if="showPattern && pattern" v-bind="pattern" />
