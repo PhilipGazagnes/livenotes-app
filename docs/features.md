@@ -81,7 +81,7 @@
       - Cards contain at least the song name and the artist
       - Optional : tags and lists
     - Filter songs by title / artist (text fiter)
-    - Filter songs by tags (and / or)
+    - Filter songs by tags (and / or, include / exclude)
     - Create a song (just creates a container that can contain notes)
       - Choose song name
         - Opens song selecton drawer

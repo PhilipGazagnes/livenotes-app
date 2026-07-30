@@ -34,6 +34,7 @@ export const useLibraryStore = defineStore('library', () => {
   const searchQuery = ref('')
   const selectedTagIds = ref<string[]>([])
   const tagFilterMode = ref<'and' | 'or'>('and')
+  const tagFilterType = ref<'include' | 'exclude'>('include')
 
   const authStore = useAuthStore()
 
@@ -50,7 +51,8 @@ export const useLibraryStore = defineStore('library', () => {
       const check = tagFilterMode.value === 'or' ? 'some' : 'every'
       result = result.filter(ls => {
         const songTagIds = ls.tags?.map((t: Tag) => t.id) ?? []
-        return selectedTagIds.value[check](tagId => songTagIds.includes(tagId))
+        const matches = selectedTagIds.value[check](tagId => songTagIds.includes(tagId))
+        return tagFilterType.value === 'exclude' ? !matches : matches
       })
     }
 
@@ -145,6 +147,8 @@ export const useLibraryStore = defineStore('library', () => {
   function clearFilters() {
     searchQuery.value = ''
     selectedTagIds.value = []
+    tagFilterMode.value = 'and'
+    tagFilterType.value = 'include'
   }
 
   // Clear cached data when the active project changes so stale songs are never shown
@@ -153,6 +157,8 @@ export const useLibraryStore = defineStore('library', () => {
     currentLibrarySong.value = null
     searchQuery.value = ''
     selectedTagIds.value = []
+    tagFilterMode.value = 'and'
+    tagFilterType.value = 'include'
   })
 
   return {
@@ -163,6 +169,7 @@ export const useLibraryStore = defineStore('library', () => {
     searchQuery,
     selectedTagIds,
     tagFilterMode,
+    tagFilterType,
     currentProjectId,
     getTitle,
     getSubtitle,

@@ -14,23 +14,30 @@
       </button>
     </div>
 
+    <!-- Include / Exclude toggle -->
+    <SegmentedToggle
+      :label="I18N.FILTER.SHOW"
+      :model-value="filterType"
+      @update:model-value="(v) => filterType = v as 'include' | 'exclude'"
+      :options="[
+        { value: 'include', label: I18N.FILTER.INCLUDE },
+        { value: 'exclude', label: I18N.FILTER.EXCLUDE },
+      ]"
+      :description="filterType === 'include' ? I18N.FILTER.MATCHING_SELECTION : I18N.FILTER.NOT_MATCHING_SELECTION"
+    />
+
     <!-- AND / OR toggle -->
-    <div v-if="selectedTagIds.length > 1" class="flex items-center gap-3 mt-3">
-      <span class="text-sm text-gray-400">Match</span>
-      <div class="flex rounded-lg overflow-hidden border border-gray-600">
-        <button
-          @click="filterMode = 'and'"
-          class="px-3 py-1 text-sm font-medium transition-colors"
-          :class="filterMode === 'and' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'"
-        >AND</button>
-        <button
-          @click="filterMode = 'or'"
-          class="px-3 py-1 text-sm font-medium transition-colors"
-          :class="filterMode === 'or' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'"
-        >OR</button>
-      </div>
-      <span class="text-sm text-gray-400">{{ filterMode === 'and' ? 'all selected tags' : 'any selected tag' }}</span>
-    </div>
+    <SegmentedToggle
+      v-if="selectedTagIds.length > 1"
+      label="Match"
+      :model-value="filterMode"
+      @update:model-value="(v) => filterMode = v as 'and' | 'or'"
+      :options="[
+        { value: 'and', label: 'AND' },
+        { value: 'or', label: 'OR' },
+      ]"
+      :description="filterMode === 'and' ? 'all selected tags' : 'any selected tag'"
+    />
   </div>
 
   <!-- Selected tags strip -->
@@ -98,11 +105,13 @@ import { ref, computed } from 'vue'
 import { useTagsStore } from '@/stores/tags'
 import { useDrawerStore } from '@/stores/drawer'
 import { I18N } from '@/constants/i18n'
+import SegmentedToggle from './SegmentedToggle.vue'
 
 const props = defineProps<{
   initialTagIds: string[]
   initialFilterMode: 'and' | 'or'
-  applyCallback: (tagIds: string[], mode: 'and' | 'or') => void
+  initialFilterType: 'include' | 'exclude'
+  applyCallback: (tagIds: string[], mode: 'and' | 'or', filterType: 'include' | 'exclude') => void
 }>()
 
 const tagsStore = useTagsStore()
@@ -110,6 +119,7 @@ const drawerStore = useDrawerStore()
 
 const selectedTagIds = ref<string[]>([...props.initialTagIds])
 const filterMode = ref<'and' | 'or'>(props.initialFilterMode)
+const filterType = ref<'include' | 'exclude'>(props.initialFilterType)
 
 const sortedTags = computed(() =>
   [...tagsStore.tags].sort((a, b) => a.name.localeCompare(b.name))
@@ -126,7 +136,7 @@ function getTagName(tagId: string): string {
 }
 
 function handleApply() {
-  props.applyCallback(selectedTagIds.value, filterMode.value)
+  props.applyCallback(selectedTagIds.value, filterMode.value, filterType.value)
   drawerStore.pop()
 }
 </script>

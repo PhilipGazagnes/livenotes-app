@@ -227,28 +227,29 @@ watch(() => authStore.activeProjectId, async (newId) => {
   applyQueryFilters()
 })
 
-// Watch for query parameter changes
+// Watch for query parameter changes.
+// Only reacts when tag/artist actually changed — drawerStore.pop() calls history.back(),
+// which Vue Router turns into a popstate firing this watcher with a value-identical
+// route.query. Reapplying on those spurious fires would clobber filter state (e.g. Exclude
+// mode) the user set after the deep link was first applied.
 watch(() => route.query, (newQuery, oldQuery) => {
-  if (newQuery.tag) {
-    libraryStore.selectedTagIds = [newQuery.tag as string]
-    libraryStore.searchQuery = ''
-  } else if (newQuery.artist) {
-    libraryStore.selectedTagIds = []
-    libraryStore.searchQuery = ''
-  } else if (oldQuery?.tag || oldQuery?.artist) {
-    libraryStore.selectedTagIds = []
+  if (newQuery.tag !== oldQuery?.tag || newQuery.artist !== oldQuery?.artist) {
+    applyQueryFilters()
   }
 })
 
 function applyQueryFilters() {
   if (route.query.tag) {
     libraryStore.selectedTagIds = [route.query.tag as string]
+    libraryStore.tagFilterType = 'include'
     libraryStore.searchQuery = ''
   } else if (route.query.artist) {
     libraryStore.selectedTagIds = []
+    libraryStore.tagFilterType = 'include'
     libraryStore.searchQuery = ''
   } else {
     libraryStore.selectedTagIds = []
+    libraryStore.tagFilterType = 'include'
   }
 }
 
@@ -282,9 +283,11 @@ function handleFiltersClicked() {
   drawerStore.push(FilterByTagsDrawer, {
     initialTagIds: [...selectedTagIds.value],
     initialFilterMode: libraryStore.tagFilterMode,
-    applyCallback: (tagIds: string[], mode: 'and' | 'or') => {
+    initialFilterType: libraryStore.tagFilterType,
+    applyCallback: (tagIds: string[], mode: 'and' | 'or', filterType: 'include' | 'exclude') => {
       libraryStore.selectedTagIds = tagIds
       libraryStore.tagFilterMode = mode
+      libraryStore.tagFilterType = filterType
     },
   })
 }

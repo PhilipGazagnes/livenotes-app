@@ -443,6 +443,11 @@ export const I18N = {
     UNCHECK_ALL: 'Uncheck All',
     APPLY: 'Apply',
     FILTER_BY_TAGS: 'Filter by Tags',
+    SHOW: 'Show',
+    INCLUDE: 'Include',
+    EXCLUDE: 'Exclude',
+    MATCHING_SELECTION: 'songs matching selection',
+    NOT_MATCHING_SELECTION: 'songs not matching selection',
   },
 
   // ============================================================================
