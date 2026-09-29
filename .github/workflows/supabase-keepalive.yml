@@ -1,0 +1,34 @@
+# Free-tier Supabase projects pause after a period of inactivity.
+# This pings the REST API of both projects daily so they stay awake.
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '17 6 * * *' # daily, 06:17 UTC
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [PROD, DEV]
+    steps:
+      - name: Ping ${{ matrix.env }}
+        env:
+          SUPABASE_URL: ${{ secrets[format('{0}_SUPABASE_URL', matrix.env)] }}
+          SUPABASE_ANON_KEY: ${{ secrets[format('{0}_SUPABASE_ANON_KEY', matrix.env)] }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Missing ${{ matrix.env }}_SUPABASE_URL or ${{ matrix.env }}_SUPABASE_ANON_KEY secret"
+            exit 1
+          fi
+          # A real PostgREST query so the database itself registers activity
+          # (RLS may return an empty array for anon, which is fine).
+          status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "$SUPABASE_URL/rest/v1/songs?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "HTTP $status"
+          [ "$status" -lt 400 ]
