@@ -156,14 +156,17 @@ TypeScript is a first-class citizen in this project. Using `any` is a code smell
 
 ### Shared types
 
-Domain types live in `src/types/`. Keep them colocated with their domain:
+Domain types live in `packages/shared/src/types/` (shared with the future mobile app) and are imported as `@livenotes/shared/types`. Keep them colocated with their domain:
 
 ```
-src/types/
+packages/shared/src/types/
+  index.ts      # barrel
   project.ts
   user.ts
-  common.ts
+  supabase.ts   # generated
 ```
+
+App-only UI types stay in `apps/web/src/types/`.
 
 ### Avoid `any`
 
@@ -171,10 +174,10 @@ Use `unknown` and narrow it explicitly when the type is genuinely uncertain.
 
 ### Supabase types
 
-Generate and use Supabase's typed client. Keep the generated types file at `src/types/supabase.ts` and regenerate it when the schema changes:
+Generate and use Supabase's typed client. Keep the generated types file at `packages/shared/src/types/supabase.ts` and regenerate it when the schema changes:
 
 ```bash
-npx supabase gen types typescript --project-id YOUR_PROJECT_ID > src/types/supabase.ts
+npx supabase gen types typescript --project-id YOUR_PROJECT_ID > packages/shared/src/types/supabase.ts
 ```
 
 ---

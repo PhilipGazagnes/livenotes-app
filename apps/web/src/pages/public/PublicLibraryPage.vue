@@ -1,0 +1,193 @@
+<template>
+  <ion-page>
+    <ion-content>
+      <!-- 404 -->
+      <div v-if="notFound" class="flex flex-col items-center justify-center min-h-screen px-4 text-center">
+        <svg class="w-24 h-24 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h1 class="text-2xl font-bold text-white mb-2">{{ I18N.EMPTY_STATES.PUBLIC_LIBRARY_NOT_FOUND.TITLE }}</h1>
+        <p class="text-gray-400">{{ I18N.EMPTY_STATES.PUBLIC_LIBRARY_NOT_FOUND.SUBTITLE }}</p>
+      </div>
+
+      <template v-else>
+        <!-- Mobile header image -->
+        <img
+          v-if="library?.header_image_mobile"
+          :src="library.header_image_mobile"
+          :alt="library.name"
+          class="block md:hidden w-full"
+        />
+        <!-- Desktop header image -->
+        <img
+          v-if="library?.header_image_desktop"
+          :src="library.header_image_desktop"
+          :alt="library.name"
+          class="hidden md:block w-full"
+        />
+        <!-- Text header: shown on mobile when no mobile image, on desktop when no desktop image -->
+        <header
+          v-if="!library?.header_image_mobile || !library?.header_image_desktop"
+          class="sticky top-0 z-50 bg-gray-900 border-b border-gray-800"
+          :class="{
+            'block md:hidden': !library?.header_image_mobile && !!library?.header_image_desktop,
+            'hidden md:block': !!library?.header_image_mobile && !library?.header_image_desktop,
+          }"
+        >
+          <div class="flex items-center justify-between px-4 py-3">
+            <div class="w-10"></div>
+            <h1 class="text-xl font-bold text-white truncate">{{ library?.name ?? ' ' }}</h1>
+            <div class="w-10"></div>
+          </div>
+        </header>
+
+        <!-- Loading -->
+        <div v-if="isLoading" class="flex justify-center py-24">
+          <BaseLoadingSpinner />
+        </div>
+
+        <div v-else class="pb-24">
+          <!-- Contact banner -->
+          <ProjectContactBanner
+            v-if="projectInfo"
+            :project="projectInfo"
+            @opened="openContactDrawer"
+          />
+
+          <!-- Empty state -->
+          <div v-if="displayedSongs.length === 0" class="text-center py-12 px-4">
+            <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SONGS_MATCH_SEARCH }}</p>
+          </div>
+
+          <!-- Song list -->
+          <div v-else class="p-4 space-y-3">
+            <BaseCard
+              v-for="song in displayedSongs"
+              :key="song.id"
+              :title="song.custom_title || song.song?.title || ''"
+              :title-segments="getTitleSegments(song)"
+              :text="getSubtitle(song)"
+              :text-segments="getSubtitleSegments(song)"
+              @click="openDrawer(song)"
+            />
+          </div>
+        </div>
+
+        <!-- Sticky bottom bar: search -->
+        <div class="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-10">
+          <div class="max-w-2xl mx-auto">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <input
+                v-model="searchQuery"
+                type="text"
+                :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
+                class="w-full pl-10 pr-10 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              <button
+                v-if="searchQuery"
+                @click="searchQuery = ''"
+                class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                :aria-label="I18N.ARIA.CLEAR_SEARCH"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </template>
+
+    </ion-content>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { IonPage, IonContent } from '@ionic/vue'
+import BaseLoadingSpinner from '@/components/BaseLoadingSpinner.vue'
+import BaseCard from '@/components/BaseCard.vue'
+import PublicLyricDrawer from '@/components/PublicLyricDrawer.vue'
+import ProjectContactBanner from '@/components/ProjectContactBanner.vue'
+import ProjectContactDrawer from '@/components/ProjectContactDrawer.vue'
+import { useDrawerStore } from '@/stores/drawer'
+import { fetchPublicLibraryBySlug, fetchPublicLibrarySongs } from '@/services/publicLibraryService'
+import { fetchProjectPublicInfo } from '@/services/settingsService'
+import { useFuseSearch } from '@/composables/useFuseSearch'
+import type { LibrarySongWithDetails, PublicLibraryWithTags, ContactInfo } from '@livenotes/shared/types'
+import { I18N } from '@/constants/i18n'
+
+const route = useRoute()
+const drawerStore = useDrawerStore()
+
+const library = ref<PublicLibraryWithTags | null>(null)
+const songs = ref<LibrarySongWithDetails[]>([])
+const isLoading = ref(true)
+const notFound = ref(false)
+
+interface ProjectPublicInfo {
+  name: string
+  description: string | null
+  thumbnail_url: string | null
+  contact_enabled: boolean
+  contact_info: ContactInfo | null
+}
+const projectInfo = ref<ProjectPublicInfo | null>(null)
+
+const searchQuery = ref('')
+
+onMounted(async () => {
+  const projectSlug = route.params.projectSlug as string
+  const librarySlug = route.params.librarySlug as string
+
+  const lib = await fetchPublicLibraryBySlug(projectSlug, librarySlug)
+  if (!lib) { notFound.value = true; isLoading.value = false; return }
+
+  library.value = lib
+  const [fetchedSongs, fetchedProject] = await Promise.all([
+    fetchPublicLibrarySongs(lib.project_id, lib.tags.map(t => t.id)),
+    fetchProjectPublicInfo(lib.project_id),
+  ])
+  songs.value = fetchedSongs
+  projectInfo.value = fetchedProject
+  isLoading.value = false
+})
+
+function getTitle(song: LibrarySongWithDetails): string {
+  return song.custom_title || song.song.title
+}
+
+function getSubtitle(song: LibrarySongWithDetails): string | undefined {
+  const artists = song.song?.artists
+  if (!artists?.length) return undefined
+  return artists.map(a => a.name).join(', ')
+}
+
+const { filteredItems, getTitleSegments, getSubtitleSegments } =
+  useFuseSearch(songs, searchQuery, getTitle, getSubtitle)
+
+const displayedSongs = computed(() =>
+  [...filteredItems.value].sort((a, b) => {
+    const titleA = (a.custom_title || a.song.title).toLowerCase()
+    const titleB = (b.custom_title || b.song.title).toLowerCase()
+    return titleA.localeCompare(titleB)
+  })
+)
+
+function openDrawer(song: LibrarySongWithDetails) {
+  drawerStore.push(PublicLyricDrawer, { song })
+}
+
+function openContactDrawer() {
+  if (projectInfo.value) {
+    drawerStore.push(ProjectContactDrawer, { project: projectInfo.value })
+  }
+}
+</script>

@@ -1,0 +1,16 @@
+{
+  "name": "@livenotes/shared",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Framework-agnostic code shared by Livenotes apps: domain types, data layer, offline snapshot.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types/index.ts",
+    "./types/*": "./src/types/*.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}
