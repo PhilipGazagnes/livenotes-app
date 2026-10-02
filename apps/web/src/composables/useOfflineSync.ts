@@ -1,17 +1,13 @@
-import { ref } from 'vue'
-import { fetchSongs } from '@/services/songService'
-import { fetchLists, fetchListWithItems, fetchListItemCount } from '@/services/listService'
-import { fetchTags } from '@/services/tagService'
-import { fetchArtistsWithCount } from '@/services/artistService'
-import { fetchLibrarySongs, fetchLibrarySongWithDetails } from '@/services/libraryService'
+import { computed } from 'vue'
+import {
+  isSyncing,
+  lastSyncedAt,
+  lastSyncError,
+  syncProgress,
+  syncProject,
+} from '@/lib/offline/offlineData'
 
-const CONCURRENCY = 3
-
-export interface SyncProgress {
-  step: string
-  current: number
-  total: number
-}
+export type { SyncProgress } from '@livenotes/shared/offline'
 
 export function formatSyncDate(date: Date): string {
   const now = new Date()
@@ -24,72 +20,24 @@ export function formatSyncDate(date: Date): string {
   return date.toLocaleDateString()
 }
 
-// Module-level cache — shared across components so ProjectMenuDrawer and
-// OfflineSyncDrawer see the same lastSyncedAt ref for a given project.
-const lastSyncedCache: Record<string, ReturnType<typeof ref<Date | null>>> = {}
+/**
+ * Offline sync state of the active project, for the UI.
+ * The data layer itself lives in `@/lib/offline/offlineData`.
+ */
+export function useOfflineSync() {
+  const hasSnapshot = computed(() => lastSyncedAt.value !== null)
 
-function getLastSyncedRef(projectId: string) {
-  if (!lastSyncedCache[projectId]) {
-    const stored = localStorage.getItem(`livenotes-last-synced-${projectId}`)
-    lastSyncedCache[projectId] = ref<Date | null>(stored ? new Date(stored) : null)
-  }
-  return lastSyncedCache[projectId]
-}
-
-export function useOfflineSync(projectId: string) {
-  const isSyncing = ref(false)
-  const progress = ref<SyncProgress | null>(null)
-  const lastSyncedAt = getLastSyncedRef(projectId)
-
-  async function warmUp() {
-    if (isSyncing.value) return
-    isSyncing.value = true
-
-    try {
-      progress.value = { step: 'Library', current: 0, total: 1 }
-      const librarySongs = await fetchLibrarySongs(projectId)
-
-      for (let i = 0; i < librarySongs.length; i += CONCURRENCY) {
-        progress.value = {
-          step: 'Song details',
-          current: Math.min(i + CONCURRENCY, librarySongs.length),
-          total: librarySongs.length,
-        }
-        await Promise.all(
-          librarySongs.slice(i, i + CONCURRENCY).map(ls =>
-            fetchLibrarySongWithDetails(ls.id).catch(() => null)
-          )
-        )
-      }
-
-      progress.value = { step: 'Songs', current: 0, total: 1 }
-      await fetchSongs(projectId).catch(() => null)
-
-      progress.value = { step: 'Tags & Artists', current: 0, total: 1 }
-      await Promise.all([
-        fetchTags(projectId).catch(() => null),
-        fetchArtistsWithCount(projectId).catch(() => null),
-      ])
-
-      progress.value = { step: 'Setlists', current: 0, total: 1 }
-      const lists = await fetchLists(projectId)
-
-      for (let i = 0; i < lists.length; i++) {
-        progress.value = { step: 'Setlist details', current: i + 1, total: lists.length }
-        await Promise.all([
-          fetchListWithItems(lists[i].id).catch(() => null),
-          fetchListItemCount(lists[i].id).catch(() => null),
-        ])
-      }
-
-      const now = new Date()
-      lastSyncedAt.value = now
-      localStorage.setItem(`livenotes-last-synced-${projectId}`, now.toISOString())
-    } finally {
-      isSyncing.value = false
-      progress.value = null
-    }
+  /** Download the active project for offline use. Rejects if the sync fails (previous copy kept). */
+  async function sync(): Promise<void> {
+    await syncProject()
   }
 
-  return { isSyncing, progress, lastSyncedAt, warmUp }
+  return {
+    isSyncing,
+    progress: syncProgress,
+    lastSyncedAt,
+    lastSyncError,
+    hasSnapshot,
+    sync,
+  }
 }

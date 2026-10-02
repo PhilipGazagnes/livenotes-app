@@ -1,7 +1,14 @@
 import { supabase } from '@/lib/supabase'
 import type { Tag } from '@livenotes/shared/types'
+import { isNetworkError, selectTags, selectTagSongCounts } from '@livenotes/shared/offline'
+import { readThrough } from '@/lib/offline/offlineData'
+import { logger } from '@/utils/logger'
 
-export async function fetchTags(projectId: string): Promise<Tag[]> {
+export function fetchTags(projectId: string): Promise<Tag[]> {
+  return readThrough(() => fetchTagsRemote(projectId), selectTags, { projectId })
+}
+
+async function fetchTagsRemote(projectId: string): Promise<Tag[]> {
   const { data, error } = await supabase
     .from('tags')
     .select('id, project_id, name, created_at')
@@ -61,12 +68,20 @@ export async function bulkAssignTags(librarySongIds: string[], tagIds: string[])
   if (error) throw error
 }
 
-export async function fetchTagSongCounts(tagIds: string[]): Promise<Map<string, number>> {
+export function fetchTagSongCounts(tagIds: string[]): Promise<Map<string, number>> {
+  return readThrough(() => fetchTagSongCountsRemote(tagIds), snapshot => selectTagSongCounts(snapshot, tagIds))
+}
+
+async function fetchTagSongCountsRemote(tagIds: string[]): Promise<Map<string, number>> {
   const counts = new Map(tagIds.map(id => [id, 0]))
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('library_song_tags')
     .select('tag_id')
     .in('tag_id', tagIds)
+  if (error) {
+    if (isNetworkError(error)) throw error
+    logger.error('Failed to fetch tag song counts', error)
+  }
   data?.forEach((row: { tag_id: string }) => {
     counts.set(row.tag_id, (counts.get(row.tag_id) ?? 0) + 1)
   })

@@ -1,10 +1,16 @@
 import { supabase } from '@/lib/supabase'
 import type { Json } from '@livenotes/shared/types/supabase'
 import type { Note, NoteType, SongcodeNoteData, LooperNoteData } from '@livenotes/shared/types'
+import { selectNotes } from '@livenotes/shared/offline'
+import { readThrough } from '@/lib/offline/offlineData'
 
 const NOTE_COLUMNS = 'id, library_song_id, type, title, content, data, display_order, created_at, updated_at, is_public, is_shareable, created_by, updated_by, share_token'
 
-export async function fetchNotes(librarySongId: string): Promise<Note[]> {
+export function fetchNotes(librarySongId: string): Promise<Note[]> {
+  return readThrough(() => fetchNotesRemote(librarySongId), snapshot => selectNotes(snapshot, librarySongId))
+}
+
+async function fetchNotesRemote(librarySongId: string): Promise<Note[]> {
   const { data, error } = await supabase
     .from('notes')
     .select(NOTE_COLUMNS)

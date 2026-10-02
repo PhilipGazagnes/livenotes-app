@@ -2,13 +2,25 @@
 import { clientsClaim } from 'workbox-core'
 import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from 'workbox-precaching'
 import { registerRoute, NavigationRoute } from 'workbox-routing'
-import { NetworkFirst } from 'workbox-strategies'
-import { CacheableResponsePlugin } from 'workbox-cacheable-response'
-import { ExpirationPlugin } from 'workbox-expiration'
 
 declare let self: ServiceWorkerGlobalScope
 
-self.skipWaiting()
+// App shell only. Offline data lives in IndexedDB (offline data layer), so
+// Supabase API responses are no longer cached here (ADR-004).
+
+// Cache of the previous implementation, which cached Supabase REST responses
+const LEGACY_DATA_CACHE = 'supabase-data'
+
+// A new version waits until the user chooses to reload (update banner),
+// so the page never reloads by itself in the middle of a performance.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()
+})
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(caches.delete(LEGACY_DATA_CACHE))
+})
+
 clientsClaim()
 
 const manifest = self.__WB_MANIFEST
@@ -22,38 +34,3 @@ const hasIndexHtml = (manifest as Array<string | { url: string }>).some(
 if (hasIndexHtml) {
   registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')))
 }
-
-const supabasePlugins = [
-  new CacheableResponsePlugin({ statuses: [0, 200] }),
-  new ExpirationPlugin({ maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 7 }),
-]
-
-const networkFirst = new NetworkFirst({
-  cacheName: 'supabase-data',
-  networkTimeoutSeconds: 3,
-  plugins: supabasePlugins,
-})
-
-let forceOffline = false
-
-self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SET_FORCE_OFFLINE') {
-    forceOffline = event.data.value
-  }
-})
-
-registerRoute(
-  ({ url }) => url.hostname.endsWith('.supabase.co') && url.pathname.startsWith('/rest/v1'),
-  async (context) => {
-    if (!navigator.onLine || forceOffline) {
-      const cached = await caches.match(context.request)
-      if (cached) return cached
-      return new Response(JSON.stringify({ error: 'offline' }), {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' },
-      })
-    }
-    return networkFirst.handle(context)
-  },
-  'GET'
-)

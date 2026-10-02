@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { LibrarySong, LibrarySongWithDetails, Note, SongV2, ArtistV2, Tag, List } from '@livenotes/shared/types'
+import { OfflineDataUnavailableError, selectLibrarySongs, selectLibrarySongWithDetails } from '@livenotes/shared/offline'
+import { readThrough } from '@/lib/offline/offlineData'
 
 interface RawArtistV2Join { position: number; artist: ArtistV2 | null }
 interface RawSongV2Row extends SongV2 { artists: RawArtistV2Join[] }
@@ -32,7 +34,18 @@ function transformLibrarySong(ls: RawLibrarySongRow): LibrarySongWithDetails {
   }
 }
 
-export async function fetchLibrarySongWithDetails(id: string): Promise<LibrarySongWithDetails> {
+export function fetchLibrarySongWithDetails(id: string): Promise<LibrarySongWithDetails> {
+  return readThrough(
+    () => fetchLibrarySongWithDetailsRemote(id),
+    snapshot => {
+      const librarySong = selectLibrarySongWithDetails(snapshot, id)
+      if (!librarySong) throw new OfflineDataUnavailableError('This song is not available offline. Sync while online first.')
+      return librarySong
+    },
+  )
+}
+
+async function fetchLibrarySongWithDetailsRemote(id: string): Promise<LibrarySongWithDetails> {
   const { data, error } = await supabase
     .from('library_songs')
     .select(`
@@ -88,7 +101,11 @@ const LIBRARY_SONG_SELECT = `
   )
 `
 
-export async function fetchLibrarySongs(projectId: string): Promise<LibrarySongWithDetails[]> {
+export function fetchLibrarySongs(projectId: string): Promise<LibrarySongWithDetails[]> {
+  return readThrough(() => fetchLibrarySongsRemote(projectId), selectLibrarySongs, { projectId })
+}
+
+async function fetchLibrarySongsRemote(projectId: string): Promise<LibrarySongWithDetails[]> {
   const { data, error } = await supabase
     .from('library_songs')
     .select(LIBRARY_SONG_SELECT)

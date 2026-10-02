@@ -1,5 +1,15 @@
 import { supabase } from '@/lib/supabase'
 import type { List, ListWithItems, LibrarySong, SongV2, ArtistV2, Tag } from '@livenotes/shared/types'
+import {
+  isNetworkError,
+  OfflineDataUnavailableError,
+  selectListItemCount,
+  selectLists,
+  selectListSongCounts,
+  selectListWithItems,
+} from '@livenotes/shared/offline'
+import { readThrough } from '@/lib/offline/offlineData'
+import { logger } from '@/utils/logger'
 
 const LIST_COLUMNS = 'id, project_id, name, description, created_at, updated_at, created_by'
 
@@ -26,7 +36,11 @@ interface RawListItemRow {
   library_song: RawLibrarySongJoin | null
 }
 
-export async function fetchLists(projectId: string): Promise<List[]> {
+export function fetchLists(projectId: string): Promise<List[]> {
+  return readThrough(() => fetchListsRemote(projectId), selectLists, { projectId })
+}
+
+async function fetchListsRemote(projectId: string): Promise<List[]> {
   const { data, error } = await supabase
     .from('lists')
     .select(LIST_COLUMNS)
@@ -36,7 +50,18 @@ export async function fetchLists(projectId: string): Promise<List[]> {
   return data
 }
 
-export async function fetchListWithItems(listId: string): Promise<ListWithItems | null> {
+export function fetchListWithItems(listId: string): Promise<ListWithItems | null> {
+  return readThrough(
+    () => fetchListWithItemsRemote(listId),
+    snapshot => {
+      const list = selectListWithItems(snapshot, listId)
+      if (!list) throw new OfflineDataUnavailableError('This setlist is not available offline. Sync while online first.')
+      return list
+    },
+  )
+}
+
+async function fetchListWithItemsRemote(listId: string): Promise<ListWithItems | null> {
   const { data: listData, error: listError } = await supabase
     .from('lists')
     .select(LIST_COLUMNS)
@@ -197,7 +222,11 @@ export async function deleteSongFromList(listId: string, songId: string): Promis
   if (error) throw error
 }
 
-export async function fetchListItemCount(listId: string): Promise<number> {
+export function fetchListItemCount(listId: string): Promise<number> {
+  return readThrough(() => fetchListItemCountRemote(listId), snapshot => selectListItemCount(snapshot, listId))
+}
+
+async function fetchListItemCountRemote(listId: string): Promise<number> {
   const { data, error } = await supabase
     .from('list_items')
     .select('id')
@@ -207,13 +236,21 @@ export async function fetchListItemCount(listId: string): Promise<number> {
   return data?.length ?? 0
 }
 
-export async function fetchListSongCounts(listIds: string[]): Promise<Map<string, number>> {
+export function fetchListSongCounts(listIds: string[]): Promise<Map<string, number>> {
+  return readThrough(() => fetchListSongCountsRemote(listIds), snapshot => selectListSongCounts(snapshot, listIds))
+}
+
+async function fetchListSongCountsRemote(listIds: string[]): Promise<Map<string, number>> {
   const counts = new Map(listIds.map(id => [id, 0]))
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('list_items')
     .select('list_id')
     .eq('type', 'song')
     .in('list_id', listIds)
+  if (error) {
+    if (isNetworkError(error)) throw error
+    logger.error('Failed to fetch list song counts', error)
+  }
   data?.forEach((row: { list_id: string }) => {
     counts.set(row.list_id, (counts.get(row.list_id) ?? 0) + 1)
   })

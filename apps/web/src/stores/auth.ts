@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { ref, computed, watch } from 'vue'
+import { isAuthRetryableFetchError, type User as SupabaseUser } from '@supabase/supabase-js'
+import { NetworkTimeoutError, withNetworkTimeout } from '@livenotes/shared/offline'
 import type { Profile, Project } from '@livenotes/shared/types'
 import * as authService from '@/services/authService'
 import { fetchProfile, updateProfile } from '@/services/profileService'
@@ -8,8 +9,54 @@ import { fetchProjectById, fetchCommunityProject } from '@/services/projectServi
 import { fetchUserRoleInProject } from '@/services/membershipService'
 import { logger } from '@/utils/logger'
 import type { ProjectRole } from '@livenotes/shared/types'
+import {
+  autoSyncIfStale,
+  clearOfflineData,
+  setAutoSyncPolicy,
+  setOfflineActiveProject,
+  setOfflineUser,
+} from '@/lib/offline/offlineData'
+import { forceOffline, isOfflineMode } from '@/lib/offline/offlineState'
+import { useOnline } from '@vueuse/core'
+import { forgetOfflineUser, readOfflineUser, rememberOfflineUser } from '@/lib/offline/offlineUser'
 
 const ACTIVE_PROJECT_CACHE_KEY = 'livenotes-project-id'
+const COMMUNITY_PROJECT_SLUG = 'community'
+
+// How long startup waits for Supabase to restore the session before falling
+// back to the remembered user (an expired token cannot be refreshed offline).
+const SESSION_TIMEOUT_OFFLINE_MS = 1_500
+const SESSION_TIMEOUT_ONLINE_MS = 8_000
+
+type SessionUserResult = { user: SupabaseUser | null }
+
+/**
+ * Restore the signed-in user. When the session cannot be restored because the
+ * network is unreachable, fall back to the remembered user so the app can
+ * start offline and read its snapshot.
+ */
+async function resolveSessionUser(): Promise<SessionUserResult> {
+  const offlineUser = readOfflineUser()
+  const pending = authService.getSession()
+  try {
+    const { data: { session }, error } = offlineUser
+      ? await withNetworkTimeout(pending, isOfflineMode() ? SESSION_TIMEOUT_OFFLINE_MS : SESSION_TIMEOUT_ONLINE_MS)
+      : await pending
+    if (session?.user) return { user: session.user }
+    if (error && isAuthRetryableFetchError(error) && offlineUser) {
+      logger.warn('Session refresh failed (network); starting with the remembered user')
+      return { user: offlineUser }
+    }
+    if (error) throw error
+    return { user: null }
+  } catch (err) {
+    if (err instanceof NetworkTimeoutError && offlineUser) {
+      logger.warn('Session restore timed out; starting with the remembered user')
+      return { user: offlineUser }
+    }
+    throw err
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -27,10 +74,33 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value)
   const userId = computed(() => user.value?.id ?? null)
   const displayName = computed(() => profile.value?.display_name ?? user.value?.email ?? '')
+  // Offline the app is read-only: hiding edit controls is driven by isEditor
+  const browserOnline = useOnline()
+  const isOnline = computed(() => browserOnline.value && !forceOffline.value)
   const isEditor = computed(() =>
-    activeProjectRole.value === 'editor' || activeProjectRole.value === 'administrator'
+    isOnline.value &&
+    (activeProjectRole.value === 'editor' || activeProjectRole.value === 'administrator')
   )
   const isAdmin = computed(() => activeProjectRole.value === 'administrator')
+
+  // Offline data layer follows the signed-in user and active project.
+  // 'sync' so reads issued right after the change already use the right snapshot.
+  watch(userId, id => setOfflineUser(id), { flush: 'sync', immediate: true })
+  watch(activeProjectId, id => setOfflineActiveProject(id), { flush: 'sync', immediate: true })
+
+  function setSignedInUser(sessionUser: SupabaseUser): void {
+    user.value = sessionUser
+    rememberOfflineUser(sessionUser)
+  }
+
+  // Automatic syncs never download the shared community project, and wait
+  // until the active project is known
+  setAutoSyncPolicy(() => !!activeProject.value && activeProject.value.slug !== COMMUNITY_PROJECT_SLUG)
+
+  /** Keep the active project's offline snapshot fresh. */
+  function startBackgroundSync(): void {
+    autoSyncIfStale().catch(err => logger.warn('Background sync failed', err))
+  }
 
   async function _loadProfile(): Promise<void> {
     if (!user.value) return
@@ -43,12 +113,15 @@ export const useAuthStore = defineStore('auth', () => {
       Promise.all([
         fetchProjectById(cached).then(p => { activeProject.value = p }),
         fetchUserRoleInProject(cached, user.value.id).then(r => { activeProjectRole.value = r }),
-      ]).catch(() => {})
-      _refreshProfile().catch(() => {})
+      ]).catch(err => logger.warn('Failed to load cached project', err))
+      _refreshProfile()
+        .catch(err => logger.warn('Failed to refresh profile', err))
+        .finally(startBackgroundSync)
       return
     }
 
     await _refreshProfile()
+    startBackgroundSync()
   }
 
   async function _refreshProfile(): Promise<void> {
@@ -98,6 +171,7 @@ export const useAuthStore = defineStore('auth', () => {
     ])
     activeProject.value = project
     activeProjectRole.value = role
+    startBackgroundSync()
   }
 
   // Actions
@@ -109,25 +183,29 @@ export const useAuthStore = defineStore('auth', () => {
 
     initPromise = (async () => {
       try {
-        const { data: { session }, error: sessionError } = await authService.getSession()
-        if (sessionError) throw sessionError
+        const { user: sessionUser } = await resolveSessionUser()
+        if (sessionUser) setSignedInUser(sessionUser)
 
-        if (session?.user) {
-          user.value = session.user
-        }
-
-        authService.subscribeToAuthChanges(async (_event, session) => {
-          user.value = session?.user ?? null
+        authService.subscribeToAuthChanges(async (event, session) => {
           if (session?.user) {
+            setSignedInUser(session.user)
             await _loadProfile()
-          } else {
-            profile.value = null
-            activeProjectId.value = null
-            activeProjectRole.value = null
+            return
+          }
+          // Offline, the initial session can be missing only because the token
+          // could not be refreshed: keep the remembered user.
+          if (event === 'INITIAL_SESSION' && user.value) return
+          user.value = null
+          profile.value = null
+          activeProjectId.value = null
+          activeProjectRole.value = null
+          if (event === 'SIGNED_OUT') {
+            forgetOfflineUser()
+            await clearOfflineData()
           }
         })
 
-        if (session?.user) {
+        if (sessionUser) {
           await _loadProfile()
         }
 
@@ -152,8 +230,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (signupError) throw signupError
 
       const requiresEmailConfirmation = data.session === null
-      if (!requiresEmailConfirmation) {
-        user.value = data.user
+      if (!requiresEmailConfirmation && data.user) {
+        setSignedInUser(data.user)
       }
       // Profile is auto-created by the DB trigger; no project is set on signup.
 
@@ -174,9 +252,8 @@ export const useAuthStore = defineStore('auth', () => {
       const { data, error: loginError } = await authService.signInWithPassword(email, password)
       if (loginError) throw loginError
 
-      user.value = data.user
-
-      if (user.value) {
+      if (data.user) {
+        setSignedInUser(data.user)
         await _loadProfile()
       }
 
@@ -220,6 +297,8 @@ export const useAuthStore = defineStore('auth', () => {
       activeProjectId.value = null
       activeProjectRole.value = null
       localStorage.removeItem(ACTIVE_PROJECT_CACHE_KEY)
+      forgetOfflineUser()
+      await clearOfflineData()
 
       return { success: true }
     } catch (err) {

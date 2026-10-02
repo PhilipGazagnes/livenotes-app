@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { ProjectRole, InvitationLink, Project } from '@livenotes/shared/types'
+import { isNetworkError } from '@livenotes/shared/offline'
+import { readThrough } from '@/lib/offline/offlineData'
 
 export interface MemberWithProfile {
   id: string
@@ -14,13 +16,18 @@ export interface InvitationWithProject extends InvitationLink {
   project: Pick<Project, 'id' | 'name' | 'thumbnail_url'>
 }
 
-export async function fetchUserRoleInProject(projectId: string, userId: string): Promise<ProjectRole | null> {
+export function fetchUserRoleInProject(projectId: string, userId: string): Promise<ProjectRole | null> {
+  return readThrough(() => fetchUserRoleInProjectRemote(projectId, userId), snapshot => snapshot.role, { projectId })
+}
+
+async function fetchUserRoleInProjectRemote(projectId: string, userId: string): Promise<ProjectRole | null> {
   const { data, error } = await supabase
     .from('project_memberships')
     .select('role')
     .eq('project_id', projectId)
     .eq('user_id', userId)
     .single()
+  if (error && isNetworkError(error)) throw error
   if (error || !data) return null
   return data.role as ProjectRole
 }

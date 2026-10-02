@@ -126,6 +126,17 @@
 
     <div class="border-t border-gray-800 mx-4 my-1" />
 
+    <!-- Reload: installed PWAs have no browser reload button (#13) -->
+    <button
+      @click="reloadApp"
+      class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800 transition-colors text-sm"
+    >
+      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      {{ I18N.APP_UPDATE.RELOAD_APP }}
+    </button>
+
     <!-- Log out -->
     <button
       @click="handleLogout"
@@ -152,6 +163,10 @@ import type { Project } from '@livenotes/shared/types'
 import { ROUTES } from '@/constants/routes'
 import { MESSAGES } from '@/constants/messages'
 import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
+import { useOnlineStatus } from '@/composables/useOnlineStatus'
+import { reloadApp } from '@/lib/appUpdates'
+import { I18N } from '@/constants/i18n'
+import { logger } from '@/utils/logger'
 import ProjectAvatarIcon from './ProjectAvatarIcon.vue'
 import CreateProjectDrawer from './CreateProjectDrawer.vue'
 import ProjectSettingsDrawer from './ProjectSettingsDrawer.vue'
@@ -173,22 +188,33 @@ const otherProjects = computed(() =>
 )
 
 const isCommunityActive = computed(() => authStore.activeProject?.slug === 'community')
-const { lastSyncedAt } = useOfflineSync(authStore.activeProjectId ?? '')
+const { lastSyncedAt } = useOfflineSync()
+const { isOnline } = useOnlineStatus()
 
 function isActiveProject(id: string) {
   return authStore.activeProjectId === id
 }
 
 onMounted(async () => {
-  const [projects, community] = await Promise.all([
-    fetchUserProjects(authStore.userId!),
-    fetchCommunityProject(),
-  ])
-  allProjects.value = projects.filter(p => p.slug !== 'community')
-  communityProject.value = community
+  // Project switching needs the network; offline the menu shows the active project only
+  if (!isOnline.value) return
+  try {
+    const [projects, community] = await Promise.all([
+      fetchUserProjects(authStore.userId!),
+      fetchCommunityProject(),
+    ])
+    allProjects.value = projects.filter(p => p.slug !== 'community')
+    communityProject.value = community
+  } catch (err) {
+    logger.error('Failed to load projects', err)
+  }
 })
 
 async function switchProject(projectId: string) {
+  if (!isOnline.value) {
+    uiStore.showToast(MESSAGES.ERROR.OFFLINE, 'error')
+    return
+  }
   drawerStore.popAll()
   uiStore.showOperationOverlay('Loading project...')
   await authStore.setActiveProject(projectId)

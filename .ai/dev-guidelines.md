@@ -284,6 +284,16 @@ const { data } = await supabase
   .eq('status', 'active')
 ```
 
+### Offline reads
+
+The app works offline from a local snapshot of the active project (see `livenotes-documentation/app/offline-data-layer-spec.md`).
+
+- Every **read** service function that a page needs offline wraps its Supabase query with `readThrough(remote, local)` (`@/lib/offline/offlineData`). `local` rebuilds the same shape from the snapshot with a selector from `@livenotes/shared/offline` (`queries.ts`); add one there, with a test, when you add a read.
+- In `remote`, never turn a network failure into `null` or `[]`: rethrow it when `isNetworkError(error)` is true, so the snapshot can answer.
+- **Writes** are online-only. The Supabase fetch wrapper blocks them offline and schedules a snapshot re-sync after each successful write; nothing to do in services.
+- Edit controls are gated by `authStore.isEditor`, which is `false` while offline.
+- If a new table must be readable offline, add it to the snapshot (`fetchSnapshot.ts`) and bump `SNAPSHOT_SCHEMA_VERSION` when the shape changes.
+
 ### Realtime
 
 If using Supabase Realtime subscriptions, always unsubscribe on component unmount using `onUnmounted`:

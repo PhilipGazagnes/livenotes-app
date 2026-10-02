@@ -11,6 +11,18 @@ export const I18N = {
     NAME: 'Livenotes',
   },
 
+  APP_UPDATE: {
+    AVAILABLE: 'A new version of Livenotes is available.',
+    RELOAD: 'Reload',
+    RELOAD_APP: 'Reload app',
+  },
+
+  OFFLINE: {
+    NO_SNAPSHOT: 'Not synced for offline use yet. Sync while online to use this project without a connection.',
+    EDITING_DISABLED: 'You are offline — viewing only. Editing needs a connection.',
+    SYNC_FAILED_KEPT: 'Sync failed. Your previous offline copy is still available.',
+  },
+
   // ============================================================================
   // BUTTONS & ACTIONS
   // ============================================================================
@@ -473,7 +485,7 @@ export const I18N = {
     PROJECT_URL_SLUG: 'Project URL slug',
     OFFLINE: 'Offline',
     FORCE_OFFLINE: 'Force Offline Mode',
-    FORCE_OFFLINE_DESC: 'Use cached data only. Enable this when connected to a network without internet (e.g. a mixing console hotspot).',
+    FORCE_OFFLINE_DESC: 'Use the offline copy only, without network requests. Enable this when connected to a network without internet (e.g. a mixing console hotspot).',
     SYNC_FOR_OFFLINE: 'Sync for offline use',
     NEVER_SYNCED: 'Never synced',
     LAST_SYNCED: (date: string) => `Last synced: ${date}`,

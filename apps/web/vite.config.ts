@@ -13,7 +13,8 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'autoUpdate',
+      // 'prompt': a new version waits for the user (update banner), see src/lib/appUpdates.ts
+      registerType: 'prompt',
       manifest: {
         name: 'Livenotes',
         short_name: 'Livenotes',

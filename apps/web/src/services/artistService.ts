@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Artist, ArtistV2, ArtistWithCount } from '@livenotes/shared/types'
+import { selectArtistsWithCount } from '@livenotes/shared/offline'
+import { readThrough } from '@/lib/offline/offlineData'
 
 interface RawArtistV2Field {
   id: string
@@ -31,7 +33,11 @@ export async function fetchArtists(projectId: string): Promise<Artist[]> {
   return data || []
 }
 
-export async function fetchArtistsWithCount(projectId: string): Promise<ArtistWithCount[]> {
+export function fetchArtistsWithCount(projectId: string): Promise<ArtistWithCount[]> {
+  return readThrough(() => fetchArtistsWithCountRemote(projectId), selectArtistsWithCount, { projectId })
+}
+
+async function fetchArtistsWithCountRemote(projectId: string): Promise<ArtistWithCount[]> {
   const { data: librarySongs, error } = await supabase
     .from('library_songs')
     .select(`

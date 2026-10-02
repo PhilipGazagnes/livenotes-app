@@ -40,6 +40,13 @@
         </button>
       </div>
     </div>
+    <p
+      v-if="!isOnline && !hasSnapshot"
+      data-testid="offline-no-snapshot"
+      class="px-4 py-2 text-xs text-orange-300 bg-orange-500/10 border-t border-orange-500/20"
+    >
+      {{ I18N.OFFLINE.NO_SNAPSHOT }}
+    </p>
   </header>
 </template>
 
@@ -50,6 +57,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDrawerStore } from '@/stores/drawer'
 import { I18N } from '@/constants/i18n'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
+import { useOfflineSync } from '@/composables/useOfflineSync'
 import ProjectAvatarIcon from './ProjectAvatarIcon.vue'
 import ProjectMenuDrawer from './ProjectMenuDrawer.vue'
 
@@ -61,6 +69,7 @@ const uiStore = useUiStore()
 const authStore = useAuthStore()
 const drawerStore = useDrawerStore()
 const { isOnline } = useOnlineStatus()
+const { hasSnapshot } = useOfflineSync()
 
 const avatarName = computed(() =>
   authStore.activeProject?.name ?? authStore.displayName ?? '?'

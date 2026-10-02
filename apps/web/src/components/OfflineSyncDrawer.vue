@@ -17,15 +17,16 @@
       <p>
         Syncing downloads all songs, notes, tags, artists, and setlists for
         <span class="text-white font-medium">{{ projectName }}</span>
-        so you can browse and read them without an internet connection.
+        to this device, so you can browse and read them without an internet connection.
+        Offline, the app is read-only.
       </p>
       <p>
-        Once synced, enable <span class="text-white font-medium">Force offline mode</span>
-        from the hamburger menu — the app will stop making network requests and
-        serve everything from cache.
+        The offline copy refreshes automatically when you open the app online and after
+        you make changes. On a network without internet (e.g. a mixing console hotspot),
+        enable <span class="text-white font-medium">Force offline mode</span> from the hamburger menu.
       </p>
       <p class="text-gray-500 text-xs">
-        Sync again any time to refresh the cache with the latest data.
+        If a sync fails, your previous offline copy stays available.
       </p>
     </section>
 
@@ -68,6 +69,7 @@
     </button>
 
     <p v-if="!isOnline" class="text-xs text-orange-400 text-center">You are offline — connect to sync.</p>
+    <p v-else-if="lastSyncError" class="text-xs text-red-400 text-center">{{ lastSyncError }}</p>
 
   </div>
 </template>
@@ -80,23 +82,24 @@ import { useUiStore } from '@/stores/ui'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
 import { I18N } from '@/constants/i18n'
+import { logger } from '@/utils/logger'
 
 const drawerStore = useDrawerStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
 const { isOnline } = useOnlineStatus()
 
-const projectId = computed(() => authStore.activeProjectId ?? '')
 const projectName = computed(() => authStore.activeProject?.name ?? '')
 
-const { isSyncing, progress, lastSyncedAt, warmUp } = useOfflineSync(projectId.value)
+const { isSyncing, progress, lastSyncedAt, lastSyncError, sync } = useOfflineSync()
 
 async function handleSync() {
   try {
-    await warmUp()
+    await sync()
     uiStore.showToast(I18N.TOAST.SYNCED_OFFLINE, 'success')
-  } catch {
-    uiStore.showToast(I18N.TOAST.SYNC_FAILED, 'error')
+  } catch (err) {
+    logger.error('Offline sync failed', err)
+    uiStore.showToast(lastSyncedAt.value ? I18N.OFFLINE.SYNC_FAILED_KEPT : I18N.TOAST.SYNC_FAILED, 'error')
   }
 }
 </script>

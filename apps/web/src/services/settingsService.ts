@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { OfflineDataUnavailableError } from '@livenotes/shared/offline'
+import { readThrough } from '@/lib/offline/offlineData'
 
 type ProjectSettings = {
   name: string
@@ -17,7 +19,19 @@ type ProjectPublicInfo = {
   contact_info: Record<string, string> | null
 }
 
-export async function fetchProjectSettings(projectId: string): Promise<ProjectSettings> {
+export function fetchProjectSettings(projectId: string): Promise<ProjectSettings> {
+  return readThrough(
+    () => fetchProjectSettingsRemote(projectId),
+    snapshot => {
+      if (!snapshot.project) throw new OfflineDataUnavailableError()
+      const { name, description, slug, thumbnail_url, contact_enabled, contact_info } = snapshot.project
+      return { name, description, slug, thumbnail_url, contact_enabled, contact_info: (contact_info as Record<string, string> | null) }
+    },
+    { projectId },
+  )
+}
+
+async function fetchProjectSettingsRemote(projectId: string): Promise<ProjectSettings> {
   const { data, error } = await supabase
     .from('projects')
     .select('name, description, slug, thumbnail_url, contact_enabled, contact_info')

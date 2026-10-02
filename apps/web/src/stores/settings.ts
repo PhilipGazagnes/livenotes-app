@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { fetchProjectSettings, updateProjectSettings } from '@/services/settingsService'
 import { logger } from '@/utils/logger'
+import { setForceOffline } from '@/lib/offline/offlineState'
 
 const STORAGE_KEY = 'livenotes-settings'
 
@@ -116,14 +117,12 @@ export const useSettingsStore = defineStore('settings', () => {
     forceOfflineMode.value = defaultSettings.forceOfflineMode
   }
 
-  function notifySwForceOffline(value: boolean) {
-    navigator.serviceWorker?.controller?.postMessage({ type: 'SET_FORCE_OFFLINE', value })
-  }
-
   function toggleForceOfflineMode() {
     forceOfflineMode.value = !forceOfflineMode.value
-    notifySwForceOffline(forceOfflineMode.value)
   }
+
+  // The offline data layer reads the setting outside of Pinia (initial value comes from localStorage)
+  watch(forceOfflineMode, value => setForceOffline(value))
 
   // Project Settings Actions
   async function loadProjectSettings(projectId: string) {
