@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test'
 
 export default defineConfig({
   testDir: './e2e',
+  // e2e/offline runs with its own config (playwright.offline.config.ts)
+  testIgnore: '**/offline/**',
   // Run tests sequentially by default — community tests share a real DB
   fullyParallel: false,
   retries: 0,
