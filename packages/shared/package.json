@@ -8,9 +8,18 @@
     ".": "./src/index.ts",
     "./types": "./src/types/index.ts",
     "./types/*": "./src/types/*.ts",
-    "./*": "./src/*.ts"
+    "./offline": "./src/offline/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "dexie": "^4.4.6"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.100.1"
   }
 }

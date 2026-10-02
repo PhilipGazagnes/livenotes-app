@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test:e2e:offline": "playwright test -c playwright.offline.config.ts"
   },
   "dependencies": {
     "@ionic/vue": "^8.8.2",
@@ -28,8 +29,7 @@
     "vuedraggable": "^4.1.0",
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
-    "workbox-routing": "^7.4.1",
-    "workbox-strategies": "^7.4.1"
+    "workbox-routing": "^7.4.1"
   },
   "devDependencies": {
     "@netlify/functions": "^5.3.0",

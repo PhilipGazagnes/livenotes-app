@@ -1,3 +1,3 @@
 // Public entry point of @livenotes/shared.
-// Domain types are exported from `@livenotes/shared/types`.
-export {}
+// Domain types: `@livenotes/shared/types`. Offline data layer: `@livenotes/shared/offline`.
+export * from './offline'
