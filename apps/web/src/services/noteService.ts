@@ -2,26 +2,14 @@ import { supabase } from '@/lib/supabase'
 import type { Json } from '@livenotes/shared/types/supabase'
 import type { Note, NoteType, SongcodeNoteData, LooperNoteData } from '@livenotes/shared/types'
 import { selectNotes } from '@livenotes/shared/offline'
-import { readThrough } from '@/lib/offline/offlineData'
-
-const NOTE_COLUMNS = 'id, library_song_id, type, title, content, data, display_order, created_at, updated_at, is_public, is_shareable, created_by, updated_by, share_token'
+import { readLocal } from '@/lib/offline/offlineData'
+import { commitWrite } from '@/lib/offline/projectWrites'
 
 export function fetchNotes(librarySongId: string): Promise<Note[]> {
-  return readThrough(() => fetchNotesRemote(librarySongId), snapshot => selectNotes(snapshot, librarySongId))
+  return readLocal(snapshot => selectNotes(snapshot, librarySongId))
 }
 
-async function fetchNotesRemote(librarySongId: string): Promise<Note[]> {
-  const { data, error } = await supabase
-    .from('notes')
-    .select(NOTE_COLUMNS)
-    .eq('library_song_id', librarySongId)
-    .order('type')
-    .order('display_order')
-  if (error) throw error
-  return (data || []) as unknown as Note[]
-}
-
-export async function insertNote(payload: {
+export function insertNote(payload: {
   library_song_id: string
   type: NoteType
   content: string | null
@@ -31,16 +19,21 @@ export async function insertNote(payload: {
   updated_by: string
   display_order: number
 }): Promise<Note> {
-  const { data, error } = await supabase
-    .from('notes')
-    .insert({ ...payload, data: payload.data as unknown as Json })
-    .select()
-    .single()
-  if (error) throw error
-  return data as unknown as Note
+  return commitWrite(
+    async () => {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({ ...payload, data: payload.data as unknown as Json })
+        .select()
+        .single()
+      if (error) throw error
+      return data as unknown as Note
+    },
+    { librarySongIds: [payload.library_song_id] },
+  )
 }
 
-export async function updateNote(
+export function updateNote(
   noteId: string,
   updates: {
     title?: string
@@ -50,39 +43,59 @@ export async function updateNote(
   },
   userId: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from('notes')
-    .update({
-      ...updates,
-      data: updates.data as unknown as Json | null,
-      updated_by: userId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', noteId)
-  if (error) throw error
+  return commitWrite(
+    async () => {
+      const { data, error } = await supabase
+        .from('notes')
+        .update({
+          ...updates,
+          data: updates.data as unknown as Json | null,
+          updated_by: userId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', noteId)
+        .select('library_song_id')
+      if (error) throw error
+      return data.map(n => n.library_song_id)
+    },
+    librarySongIds => ({ librarySongIds }),
+  ).then(() => undefined)
 }
 
-export async function deleteNote(noteId: string): Promise<void> {
-  const { error } = await supabase.from('notes').delete().eq('id', noteId)
-  if (error) throw error
+export function deleteNote(noteId: string): Promise<void> {
+  return commitWrite(
+    async () => {
+      const { data, error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', noteId)
+        .select('library_song_id')
+      if (error) throw error
+      return data.map(n => n.library_song_id)
+    },
+    librarySongIds => ({ librarySongIds }),
+  ).then(() => undefined)
 }
 
-export async function reorderNotes(noteIds: string[]): Promise<void> {
-  for (let i = 0; i < noteIds.length; i++) {
-    const { error } = await supabase
-      .from('notes')
-      .update({ display_order: i })
-      .eq('id', noteIds[i])
-    if (error) throw error
-  }
+export function reorderNotes(noteIds: string[]): Promise<void> {
+  return commitWrite(
+    async () => {
+      const librarySongIds: string[] = []
+      for (let i = 0; i < noteIds.length; i++) {
+        const { data, error } = await supabase
+          .from('notes')
+          .update({ display_order: i })
+          .eq('id', noteIds[i])
+          .select('library_song_id')
+        if (error) throw error
+        librarySongIds.push(...data.map(n => n.library_song_id))
+      }
+      return librarySongIds
+    },
+    librarySongIds => ({ librarySongIds }),
+  ).then(() => undefined)
 }
 
-export async function getNoteById(noteId: string): Promise<Note | null> {
-  const { data, error } = await supabase
-    .from('notes')
-    .select(NOTE_COLUMNS)
-    .eq('id', noteId)
-    .single()
-  if (error) throw error
-  return data as unknown as Note
+export function getNoteById(noteId: string): Promise<Note | null> {
+  return readLocal(snapshot => snapshot.notes.find(n => n.id === noteId) ?? null)
 }

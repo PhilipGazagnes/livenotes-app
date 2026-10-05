@@ -16,14 +16,20 @@
         </h3>
       </div>
 
-      <BaseDropdownMenu v-if="authStore.isEditor && !uiStore.selectionMode" :items="dropdownItems" />
+      <BaseDropdownMenu
+        v-if="authStore.isEditor && !uiStore.selectionMode"
+        :items="dropdownItems"
+        :disabled="!editMode.canEditNow"
+        @blocked="editMode.explainBlock()"
+      />
     </div>
 
     <!-- Drag handle zone (only in draggable contexts, not in selection mode) -->
     <div
       v-if="authStore.isEditor && draggable && !uiStore.selectionMode"
-      class="drag-handle w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
-      @click.stop
+      class="w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
+      :class="editMode.canEditNow ? 'drag-handle' : 'opacity-40'"
+      @click.stop="editMode.canEditNow || editMode.explainBlock()"
     >
       <svg class="w-2.5 h-5 text-gray-600" viewBox="0 0 10 20" fill="currentColor" aria-hidden="true">
         <circle cx="3" cy="4" r="1.5"/>
@@ -42,6 +48,7 @@
 import type { ListItem } from '@livenotes/shared/types'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useEditModeStore } from '@/stores/editMode'
 import BaseDropdownMenu from '@/components/BaseDropdownMenu.vue'
 
 defineProps<{
@@ -56,6 +63,7 @@ const emit = defineEmits<{
 
 const uiStore = useUiStore()
 const authStore = useAuthStore()
+const editMode = useEditModeStore()
 
 const dropdownItems = [
   { label: 'Edit', callback: () => emit('edited') },

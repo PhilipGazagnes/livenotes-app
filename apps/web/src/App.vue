@@ -8,6 +8,12 @@ import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import OperationOverlay from '@/components/OperationOverlay.vue'
 import DrawerManager from '@/components/DrawerManager.vue'
 import AppUpdateBanner from '@/components/AppUpdateBanner.vue'
+import SyncAvailableBanner from '@/components/SyncAvailableBanner.vue'
+import KeepEditingDialog from '@/components/KeepEditingDialog.vue'
+import { useEditModeStore } from '@/stores/editMode'
+
+// Registers the write guard and the editing-flag countdown for the whole app
+useEditModeStore()
 
 // Supabase's internal auto-refresh timer can get stuck when the browser tab
 // is backgrounded mid-refresh, causing all subsequent API calls to queue
@@ -41,6 +47,8 @@ onUnmounted(() => {
     <OperationOverlay />
     <DrawerManager />
     <AppUpdateBanner />
+    <SyncAvailableBanner />
+    <KeepEditingDialog />
   </ion-app>
 </template>
 

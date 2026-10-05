@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { OfflineDataUnavailableError } from '@livenotes/shared/offline'
-import { readThrough } from '@/lib/offline/offlineData'
+import { readLocal } from '@/lib/offline/offlineData'
+import { commitWrite } from '@/lib/offline/projectWrites'
 
 type ProjectSettings = {
   name: string
@@ -20,8 +21,7 @@ type ProjectPublicInfo = {
 }
 
 export function fetchProjectSettings(projectId: string): Promise<ProjectSettings> {
-  return readThrough(
-    () => fetchProjectSettingsRemote(projectId),
+  return readLocal(
     snapshot => {
       if (!snapshot.project) throw new OfflineDataUnavailableError()
       const { name, description, slug, thumbnail_url, contact_enabled, contact_info } = snapshot.project
@@ -31,25 +31,20 @@ export function fetchProjectSettings(projectId: string): Promise<ProjectSettings
   )
 }
 
-async function fetchProjectSettingsRemote(projectId: string): Promise<ProjectSettings> {
-  const { data, error } = await supabase
-    .from('projects')
-    .select('name, description, slug, thumbnail_url, contact_enabled, contact_info')
-    .eq('id', projectId)
-    .single()
-  if (error) throw error
-  return data as unknown as ProjectSettings
-}
-
-export async function updateProjectSettings(
+export function updateProjectSettings(
   projectId: string,
   updates: { name?: string; description?: string | null; slug?: string | null; thumbnail_url?: string | null; contact_enabled?: boolean; contact_info?: Record<string, string> | null }
 ): Promise<void> {
-  const { error } = await supabase
-    .from('projects')
-    .update(updates)
-    .eq('id', projectId)
-  if (error) throw error
+  return commitWrite(
+    async () => {
+      const { error } = await supabase
+        .from('projects')
+        .update(updates)
+        .eq('id', projectId)
+      if (error) throw error
+    },
+    { project: true },
+  )
 }
 
 export async function fetchProjectPublicInfo(projectId: string): Promise<ProjectPublicInfo | null> {

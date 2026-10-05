@@ -8,6 +8,7 @@ import {
   fetchLibrarySongWithDetails,
   addToLibrary as serviceAddToLibrary,
   removeFromLibrary as serviceRemoveFromLibrary,
+  removeManyFromLibrary as serviceRemoveManyFromLibrary,
   updateLibrarySong as serviceUpdateLibrarySong,
 } from '@/services/libraryService'
 
@@ -114,6 +115,20 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
 
+  async function removeManyFromLibrary(librarySongIds: string[]) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await serviceRemoveManyFromLibrary(librarySongIds)
+      await loadLibrary({ force: true })
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to remove from library'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function updateLibrarySong(
     librarySongId: string,
     updates: { custom_title?: string; custom_notes?: string }
@@ -181,6 +196,7 @@ export const useLibraryStore = defineStore('library', () => {
     loadLibrary,
     addToLibrary,
     removeFromLibrary,
+    removeManyFromLibrary,
     updateLibrarySong,
     getLibrarySongById,
     setCurrentLibrarySong,

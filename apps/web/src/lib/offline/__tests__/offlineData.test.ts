@@ -9,7 +9,6 @@ vi.mock('@livenotes/shared/offline', async (importOriginal) => {
   return {
     ...actual,
     fetchProjectSnapshot: (...args: unknown[]) => fetchProjectSnapshot(...args),
-    deleteOtherUsersDatabases: vi.fn().mockResolvedValue(undefined),
   }
 })
 
@@ -21,8 +20,10 @@ const { setForceOffline } = await import('../offlineState')
 const databases = new Map<string, Map<string, ProjectSnapshot>>()
 const destroyed: string[] = []
 function memoryStore(userId: string): SnapshotStore {
-  if (!databases.has(userId)) databases.set(userId, new Map())
-  const db = () => databases.get(userId)!
+  const db = () => {
+    if (!databases.has(userId)) databases.set(userId, new Map())
+    return databases.get(userId)!
+  }
   return {
     load: async id => db().get(id) ?? null,
     save: async s => { db().set(s.projectId, s) },
@@ -32,9 +33,9 @@ function memoryStore(userId: string): SnapshotStore {
   }
 }
 
-function snapshot(projectId: string, marker: string): ProjectSnapshot {
+function snapshot(projectId: string, marker: string, version = 1): ProjectSnapshot {
   return {
-    projectId, schemaVersion: SNAPSHOT_SCHEMA_VERSION, syncedAt: new Date().toISOString(),
+    projectId, schemaVersion: SNAPSHOT_SCHEMA_VERSION, syncedAt: new Date().toISOString(), version,
     project: null, role: null, librarySongs: [], songs: [], songArtists: [], artists: [],
     librarySongTags: [], notes: [], tags: [{ id: marker, project_id: projectId, name: marker, created_at: null }],
     lists: [], listItems: [],
@@ -42,105 +43,80 @@ function snapshot(projectId: string, marker: string): ProjectSnapshot {
 }
 
 const marker = (s: ProjectSnapshot) => s.tags[0].name
-const networkError = () => new TypeError('Failed to fetch')
 
 function goOnline(online: boolean) {
   vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(online)
 }
 
-beforeEach(async () => {
+beforeEach(() => {
   databases.clear()
   destroyed.length = 0
   fetchProjectSnapshot.mockReset()
   offline.__setSnapshotStoreFactory(memoryStore)
-  offline.setAutoSyncPolicy(() => true)
   setForceOffline(false)
   goOnline(true)
   offline.setOfflineUser('u1')
   offline.setOfflineActiveProject('p1')
 })
 
-afterEach(async () => {
-  vi.useRealTimers()
+afterEach(() => {
   vi.restoreAllMocks()
-  await offline.clearOfflineData()
+  offline.setOfflineActiveProject(null)
+  offline.setOfflineUser(null)
 })
 
-async function seed(projectId = 'p1', name = 'local') {
-  fetchProjectSnapshot.mockResolvedValueOnce(snapshot(projectId, name))
+async function seed(projectId = 'p1', name = 'local', version = 1) {
+  fetchProjectSnapshot.mockResolvedValueOnce(snapshot(projectId, name, version))
   await offline.syncProject(projectId)
 }
 
-describe('readThrough', () => {
-  it('online: returns the network result', async () => {
+describe('readLocal (ADR-009)', () => {
+  it('reads the local copy without touching the network', async () => {
     await seed()
-    const local = vi.fn()
-    await expect(offline.readThrough(async () => 'remote', local)).resolves.toBe('remote')
-    expect(local).not.toHaveBeenCalled()
+    await expect(offline.readLocal(marker)).resolves.toBe('local')
+    expect(fetchProjectSnapshot).toHaveBeenCalledTimes(1)
   })
 
-  it('offline: answers from the snapshot without calling the network', async () => {
-    await seed()
+  it('without a copy, downloads the project first', async () => {
+    fetchProjectSnapshot.mockResolvedValueOnce(snapshot('p1', 'downloaded'))
+    await expect(offline.readLocal(marker)).resolves.toBe('downloaded')
+    // the next read is local
+    await expect(offline.readLocal(marker)).resolves.toBe('downloaded')
+    expect(fetchProjectSnapshot).toHaveBeenCalledTimes(1)
+  })
+
+  it('offline without a copy: OfflineDataUnavailableError', async () => {
     goOnline(false)
-    const remote = vi.fn()
-    await expect(offline.readThrough(remote, marker)).resolves.toBe('local')
-    expect(remote).not.toHaveBeenCalled()
+    await expect(offline.readLocal(marker)).rejects.toBeInstanceOf(OfflineDataUnavailableError)
+    expect(fetchProjectSnapshot).not.toHaveBeenCalled()
   })
 
-  it('force offline mode behaves like offline', async () => {
-    await seed()
+  it('force offline counts as offline', async () => {
     setForceOffline(true)
-    const remote = vi.fn()
-    await expect(offline.readThrough(remote, marker)).resolves.toBe('local')
-    expect(remote).not.toHaveBeenCalled()
+    await expect(offline.readLocal(marker)).rejects.toBeInstanceOf(OfflineDataUnavailableError)
   })
 
-  it('offline without snapshot: throws OfflineDataUnavailableError', async () => {
-    goOnline(false)
-    await expect(offline.readThrough(vi.fn(), marker)).rejects.toBeInstanceOf(OfflineDataUnavailableError)
-  })
-
-  it('network failure with a snapshot: falls back to the snapshot', async () => {
-    await seed()
-    await expect(offline.readThrough(() => Promise.reject(networkError()), marker)).resolves.toBe('local')
-  })
-
-  it('network failure without a snapshot: rethrows', async () => {
-    await expect(offline.readThrough(() => Promise.reject(networkError()), marker)).rejects.toThrow('Failed to fetch')
-  })
-
-  it('server errors are never hidden, even with a snapshot', async () => {
-    await seed()
-    const rls = { message: 'permission denied for table tags', code: '42501' }
-    await expect(offline.readThrough(() => Promise.reject(rls), marker)).rejects.toBe(rls)
-  })
-
-  it('slow network with a snapshot: answers from the snapshot after the timeout', async () => {
-    await seed()
-    vi.useFakeTimers()
-    const never = new Promise<string>(() => {})
-    const result = offline.readThrough(() => never, marker)
-    await vi.advanceTimersByTimeAsync(offline.REMOTE_READ_TIMEOUT_MS)
-    await expect(result).resolves.toBe('local')
-  })
-
-  it('uses the snapshot of the requested project', async () => {
-    await seed('p1', 'one')
-    await seed('p2', 'two')
-    goOnline(false)
-    await expect(offline.readThrough(vi.fn(), marker, { projectId: 'p2' })).resolves.toBe('two')
+  it('reads another project by id', async () => {
+    await seed('p2', 'other')
+    await expect(offline.readLocal(marker, { projectId: 'p2' })).resolves.toBe('other')
   })
 })
 
 describe('syncProject', () => {
-  it('keeps the previous snapshot when a sync fails', async () => {
+  it('replaces the copy and exposes its version', async () => {
+    await seed('p1', 'first', 4)
+    expect(offline.localVersion.value).toBe(4)
+    await seed('p1', 'second', 6)
+    await expect(offline.readLocal(marker)).resolves.toBe('second')
+    expect(offline.localVersion.value).toBe(6)
+  })
+
+  it('keeps the previous copy when a sync fails', async () => {
     await seed('p1', 'first')
     fetchProjectSnapshot.mockRejectedValueOnce(new Error('Sync failed while loading setlists'))
     await expect(offline.syncProject()).rejects.toThrow('setlists')
-
     expect(offline.lastSyncError.value).toContain('setlists')
-    goOnline(false)
-    await expect(offline.readThrough(vi.fn(), marker)).resolves.toBe('first')
+    await expect(offline.readLocal(marker)).resolves.toBe('first')
   })
 
   it('coalesces concurrent syncs of the same project', async () => {
@@ -162,66 +138,67 @@ describe('syncProject', () => {
   })
 })
 
-describe('autoSyncIfStale', () => {
-  it('syncs when there is no snapshot', async () => {
-    fetchProjectSnapshot.mockResolvedValue(snapshot('p1', 'x'))
-    await offline.autoSyncIfStale()
-    expect(fetchProjectSnapshot).toHaveBeenCalledTimes(1)
+describe('local patches (ADR-012)', () => {
+  it('patchLocalCopy applies the change and the new version', async () => {
+    await seed('p1', 'local', 3)
+    await offline.patchLocalCopy('p1', { tags: [{ id: 't9', project_id: 'p1', name: 'new', created_at: null }], version: 4 })
+    const tags = await offline.readLocal(s => s.tags.map(t => t.name))
+    expect(tags).toEqual(['local', 'new'])
+    expect(offline.localVersion.value).toBe(4)
+    // persisted, not only in memory
+    expect(databases.get('u1')!.get('p1')!.version).toBe(4)
   })
 
-  it('respects the auto-sync policy (e.g. community project)', async () => {
-    offline.setAutoSyncPolicy(() => false)
-    await offline.autoSyncIfStale()
-    expect(fetchProjectSnapshot).not.toHaveBeenCalled()
+  it('markLocalCopyOutdated sets version -1', async () => {
+    await seed('p1', 'local', 3)
+    await offline.markLocalCopyOutdated('p1')
+    expect(offline.localVersion.value).toBe(-1)
   })
 
-  it('skips a fresh snapshot', async () => {
-    await seed()
-    await offline.autoSyncIfStale()
-    expect(fetchProjectSnapshot).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('markSnapshotDirty', () => {
-  it('does not re-sync after writes when the policy forbids it', async () => {
-    vi.useFakeTimers()
-    offline.setAutoSyncPolicy(() => false)
-    offline.markSnapshotDirty()
-    await vi.advanceTimersByTimeAsync(offline.DIRTY_RESYNC_DELAY_MS)
-    expect(fetchProjectSnapshot).not.toHaveBeenCalled()
-  })
-
-  it('debounces writes into one background re-sync', async () => {
-    vi.useFakeTimers()
-    fetchProjectSnapshot.mockResolvedValue(snapshot('p1', 'x'))
-    offline.markSnapshotDirty()
-    offline.markSnapshotDirty()
-    await vi.advanceTimersByTimeAsync(offline.DIRTY_RESYNC_DELAY_MS - 1)
-    expect(fetchProjectSnapshot).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(1)
-    expect(fetchProjectSnapshot).toHaveBeenCalledTimes(1)
+  it('removeLocalCopy drops one project', async () => {
+    await seed('p1')
+    await seed('p2')
+    await offline.removeLocalCopy('p1')
+    expect(offline.localVersion.value).toBeNull()
+    expect(databases.get('u1')!.has('p1')).toBe(false)
+    expect(databases.get('u1')!.has('p2')).toBe(true)
   })
 })
 
-describe('users and sign-out', () => {
-  it('a different user does not see the previous user snapshot', async () => {
+describe('users and local data (ADR-014)', () => {
+  it('a different user does not see the previous user copy', async () => {
     await seed()
     offline.setOfflineUser('u2')
-    offline.setOfflineActiveProject('p1')
     goOnline(false)
-    await expect(offline.readThrough(vi.fn(), marker)).rejects.toBeInstanceOf(OfflineDataUnavailableError)
+    await expect(offline.readLocal(marker)).rejects.toBeInstanceOf(OfflineDataUnavailableError)
   })
 
-  it('clearOfflineData deletes the user database', async () => {
+  it('switching users keeps the previous user data on the device', async () => {
     await seed()
-    await offline.clearOfflineData()
-    expect(destroyed).toContain('u1')
+    offline.setOfflineUser('u2')
+    offline.setOfflineUser('u1')
+    goOnline(false)
+    await expect(offline.readLocal(marker)).resolves.toBe('local')
+    expect(destroyed).toEqual([])
+  })
+
+  it('deleteLocalData deletes only the current user data, and the store keeps working', async () => {
+    await seed()
+    offline.setOfflineUser('u2')
+    await seed('p1', 'u2-copy')
+    await offline.deleteLocalData()
+    expect(destroyed).toEqual(['u2'])
     expect(offline.lastSyncedAt.value).toBeNull()
+    await seed('p1', 'after')
+    await expect(offline.readLocal(marker)).resolves.toBe('after')
+    offline.setOfflineUser('u1')
+    await expect(offline.readLocal(marker)).resolves.toBe('local')
   })
 
   it('removes legacy last-synced keys', async () => {
+    offline.setOfflineUser(null)
     localStorage.setItem('livenotes-last-synced-p1', '2026-01-01')
-    await offline.clearOfflineData()
+    offline.setOfflineUser('u1')
     expect(localStorage.getItem('livenotes-last-synced-p1')).toBeNull()
   })
 })

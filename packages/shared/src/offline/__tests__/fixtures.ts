@@ -56,6 +56,7 @@ export function makeSnapshot(overrides: Partial<ProjectSnapshot> = {}): ProjectS
     projectId: PROJECT_ID,
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     syncedAt: '2026-10-02T10:00:00.000Z',
+    version: 3,
     project: {
       id: PROJECT_ID, name: 'Band', slug: 'band', owner_id: 'u1', created_at: null, updated_at: null,
       description: null, thumbnail_url: null, contact_enabled: false, contact_info: null,

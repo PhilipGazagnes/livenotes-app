@@ -1,77 +1,12 @@
 import { supabase } from '@/lib/supabase'
 import type { ArtistV2, ArtistWithCount } from '@livenotes/shared/types'
 import { selectArtistsWithCount } from '@livenotes/shared/offline'
-import { readThrough } from '@/lib/offline/offlineData'
-
-interface RawArtistV2Field {
-  id: string
-  name: string
-  created_at: string | null
-  updated_at: string | null
-}
-interface RawSongArtistV2Row {
-  artist_id: string
-  artists: RawArtistV2Field | null
-}
-interface RawSongV2ForCount {
-  id: string
-  song_artists: RawSongArtistV2Row[]
-}
-interface RawLibrarySongForCount {
-  id: string
-  song_id: string
-  songs: RawSongV2ForCount | null
-}
+import { readLocal } from '@/lib/offline/offlineData'
+import { commitWrite } from '@/lib/offline/projectWrites'
+import { removeManyFromLibrary } from './libraryService'
 
 export function fetchArtistsWithCount(projectId: string): Promise<ArtistWithCount[]> {
-  return readThrough(() => fetchArtistsWithCountRemote(projectId), selectArtistsWithCount, { projectId })
-}
-
-async function fetchArtistsWithCountRemote(projectId: string): Promise<ArtistWithCount[]> {
-  const { data: librarySongs, error } = await supabase
-    .from('library_songs')
-    .select(`
-      id,
-      song_id,
-      songs!inner(
-        id,
-        song_artists!inner(
-          artist_id,
-          artists!inner(
-            id,
-            name,
-            created_at,
-            updated_at
-          )
-        )
-      )
-    `)
-    .eq('project_id', projectId)
-  if (error) throw error
-
-  const artistMap = new Map<string, ArtistWithCount>()
-  const rows = (librarySongs as unknown as RawLibrarySongForCount[]) ?? []
-  rows.forEach((librarySong) => {
-    const songArtists = librarySong.songs?.song_artists ?? []
-    songArtists.forEach((sa) => {
-      const artist = sa.artists
-      if (artist) {
-        if (artistMap.has(artist.id)) {
-          artistMap.get(artist.id)!.song_count++
-        } else {
-          artistMap.set(artist.id, {
-            id: artist.id,
-            project_id: projectId,
-            name: artist.name,
-            created_at: artist.created_at,
-            updated_at: artist.updated_at,
-            song_count: 1,
-          })
-        }
-      }
-    })
-  })
-  return Array.from(artistMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  return readLocal(selectArtistsWithCount, { projectId })
 }
 
 export async function findArtistByFingerprint(fingerprint: string): Promise<ArtistV2 | null> {
@@ -104,15 +39,20 @@ export async function fetchArtistCreatedBy(artistId: string): Promise<string> {
   return data.created_by
 }
 
-export async function updateArtistV2(artistId: string, name: string, fingerprint: string): Promise<ArtistV2> {
-  const { data, error } = await supabase
-    .from('artists')
-    .update({ name, fingerprint, updated_at: new Date().toISOString() })
-    .eq('id', artistId)
-    .select()
-    .single()
-  if (error) throw error
-  return data
+export function updateArtistV2(artistId: string, name: string, fingerprint: string): Promise<ArtistV2> {
+  return commitWrite(
+    async () => {
+      const { data, error } = await supabase
+        .from('artists')
+        .update({ name, fingerprint, updated_at: new Date().toISOString() })
+        .eq('id', artistId)
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    artist => ({ artists: [artist] }),
+  )
 }
 
 export async function fetchUserProjectId(userId: string): Promise<string | null> {
@@ -150,8 +90,7 @@ export async function bulkDeleteArtistSongs(artistIds: string[], projectId: stri
   const libraryIds = (libSongs ?? []).map((ls: { id: string }) => ls.id)
   if (libraryIds.length === 0) return
 
-  const { error } = await supabase.from('library_songs').delete().in('id', libraryIds)
-  if (error) throw error
+  await removeManyFromLibrary(libraryIds)
 }
 
 export async function checkArtistUsedInSongs(artistId: string, songIds: string[]): Promise<boolean> {

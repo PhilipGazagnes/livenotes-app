@@ -39,6 +39,44 @@
           <span class="text-white font-semibold text-sm truncate">{{ authStore.activeProject.name }}</span>
         </div>
       </div>
+      <!-- Edit mode (ADR-011) -->
+      <div v-if="editMode.isEditing" class="flex items-center justify-between gap-2 px-6 py-2.5" data-testid="edit-mode-status">
+        <span class="flex items-center gap-2 text-sm text-amber-400">
+          <span class="h-2 w-2 rounded-full bg-amber-400" />
+          {{ I18N.EDIT_MODE.EDITING }}
+        </span>
+        <button
+          @click="handleStopEditing"
+          data-testid="stop-editing-btn"
+          class="rounded-md border border-gray-600 px-3 py-1 text-xs text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+        >
+          {{ I18N.EDIT_MODE.STOP }}
+        </button>
+      </div>
+      <div v-else-if="editMode.otherEditor" class="flex items-center justify-between gap-2 px-6 py-2.5" data-testid="edit-mode-status">
+        <span class="text-sm text-gray-400 truncate">{{ I18N.EDIT_MODE.EDITING_BY(editMode.otherEditorName) }}</span>
+        <button
+          v-if="authStore.isAdmin"
+          @click="editMode.releaseEditing()"
+          class="rounded-md border border-gray-600 px-3 py-1 text-xs text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+        >
+          {{ I18N.EDIT_MODE.RELEASE }}
+        </button>
+      </div>
+      <button
+        v-else-if="editMode.hasEditorRole"
+        @click="handleStartEditing"
+        :disabled="editMode.isBusy"
+        data-testid="start-editing-btn"
+        class="flex items-center gap-3 px-6 py-2.5 text-sm text-blue-400 hover:text-blue-300 hover:bg-gray-800 transition-colors disabled:opacity-50"
+        :class="{ 'opacity-50': !isOnline }"
+      >
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.232-6.232a2.5 2.5 0 113.536 3.536L12.536 16.5H9V13z"/>
+        </svg>
+        {{ I18N.EDIT_MODE.START }}
+      </button>
+
       <button
         v-if="authStore.isAdmin"
         @click="goToProjectSettings"
@@ -54,12 +92,19 @@
         Members
       </button>
       <button
-        v-if="!isCommunityActive"
         @click="openOfflineSync"
+        data-testid="sync-menu-btn"
         class="flex items-center justify-between px-6 py-2.5 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-sm w-full"
       >
-        <span>Sync for offline use</span>
+        <span>{{ I18N.OFFLINE.SYNC }}</span>
         <span v-if="lastSyncedAt" class="text-xs text-gray-600">synced {{ formatSyncDate(lastSyncedAt) }}</span>
+      </button>
+      <button
+        @click="handleDeleteLocalData"
+        data-testid="delete-local-data-btn"
+        class="flex items-center px-6 py-2.5 text-gray-500 hover:text-red-400 hover:bg-gray-800 transition-colors text-sm w-full"
+      >
+        {{ I18N.OFFLINE.DELETE_LOCAL_DATA }}
       </button>
 
       <div class="border-t border-gray-800 mx-4 my-1" />
@@ -157,6 +202,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useDrawerStore } from '@/stores/drawer'
 import { useUiStore } from '@/stores/ui'
+import { useEditModeStore } from '@/stores/editMode'
 import { fetchUserProjects, fetchCommunityProject } from '@/services/projectService'
 import type { ProjectWithRole } from '@/services/projectService'
 import type { Project } from '@livenotes/shared/types'
@@ -179,6 +225,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const drawerStore = useDrawerStore()
 const uiStore = useUiStore()
+const editMode = useEditModeStore()
 
 const allProjects = ref<ProjectWithRole[]>([])
 const communityProject = ref<Project | null>(null)
@@ -187,8 +234,7 @@ const otherProjects = computed(() =>
   allProjects.value.filter(p => p.id !== authStore.activeProjectId && p.slug !== 'community')
 )
 
-const isCommunityActive = computed(() => authStore.activeProject?.slug === 'community')
-const { lastSyncedAt } = useOfflineSync()
+const { lastSyncedAt, deleteLocalData } = useOfflineSync()
 const { isOnline } = useOnlineStatus()
 
 function isActiveProject(id: string) {
@@ -242,6 +288,31 @@ function openOfflineSync() {
   drawerStore.push(OfflineSyncDrawer, {})
 }
 
+async function handleStartEditing() {
+  await editMode.startEditing()
+  if (editMode.isEditing) drawerStore.popAll()
+}
+
+async function handleStopEditing() {
+  await editMode.stopEditing()
+}
+
+async function handleDeleteLocalData() {
+  const confirmed = await uiStore.showConfirm(
+    I18N.OFFLINE.DELETE_LOCAL_DATA_TITLE,
+    I18N.OFFLINE.DELETE_LOCAL_DATA_MESSAGE,
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL,
+  )
+  if (!confirmed) return
+  try {
+    await deleteLocalData()
+    uiStore.showToast(I18N.OFFLINE.LOCAL_DATA_DELETED, 'success')
+  } catch (err) {
+    uiStore.showErrorToast('delete local data', err as Error)
+  }
+}
+
 function showJoinInfo() {
   drawerStore.push(JoinProjectDrawer, {})
 }
@@ -256,6 +327,7 @@ async function handleLogout() {
   if (!confirmed) return
 
   drawerStore.clearForNavigation()
+  if (editMode.isEditing) await editMode.stopEditing({ silent: true })
   const result = await authStore.logout()
   if (result.success) {
     window.location.replace(ROUTES.LOGIN)

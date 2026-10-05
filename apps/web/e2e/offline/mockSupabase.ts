@@ -134,10 +134,56 @@ function session() {
 export interface MockBackend {
   offline: boolean
   restRequests: string[]
+  /** Project version and editing flag, as the database functions report them */
+  version: number
+  lastChangedBy: { user_id: string; name: string } | null
+  editorId: string | null
+}
+
+const OTHER_MEMBER = { user_id: 'u2', name: 'Alex' }
+
+function statusOf(backend: MockBackend) {
+  return {
+    version: backend.version,
+    last_changed_at: backend.lastChangedBy ? new Date(Date.now() - 5 * 60_000).toISOString() : null,
+    last_changed_by: backend.lastChangedBy,
+    editor: backend.editorId
+      ? { user_id: backend.editorId, name: backend.editorId === USER_ID ? 'Tester' : OTHER_MEMBER.name, since: now, expires_in_seconds: 900 }
+      : null,
+  }
+}
+
+/** Database functions (POST /rest/v1/rpc/<name>) */
+function rpc(backend: MockBackend, name: string, args: Record<string, unknown>): unknown {
+  switch (name) {
+    case 'get_project_status': return statusOf(backend)
+    case 'start_project_editing':
+      if (backend.editorId && backend.editorId !== USER_ID) return { ok: false, reason: 'locked', status: statusOf(backend) }
+      if (args.p_known_version !== backend.version) return { ok: false, reason: 'outdated', status: statusOf(backend) }
+      backend.editorId = USER_ID
+      return { ok: true, status: statusOf(backend) }
+    case 'renew_project_editing':
+      return backend.editorId === USER_ID ? { ok: true, status: statusOf(backend) } : { ok: false, reason: 'not_holder', status: statusOf(backend) }
+    case 'stop_project_editing':
+      if (backend.editorId === USER_ID) backend.editorId = null
+      return { ok: true }
+    default: return null
+  }
+}
+
+/** Another member edits the project on the server (version moves on). */
+export function changeByOtherMember(backend: MockBackend): void {
+  backend.version += 1
+  backend.lastChangedBy = OTHER_MEMBER
+}
+
+/** Another member takes the editing flag. */
+export function otherMemberStartsEditing(backend: MockBackend): void {
+  backend.editorId = OTHER_MEMBER.user_id
 }
 
 export async function mockSupabase(context: BrowserContext): Promise<MockBackend> {
-  const backend: MockBackend = { offline: false, restRequests: [] }
+  const backend: MockBackend = { offline: false, restRequests: [], version: 1, lastChangedBy: null, editorId: null }
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
@@ -156,6 +202,7 @@ export async function mockSupabase(context: BrowserContext): Promise<MockBackend
     const url = new URL(request.url())
     const table = url.pathname.replace('/rest/v1/', '')
     backend.restRequests.push(`${request.method()} ${table}`)
+    if (table.startsWith('rpc/')) return json(route, rpc(backend, table.slice(4), request.postDataJSON() ?? {}))
     if (request.method() !== 'GET') return json(route, [])
     const rows = applyFilters(rowsFor(table, url.searchParams.get('select') ?? '*'), url.searchParams)
     const wantsObject = (request.headers()['accept'] ?? '').includes('vnd.pgrst.object')

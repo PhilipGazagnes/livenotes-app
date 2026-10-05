@@ -1,7 +1,7 @@
 <template>
   <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold text-white">Offline sync</h2>
+      <h2 class="text-xl font-semibold text-white">Sync</h2>
       <button @click="drawerStore.pop()" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" aria-label="Close">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -15,18 +15,21 @@
     <!-- Explanation -->
     <section class="space-y-3 text-sm text-gray-400">
       <p>
-        Syncing downloads all songs, notes, tags, artists, and setlists for
+        The app always shows the copy of
         <span class="text-white font-medium">{{ projectName }}</span>
-        to this device, so you can browse and read them without an internet connection.
-        Offline, the app is read-only.
+        stored on this device, so screens open instantly, with or without a connection.
       </p>
       <p>
-        The offline copy refreshes automatically when you open the app online and after
-        you make changes. On a network without internet (e.g. a mixing console hotspot),
+        Changes made by other members appear only when you sync: nothing changes on screen
+        by itself. When the project changed, a banner tells you who changed it and when.
+        Your own edits show up right away.
+      </p>
+      <p>
+        On a network without internet (e.g. a mixing console hotspot),
         enable <span class="text-white font-medium">Force offline mode</span> from the hamburger menu.
       </p>
       <p class="text-gray-500 text-xs">
-        If a sync fails, your previous offline copy stays available.
+        If a sync fails, your previous copy stays available.
       </p>
     </section>
 

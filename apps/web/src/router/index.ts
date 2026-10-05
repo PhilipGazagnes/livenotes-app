@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { checkProjectStatus } from '@/lib/offline/projectStatus'
 import { ROUTES } from '@/constants/routes'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -103,6 +104,8 @@ router.beforeEach(async (to, _from, next) => {
 
 // Hide loading overlay after navigation completes
 router.afterEach(() => {
+  // Staleness check on navigation (throttled, ADR-010)
+  void checkProjectStatus()
   const uiStore = useUiStore()
   uiStore.hideOperationOverlay()
 })

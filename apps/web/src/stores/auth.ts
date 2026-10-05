@@ -9,19 +9,13 @@ import { fetchProjectById, fetchCommunityProject } from '@/services/projectServi
 import { fetchUserRoleInProject } from '@/services/membershipService'
 import { logger } from '@/utils/logger'
 import type { ProjectRole } from '@livenotes/shared/types'
-import {
-  autoSyncIfStale,
-  clearOfflineData,
-  setAutoSyncPolicy,
-  setOfflineActiveProject,
-  setOfflineUser,
-} from '@/lib/offline/offlineData'
+import { setOfflineActiveProject, setOfflineUser } from '@/lib/offline/offlineData'
+import { checkProjectStatus, resetProjectStatus } from '@/lib/offline/projectStatus'
 import { forceOffline, isOfflineMode } from '@/lib/offline/offlineState'
 import { useOnline } from '@vueuse/core'
 import { forgetOfflineUser, readOfflineUser, rememberOfflineUser } from '@/lib/offline/offlineUser'
 
 const ACTIVE_PROJECT_CACHE_KEY = 'livenotes-project-id'
-const COMMUNITY_PROJECT_SLUG = 'community'
 
 // How long startup waits for Supabase to restore the session before falling
 // back to the remembered user (an expired token cannot be refreshed offline).
@@ -74,32 +68,27 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!user.value)
   const userId = computed(() => user.value?.id ?? null)
   const displayName = computed(() => profile.value?.display_name ?? user.value?.email ?? '')
-  // Offline the app is read-only: hiding edit controls is driven by isEditor
   const browserOnline = useOnline()
   const isOnline = computed(() => browserOnline.value && !forceOffline.value)
+  // Role allows editing. Whether editing is possible right now (connection,
+  // editing flag, up-to-date copy) is the edit-mode store's job (ADR-013).
   const isEditor = computed(() =>
-    isOnline.value &&
-    (activeProjectRole.value === 'editor' || activeProjectRole.value === 'administrator')
+    activeProjectRole.value === 'editor' || activeProjectRole.value === 'administrator'
   )
   const isAdmin = computed(() => activeProjectRole.value === 'administrator')
 
   // Offline data layer follows the signed-in user and active project.
   // 'sync' so reads issued right after the change already use the right snapshot.
   watch(userId, id => setOfflineUser(id), { flush: 'sync', immediate: true })
-  watch(activeProjectId, id => setOfflineActiveProject(id), { flush: 'sync', immediate: true })
+  watch(activeProjectId, id => {
+    setOfflineActiveProject(id)
+    resetProjectStatus()
+    if (id) void checkProjectStatus({ force: true })
+  }, { flush: 'sync', immediate: true })
 
   function setSignedInUser(sessionUser: SupabaseUser): void {
     user.value = sessionUser
     rememberOfflineUser(sessionUser)
-  }
-
-  // Automatic syncs never download the shared community project, and wait
-  // until the active project is known
-  setAutoSyncPolicy(() => !!activeProject.value && activeProject.value.slug !== COMMUNITY_PROJECT_SLUG)
-
-  /** Keep the active project's offline snapshot fresh. */
-  function startBackgroundSync(): void {
-    autoSyncIfStale().catch(err => logger.warn('Background sync failed', err))
   }
 
   async function _loadProfile(): Promise<void> {
@@ -114,14 +103,11 @@ export const useAuthStore = defineStore('auth', () => {
         fetchProjectById(cached).then(p => { activeProject.value = p }),
         fetchUserRoleInProject(cached, user.value.id).then(r => { activeProjectRole.value = r }),
       ]).catch(err => logger.warn('Failed to load cached project', err))
-      _refreshProfile()
-        .catch(err => logger.warn('Failed to refresh profile', err))
-        .finally(startBackgroundSync)
+      _refreshProfile().catch(err => logger.warn('Failed to refresh profile', err))
       return
     }
 
     await _refreshProfile()
-    startBackgroundSync()
   }
 
   async function _refreshProfile(): Promise<void> {
@@ -171,7 +157,6 @@ export const useAuthStore = defineStore('auth', () => {
     ])
     activeProject.value = project
     activeProjectRole.value = role
-    startBackgroundSync()
   }
 
   // Actions
@@ -199,10 +184,8 @@ export const useAuthStore = defineStore('auth', () => {
           profile.value = null
           activeProjectId.value = null
           activeProjectRole.value = null
-          if (event === 'SIGNED_OUT') {
-            forgetOfflineUser()
-            await clearOfflineData()
-          }
+          // Local data is kept (ADR-014); only the remembered user is forgotten
+          if (event === 'SIGNED_OUT') forgetOfflineUser()
         })
 
         if (sessionUser) {
@@ -298,7 +281,6 @@ export const useAuthStore = defineStore('auth', () => {
       activeProjectRole.value = null
       localStorage.removeItem(ACTIVE_PROJECT_CACHE_KEY)
       forgetOfflineUser()
-      await clearOfflineData()
 
       return { success: true }
     } catch (err) {
@@ -323,6 +305,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     userId,
     displayName,
+    isOnline,
     isEditor,
     isAdmin,
     // Actions

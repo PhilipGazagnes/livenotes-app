@@ -123,7 +123,7 @@ export const useListsStore = defineStore('lists', () => {
       const existingIds = await listService.fetchExistingLibrarySongIdsInList(listId)
       if (existingIds.has(librarySongId)) return { success: true }
       const position = await listService.fetchListMaxPosition(listId)
-      await listService.insertLibrarySongToList(listId, librarySongId, position)
+      await listService.insertLibrarySongsToList(listId, [librarySongId], position)
       if (currentList.value?.id === listId) await fetchListById(listId)
       return { success: true }
     } catch (err) {
@@ -161,9 +161,7 @@ export const useListsStore = defineStore('lists', () => {
       const newIds = librarySongIds.filter(id => !existingIds.has(id))
       if (newIds.length === 0) return { success: true }
       const startPosition = await listService.fetchListMaxPosition(listId)
-      for (let i = 0; i < newIds.length; i++) {
-        await listService.insertLibrarySongToList(listId, newIds[i], startPosition + i)
-      }
+      await listService.insertLibrarySongsToList(listId, newIds, startPosition)
       if (currentList.value?.id === listId) await fetchListById(listId)
       return { success: true }
     } catch (err) {
@@ -174,11 +172,11 @@ export const useListsStore = defineStore('lists', () => {
     }
   }
 
-  async function reorderListItems(_listId: string, itemIds: string[]) {
+  async function reorderListItems(listId: string, itemIds: string[]) {
     error.value = null
     try {
       const itemPositions = itemIds.map((id, index) => ({ id, position: index }))
-      await listService.reorderListItems(itemPositions)
+      await listService.reorderListItems(listId, itemPositions)
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to reorder list items'

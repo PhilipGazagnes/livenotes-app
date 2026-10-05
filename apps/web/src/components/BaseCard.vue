@@ -80,6 +80,8 @@
         <BaseDropdownMenu
           v-if="authStore.isEditor && dropdownItems && dropdownItems.length > 0 && !(id && uiStore.selectionMode)"
           :items="dropdownItems"
+          :disabled="!editMode.canEditNow"
+          @blocked="editMode.explainBlock()"
         />
       </div>
     </div>
@@ -87,8 +89,9 @@
     <!-- Drag handle zone -->
     <div
       v-if="authStore.isEditor && draggable && !(id && uiStore.selectionMode)"
-      class="drag-handle w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
-      @click.stop
+      class="w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
+      :class="editMode.canEditNow ? 'drag-handle' : 'opacity-40'"
+      @click.stop="editMode.canEditNow || editMode.explainBlock()"
     >
       <svg class="w-2.5 h-5 text-gray-600" viewBox="0 0 10 20" fill="currentColor" aria-hidden="true">
         <circle cx="3" cy="4" r="1.5"/>
@@ -109,6 +112,7 @@ import type { DropdownMenuItem } from '@/components/BaseDropdownMenu.vue'
 import BaseDropdownMenu from '@/components/BaseDropdownMenu.vue'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useEditModeStore } from '@/stores/editMode'
 
 const props = defineProps<{
   title: string
@@ -136,6 +140,7 @@ const emit = defineEmits<{
 
 const uiStore = useUiStore()
 const authStore = useAuthStore()
+const editMode = useEditModeStore()
 const isSelected = computed(() => props.id ? uiStore.isSelected(props.id) : false)
 
 function handleClick() {

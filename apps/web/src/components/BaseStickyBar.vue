@@ -84,11 +84,12 @@
         <!-- Bulk selection button -->
         <button
           v-if="authStore.isEditor"
-          @click="toggleBulkMode"
+          @click="editMode.runIfEditable(toggleBulkMode)"
           class="flex-shrink-0 p-2.5 rounded-lg border transition-colors"
-          :class="uiStore.selectionMode
+          :class="[uiStore.selectionMode
             ? 'border-blue-500 text-blue-400 bg-blue-500/10'
-            : 'border-gray-700 text-gray-400 bg-gray-900 hover:text-white hover:border-gray-600'"
+            : 'border-gray-700 text-gray-400 bg-gray-900 hover:text-white hover:border-gray-600',
+          { 'opacity-40': !editMode.canEditNow }]"
           aria-label="Bulk selection"
         >
           <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -100,9 +101,11 @@
         <!-- New button -->
         <button
           v-if="authStore.isEditor"
-          @click="emit('newClicked')"
+          @click="editMode.runIfEditable(() => emit('newClicked'))"
           data-testid="sticky-bar-new-btn"
+          :aria-disabled="!editMode.canEditNow || undefined"
           class="flex-shrink-0 p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+          :class="{ 'opacity-40': !editMode.canEditNow }"
           aria-label="Create new"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,6 +122,7 @@
 import { computed } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useEditModeStore } from '@/stores/editMode'
 
 const props = defineProps<{
   searchQuery: string
@@ -136,6 +140,7 @@ const emit = defineEmits<{
 
 const uiStore = useUiStore()
 const authStore = useAuthStore()
+const editMode = useEditModeStore()
 
 const localQuery = computed({
   get: () => props.searchQuery,

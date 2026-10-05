@@ -1,11 +1,13 @@
 import { computed } from 'vue'
 import {
+  deleteLocalData,
   isSyncing,
   lastSyncedAt,
   lastSyncError,
   syncProgress,
   syncProject,
 } from '@/lib/offline/offlineData'
+import { checkProjectStatus } from '@/lib/offline/projectStatus'
 
 export type { SyncProgress } from '@livenotes/shared/offline'
 
@@ -21,15 +23,16 @@ export function formatSyncDate(date: Date): string {
 }
 
 /**
- * Offline sync state of the active project, for the UI.
+ * Local copy of the active project, for the UI.
  * The data layer itself lives in `@/lib/offline/offlineData`.
  */
 export function useOfflineSync() {
   const hasSnapshot = computed(() => lastSyncedAt.value !== null)
 
-  /** Download the active project for offline use. Rejects if the sync fails (previous copy kept). */
+  /** Download the active project (the only sync, ADR-010). Rejects if it fails (previous copy kept). */
   async function sync(): Promise<void> {
     await syncProject()
+    await checkProjectStatus({ force: true })
   }
 
   return {
@@ -39,5 +42,6 @@ export function useOfflineSync() {
     lastSyncError,
     hasSnapshot,
     sync,
+    deleteLocalData,
   }
 }

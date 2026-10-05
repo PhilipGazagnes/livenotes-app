@@ -7,9 +7,13 @@ type Result = { data: unknown; error: unknown }
  * Minimal chainable stand-in for the Supabase query builder.
  * `respond(table, range)` decides each response.
  */
-function mockClient(respond: (table: string, range: [number, number] | null) => Result) {
+function mockClient(
+  respond: (table: string, range: [number, number] | null) => Result,
+  status: Result = { data: { version: 7, last_changed_at: null, last_changed_by: null, editor: null }, error: null },
+) {
   const calls: Array<{ table: string; range: [number, number] | null }> = []
   const client = {
+    rpc: () => Promise.resolve(status),
     from(table: string) {
       let range: [number, number] | null = null
       const builder = {
@@ -59,6 +63,7 @@ describe('fetchProjectSnapshot', () => {
     const s = await fetchProjectSnapshot(client, 'p1', 'u1')
 
     expect(s.projectId).toBe('p1')
+    expect(s.version).toBe(7)
     expect(s.project).toEqual(project)
     expect(s.role).toBe('reader')
     expect(s.librarySongs.map(ls => ls.id)).toEqual(['ls1', 'ls2'])
@@ -93,6 +98,11 @@ describe('fetchProjectSnapshot', () => {
     const promise = fetchProjectSnapshot(client, 'p1', 'u1')
     await expect(promise).rejects.toBeInstanceOf(SnapshotSyncError)
     await expect(promise).rejects.toThrow('Sync failed while loading setlists: permission denied')
+  })
+
+  it('fails when the project version cannot be read', async () => {
+    const { client } = mockClient(okResponses([]), { data: null, error: { message: 'boom' } })
+    await expect(fetchProjectSnapshot(client, 'p1', 'u1')).rejects.toThrow('Sync failed while loading project version: boom')
   })
 
   it('reports progress for each step', async () => {

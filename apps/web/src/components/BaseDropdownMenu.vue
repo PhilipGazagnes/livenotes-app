@@ -1,11 +1,13 @@
 <template>
   <button
     data-testid="card-menu-btn"
-    @click.stop.prevent="toggle"
+    @click.stop.prevent="disabled ? emit('blocked') : toggle($event)"
     @mousedown.stop
     @touchstart.stop
     @pointerdown.stop
-    class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+    :aria-disabled="disabled || undefined"
+    class="p-2 rounded-lg transition-colors"
+    :class="disabled ? 'text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-white hover:bg-gray-700'"
   >
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
@@ -54,7 +56,11 @@ export interface DropdownMenuItem {
 
 defineProps<{
   items: DropdownMenuItem[]
+  /** Shown greyed out; a click emits `blocked` instead of opening (ADR-013) */
+  disabled?: boolean
 }>()
+
+const emit = defineEmits<{ blocked: [] }>()
 
 const isOpen = ref(false)
 const position = ref({ top: '0px', left: '0px' })

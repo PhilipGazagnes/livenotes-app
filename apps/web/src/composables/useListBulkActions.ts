@@ -4,7 +4,7 @@ import { useDrawerStore } from '@/stores/drawer'
 import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
 import { deleteListItem } from '@/services/listItemService'
-import { removeFromLibrary } from '@/services/libraryService'
+import { removeManyFromLibrary } from '@/services/libraryService'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
 import type { BulkAction } from '@/types/bulkAction'
 import BulkAddToListsDrawer from '@/components/BulkAddToListsDrawer.vue'
@@ -74,7 +74,7 @@ export function useListBulkActions(
       confirmVariant: 'danger',
       confirmCallback: async () => {
         try {
-          for (const librarySongId of librarySongIds) await removeFromLibrary(librarySongId)
+          await removeManyFromLibrary(librarySongIds)
           await onRefresh()
           uiStore.showToast(I18N.TOAST.BULK_DELETED_SONGS(count), 'success')
           uiStore.exitSelectionMode()

@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import type { Project, ProjectRole } from '@livenotes/shared/types'
-import { isNetworkError } from '@livenotes/shared/offline'
-import { readThrough } from '@/lib/offline/offlineData'
+import { readLocal, removeLocalCopy } from '@/lib/offline/offlineData'
 
 export interface ProjectWithRole extends Project {
   membership_role: ProjectRole
@@ -32,22 +31,7 @@ export async function fetchCommunityProject(): Promise<Project | null> {
 }
 
 export function fetchProjectById(projectId: string): Promise<Project | null> {
-  return readThrough(() => fetchProjectByIdRemote(projectId), snapshot => snapshot.project, { projectId })
-}
-
-async function fetchProjectByIdRemote(projectId: string): Promise<Project | null> {
-  const { data, error } = await supabase
-    .from('projects')
-    .select('id, name, slug, owner_id, created_at, updated_at, description, thumbnail_url, contact_enabled, contact_info')
-    .eq('id', projectId)
-    .single()
-
-  if (error) {
-    // Network failures propagate so readThrough can answer from the snapshot
-    if (isNetworkError(error)) throw error
-    return null
-  }
-  return data as unknown as Project
+  return readLocal(snapshot => snapshot.project, { projectId })
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
@@ -56,6 +40,7 @@ export async function deleteProject(projectId: string): Promise<void> {
     .delete()
     .eq('id', projectId)
   if (error) throw error
+  await removeLocalCopy(projectId)
 }
 
 export async function createProject(name: string, userId: string): Promise<Project> {

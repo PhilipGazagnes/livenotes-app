@@ -14,6 +14,7 @@ import type {
   Tag,
 } from '../types'
 import { SNAPSHOT_SCHEMA_VERSION, type ProjectSnapshot } from './snapshot'
+import { fetchProjectStatus } from './status'
 
 export type LivenotesClient = SupabaseClient<Database>
 
@@ -26,10 +27,10 @@ export interface SyncProgress {
 /** Page size for paged reads (PostgREST caps responses at 1,000 rows by default). */
 export const SNAPSHOT_PAGE_SIZE = 500
 
-const PROJECT_COLUMNS =
+export const PROJECT_COLUMNS =
   'id, name, slug, owner_id, created_at, updated_at, description, thumbnail_url, contact_enabled, contact_info'
 
-const LIBRARY_SELECT = `
+export const LIBRARY_SELECT = `
   *,
   song:songs!library_songs_song_id_fkey(
     *,
@@ -99,7 +100,10 @@ export async function fetchProjectSnapshot(
   const report = (step: string, current: number) => onProgress?.({ step, current, total: TOTAL_STEPS })
 
   report('Project', 1)
-  const [projectRes, roleRes] = await Promise.all([
+  // The version is read before the data: a change made during the download
+  // leaves the copy at an older version, so the staleness check catches it.
+  const [status, projectRes, roleRes] = await Promise.all([
+    fetchProjectStatus(client, projectId).catch(err => { throw new SnapshotSyncError('project version', err) }),
     client.from('projects').select(PROJECT_COLUMNS).eq('id', projectId).maybeSingle(),
     client.from('project_memberships').select('role').eq('project_id', projectId).eq('user_id', userId).maybeSingle(),
   ])
@@ -138,6 +142,7 @@ export async function fetchProjectSnapshot(
 
   return buildSnapshot({
     projectId,
+    version: status?.version ?? 0,
     project: (projectRes.data as unknown as Project | null) ?? null,
     role: ((roleRes.data as { role: string } | null)?.role as ProjectRole | undefined) ?? null,
     rawLibrary,
@@ -149,6 +154,7 @@ export async function fetchProjectSnapshot(
 /** Flatten the embedded responses into raw table rows (deduplicating shared rows). */
 export function buildSnapshot(input: {
   projectId: string
+  version?: number
   project: Project | null
   role: ProjectRole | null
   rawLibrary: RawLibrarySong[]
@@ -187,6 +193,7 @@ export function buildSnapshot(input: {
     projectId: input.projectId,
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     syncedAt: input.syncedAt ?? new Date().toISOString(),
+    version: input.version ?? 0,
     project: input.project,
     role: input.role,
     librarySongs,
@@ -199,4 +206,36 @@ export function buildSnapshot(input: {
     lists,
     listItems,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Aggregates re-read after a write, to patch the local copy (ADR-012)
+// ---------------------------------------------------------------------------
+
+/** Library songs with their song card, artists, tags and notes. Missing ids were deleted. */
+export async function fetchLibrarySongAggregates(client: LivenotesClient, ids: string[]): Promise<RawLibrarySong[]> {
+  if (!ids.length) return []
+  const { data, error } = await client.from('library_songs').select(LIBRARY_SELECT).in('id', ids)
+  if (error) throw error
+  return (data ?? []) as unknown as RawLibrarySong[]
+}
+
+/** Setlists with all their items. Missing ids were deleted. */
+export async function fetchListAggregates(client: LivenotesClient, ids: string[]): Promise<RawList[]> {
+  if (!ids.length) return []
+  const { data, error } = await client.from('lists').select('*, items:list_items(*)').in('id', ids)
+  if (error) throw error
+  return (data ?? []) as unknown as RawList[]
+}
+
+export async function fetchProjectTags(client: LivenotesClient, projectId: string): Promise<Tag[]> {
+  const { data, error } = await client.from('tags').select('id, project_id, name, created_at').eq('project_id', projectId)
+  if (error) throw error
+  return (data ?? []) as Tag[]
+}
+
+export async function fetchProjectRow(client: LivenotesClient, projectId: string): Promise<Project | null> {
+  const { data, error } = await client.from('projects').select(PROJECT_COLUMNS).eq('id', projectId).maybeSingle()
+  if (error) throw error
+  return (data as unknown as Project | null) ?? null
 }

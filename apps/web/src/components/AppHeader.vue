@@ -29,14 +29,28 @@
         <slot name="action" />
         <button
           @click="openProjectMenu"
-          class="p-1 rounded-full hover:ring-2 hover:ring-gray-600 transition-all"
+          class="relative p-1 rounded-full transition-all"
+          :class="editMode.isEditing ? 'ring-2 ring-amber-400' : 'hover:ring-2 hover:ring-gray-600'"
           aria-label="Project menu"
+          :title="editIndicatorTitle"
+          data-testid="project-menu-btn"
         >
           <ProjectAvatarIcon
             :name="avatarName"
             :thumbnail-url="authStore.activeProject?.thumbnail_url ?? null"
             :size="32"
           />
+          <!-- Editing indicator (ADR-011): amber when you hold the flag, grey when another member does -->
+          <span
+            v-if="editMode.isEditing || editMode.otherEditor"
+            data-testid="editing-indicator"
+            class="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-gray-900"
+            :class="editMode.isEditing ? 'bg-amber-400 text-gray-900' : 'bg-gray-500 text-white'"
+          >
+            <svg class="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15.232 5.232l3.536 3.536M9 13l6.232-6.232a2.5 2.5 0 113.536 3.536L12.536 16.5H9V13z"/>
+            </svg>
+          </span>
         </button>
       </div>
     </div>
@@ -58,6 +72,7 @@ import { useDrawerStore } from '@/stores/drawer'
 import { I18N } from '@/constants/i18n'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import { useOfflineSync } from '@/composables/useOfflineSync'
+import { useEditModeStore } from '@/stores/editMode'
 import ProjectAvatarIcon from './ProjectAvatarIcon.vue'
 import ProjectMenuDrawer from './ProjectMenuDrawer.vue'
 
@@ -70,6 +85,13 @@ const authStore = useAuthStore()
 const drawerStore = useDrawerStore()
 const { isOnline } = useOnlineStatus()
 const { hasSnapshot } = useOfflineSync()
+const editMode = useEditModeStore()
+
+const editIndicatorTitle = computed(() => {
+  if (editMode.isEditing) return I18N.EDIT_MODE.EDITING
+  if (editMode.otherEditor) return I18N.EDIT_MODE.EDITING_BY(editMode.otherEditorName)
+  return 'Project menu'
+})
 
 const avatarName = computed(() =>
   authStore.activeProject?.name ?? authStore.displayName ?? '?'

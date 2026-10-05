@@ -1,35 +1,28 @@
 import { ref } from 'vue'
 import {
+  applySnapshotPatch,
   DexieSnapshotStore,
-  deleteOtherUsersDatabases,
   fetchProjectSnapshot,
-  isNetworkError,
   OfflineDataUnavailableError,
-  withNetworkTimeout,
   type ProjectSnapshot,
+  type SnapshotPatch,
   type SnapshotStore,
   type SyncProgress,
 } from '@livenotes/shared/offline'
 import { supabase } from '@/lib/supabase'
 import { logger } from '@/utils/logger'
-import { isOfflineMode, onDataWritten } from './offlineState'
+import { isOfflineMode } from './offlineState'
 
 /**
- * Offline data layer (web): one local snapshot per project in IndexedDB.
- * See livenotes-documentation/app/offline-data-layer-spec.md.
+ * Local copy of each project (web: IndexedDB), the only source of project
+ * reads. See livenotes-documentation/app/offline-data-layer-spec.md.
  *
- * - `readThrough` serves reads from the network when possible, from the
- *   snapshot when offline or when the network fails.
- * - `syncProject` replaces the snapshot atomically (all-or-nothing).
- * - Writes are online-only; each successful write schedules a re-sync.
+ * - Reads always come from the local copy (ADR-009). Without a copy yet, the
+ *   project is downloaded first.
+ * - The Sync button is the only thing that refreshes a copy (ADR-010).
+ * - Writes go to the server, then patch the copy (`projectWrites.ts`, ADR-012).
+ * - Local data stays on logout; deleting it is a user action (ADR-014).
  */
-
-/** Online reads give up after this long when a snapshot can answer instead (venue "lie-fi"). */
-export const REMOTE_READ_TIMEOUT_MS = 8_000
-/** Auto-sync when the snapshot is older than this. */
-export const AUTO_SYNC_MAX_AGE_MS = 10 * 60 * 1000
-/** Debounce between a write and the background re-sync. */
-export const DIRTY_RESYNC_DELAY_MS = 4_000
 
 const LEGACY_LAST_SYNCED_PREFIX = 'livenotes-last-synced-'
 
@@ -41,70 +34,68 @@ let activeProjectId: string | null = null
 const snapshots = new Map<string, ProjectSnapshot>()
 const pendingLoads = new Map<string, Promise<ProjectSnapshot | null>>()
 const pendingSyncs = new Map<string, Promise<ProjectSnapshot>>()
-let dirtyTimer: ReturnType<typeof setTimeout> | null = null
-// Whether automatic syncs (on open, reconnect, after writes) may run for the
-// active project. Manual sync is always allowed.
-let autoSyncAllowed: () => boolean = () => true
-
-/** Set the rule for automatic syncs, e.g. never for the shared community project. */
-export function setAutoSyncPolicy(policy: () => boolean): void {
-  autoSyncAllowed = policy
-}
 
 // Reactive state for the UI (refers to the active project)
 export const isSyncing = ref(false)
 export const syncProgress = ref<SyncProgress | null>(null)
 export const lastSyncedAt = ref<Date | null>(null)
 export const lastSyncError = ref<string | null>(null)
+/** Server version the active project's copy matches; null without a copy */
+export const localVersion = ref<number | null>(null)
 
-function refreshLastSynced(snapshot: ProjectSnapshot | null): void {
+function refreshActiveState(snapshot: ProjectSnapshot | null): void {
   lastSyncedAt.value = snapshot ? new Date(snapshot.syncedAt) : null
+  localVersion.value = snapshot ? snapshot.version : null
 }
 
-/** Switch the local database to `userId` (null when signed out). */
+export function getOfflineActiveProjectId(): string | null {
+  return activeProjectId
+}
+
+export function getOfflineUserId(): string | null {
+  return currentUserId
+}
+
+/** Switch the local database to `userId` (null when signed out). Other users' data is kept. */
 export function setOfflineUser(userId: string | null): void {
   if (userId === currentUserId) return
   store?.close()
   snapshots.clear()
   pendingLoads.clear()
-  refreshLastSynced(null)
+  refreshActiveState(null)
   currentUserId = userId
   store = userId ? createStore(userId) : null
-  if (userId) {
-    // Data of a previous user must not stay readable on this device
-    deleteOtherUsersDatabases(userId).catch(err => logger.warn('Could not delete other users offline data', err))
-    removeLegacyLastSyncedKeys()
-  }
+  if (userId) removeLegacyLastSyncedKeys()
 }
 
 export function setOfflineActiveProject(projectId: string | null): void {
   if (projectId === activeProjectId) return
   activeProjectId = projectId
-  refreshLastSynced(null)
+  refreshActiveState(null)
   if (projectId) {
     getSnapshot(projectId)
-      .then(snapshot => { if (activeProjectId === projectId) refreshLastSynced(snapshot) })
-      .catch(err => logger.warn('Could not load offline snapshot', err))
+      .then(snapshot => { if (activeProjectId === projectId) refreshActiveState(snapshot) })
+      .catch(err => logger.warn('Could not load the local copy', err))
   }
 }
 
-/** Sign-out: delete every offline database on this device. */
-export async function clearOfflineData(): Promise<void> {
+/** "Delete local data": remove this user's local copies on this device. */
+export async function deleteLocalData(): Promise<void> {
+  if (!store || !currentUserId) return
+  const userId = currentUserId
   const previous = store
   store = null
-  currentUserId = null
-  activeProjectId = null
   snapshots.clear()
   pendingLoads.clear()
-  refreshLastSynced(null)
-  if (dirtyTimer) clearTimeout(dirtyTimer)
-  dirtyTimer = null
-  removeLegacyLastSyncedKeys()
+  refreshActiveState(null)
   try {
-    await previous?.destroy()
-    await deleteOtherUsersDatabases()
+    await previous.destroy()
   } catch (err) {
-    logger.error('Failed to delete offline data', err)
+    logger.error('Failed to delete local data', err)
+    throw err
+  } finally {
+    // Reopen an empty database for the same user (unless they switched meanwhile)
+    if (currentUserId === userId && !store) store = createStore(userId)
   }
 }
 
@@ -118,7 +109,7 @@ function removeLegacyLastSyncedKeys(): void {
   }
 }
 
-/** Snapshot of a project, from memory or IndexedDB. Null when never synced. */
+/** Local copy of a project, from memory or IndexedDB. Null when never synced. */
 export async function getSnapshot(projectId: string | null = activeProjectId): Promise<ProjectSnapshot | null> {
   if (!projectId || !store) return null
   const cached = snapshots.get(projectId)
@@ -133,7 +124,7 @@ export async function getSnapshot(projectId: string | null = activeProjectId): P
       return snapshot
     })
     .catch(err => {
-      logger.error('Failed to read offline snapshot', err)
+      logger.error('Failed to read the local copy', err)
       return null
     })
     .finally(() => pendingLoads.delete(projectId))
@@ -141,9 +132,16 @@ export async function getSnapshot(projectId: string | null = activeProjectId): P
   return load
 }
 
+async function saveSnapshot(owner: SnapshotStore, snapshot: ProjectSnapshot): Promise<void> {
+  await owner.save(snapshot)
+  if (store !== owner) return
+  snapshots.set(snapshot.projectId, snapshot)
+  if (snapshot.projectId === activeProjectId) refreshActiveState(snapshot)
+}
+
 /**
- * Download the project and replace its snapshot. Concurrent calls for the
- * same project share one sync. On failure the previous snapshot is kept.
+ * Download the project and replace its local copy. Concurrent calls for the
+ * same project share one sync. On failure the previous copy is kept.
  */
 export function syncProject(projectId: string | null = activeProjectId): Promise<ProjectSnapshot> {
   if (!projectId) return Promise.reject(new Error('No active project to sync'))
@@ -167,12 +165,8 @@ export function syncProject(projectId: string | null = activeProjectId): Promise
         if (isActive()) syncProgress.value = progress
       })
       if (store !== owner) throw new Error('Signed out during sync')
-      await owner.save(snapshot)
-      snapshots.set(projectId, snapshot)
-      if (isActive()) {
-        refreshLastSynced(snapshot)
-        lastSyncError.value = null
-      }
+      await saveSnapshot(owner, snapshot)
+      if (isActive()) lastSyncError.value = null
       return snapshot
     } catch (err) {
       if (isActive()) lastSyncError.value = err instanceof Error ? err.message : 'Sync failed'
@@ -189,79 +183,47 @@ export function syncProject(projectId: string | null = activeProjectId): Promise
   return sync
 }
 
-/** Sync the active project in the background if it was never synced or is stale. */
-export async function autoSyncIfStale(maxAgeMs = AUTO_SYNC_MAX_AGE_MS): Promise<void> {
-  if (!activeProjectId || !store || isOfflineMode() || !autoSyncAllowed()) return
-  const snapshot = await getSnapshot(activeProjectId)
-  const age = snapshot ? Date.now() - new Date(snapshot.syncedAt).getTime() : Infinity
-  if (age < maxAgeMs) return
-  await syncProject(activeProjectId).catch(err => logger.warn('Background sync failed', err))
+/** Apply a change to a project's local copy (no-op without a copy). */
+export async function patchLocalCopy(projectId: string, patch: SnapshotPatch): Promise<void> {
+  const owner = store
+  if (!owner) return
+  const snapshot = await getSnapshot(projectId)
+  if (!snapshot) return
+  await saveSnapshot(owner, applySnapshotPatch(snapshot, patch))
 }
 
-/** A write succeeded: refresh the snapshot shortly after (debounced). */
-export function markSnapshotDirty(): void {
-  if (!activeProjectId || !store) return
-  if (dirtyTimer) clearTimeout(dirtyTimer)
-  dirtyTimer = setTimeout(() => {
-    dirtyTimer = null
-    if (isOfflineMode() || !autoSyncAllowed()) return
-    syncProject().catch(err => logger.warn('Background re-sync after write failed', err))
-  }, DIRTY_RESYNC_DELAY_MS)
+/** Drop one project's local copy (e.g. the project was deleted). */
+export async function removeLocalCopy(projectId: string): Promise<void> {
+  snapshots.delete(projectId)
+  if (projectId === activeProjectId) refreshActiveState(null)
+  await store?.remove(projectId)
 }
 
-export interface ReadThroughOptions {
-  /** Project whose snapshot answers offline (defaults to the active project) */
+/** The copy is known to be behind the server (e.g. a patch failed): the staleness check will ask for a sync. */
+export async function markLocalCopyOutdated(projectId: string): Promise<void> {
+  await patchLocalCopy(projectId, { version: -1 }).catch(err => logger.error('Could not mark the local copy outdated', err))
+}
+
+export interface ReadLocalOptions {
+  /** Project to read (defaults to the active project) */
   projectId?: string | null
 }
 
 /**
- * Read from the network, fall back to the local snapshot.
- *
- * - Offline mode: answer from the snapshot, or throw OfflineDataUnavailableError.
- * - Online: run `remote`. On a network failure (or after REMOTE_READ_TIMEOUT_MS
- *   when a snapshot exists) answer from the snapshot instead.
- * - Server errors (RLS, validation…) are always rethrown, never hidden.
+ * Read from the project's local copy (ADR-009). Without a copy yet, download
+ * it first; offline without a copy, throw OfflineDataUnavailableError.
  */
-export async function readThrough<T>(
-  remote: () => Promise<T>,
-  local: (snapshot: ProjectSnapshot) => T,
-  options: ReadThroughOptions = {},
+export async function readLocal<T>(
+  select: (snapshot: ProjectSnapshot) => T,
+  options: ReadLocalOptions = {},
 ): Promise<T> {
   const projectId = options.projectId === undefined ? activeProjectId : options.projectId
+  if (!projectId) throw new Error('No active project')
 
-  if (isOfflineMode()) {
-    const snapshot = await getSnapshot(projectId)
-    if (!snapshot) throw new OfflineDataUnavailableError()
-    return local(snapshot)
-  }
-
-  // Start the network request first; the snapshot loads in parallel.
-  // The no-op catch keeps an early (or post-timeout) rejection from being
-  // reported as unhandled; the error is still handled below.
-  const remotePromise = remote()
-  remotePromise.catch(() => {})
   const snapshot = await getSnapshot(projectId)
-  try {
-    return snapshot ? await withNetworkTimeout(remotePromise, REMOTE_READ_TIMEOUT_MS) : await remotePromise
-  } catch (err) {
-    if (snapshot && isNetworkError(err)) {
-      logger.warn('Network read failed, using offline snapshot', err)
-      return local(snapshot)
-    }
-    throw err
-  }
-}
-
-let initialized = false
-
-/** Wire connectivity events. Call once at startup. */
-export function initOfflineData(): void {
-  if (initialized) return
-  initialized = true
-  onDataWritten(markSnapshotDirty)
-  window.addEventListener('online', () => {
-    autoSyncIfStale().catch(err => logger.warn('Auto-sync on reconnect failed', err))
-  })
+  if (snapshot) return select(snapshot)
+  if (isOfflineMode()) throw new OfflineDataUnavailableError()
+  return select(await syncProject(projectId))
 }
 
 /** Test hook: replace the storage adapter. */

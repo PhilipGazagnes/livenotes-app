@@ -5,7 +5,7 @@ import router from './router'
 import App from './App.vue'
 import { logWebVitals } from './utils/performance'
 import { useAuthStore } from './stores/auth'
-import { initOfflineData } from './lib/offline/offlineData'
+import { initProjectStatusChecks } from './lib/offline/projectStatus'
 import { registerAppUpdates } from './lib/appUpdates'
 
 // Import Ionic core CSS FIRST (required for Ionic components)
@@ -18,7 +18,7 @@ import '@ionic/vue/css/typography.css'
 import './style.css'
 
 registerAppUpdates()
-initOfflineData()
+initProjectStatusChecks()
 
 const app = createApp(App)
 const pinia = createPinia()

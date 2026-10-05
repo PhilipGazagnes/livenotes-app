@@ -108,7 +108,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useTagsStore } from '@/stores/tags'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { supabase } from '@/lib/supabase'
+import { setLibrarySongTags } from '@/services/tagService'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import { executeOperation } from '@/utils/operations'
@@ -211,20 +211,7 @@ async function handleSave() {
       const tagsToRemove = props.initialTagIds.filter(id => !selectedTagIds.value.includes(id))
       
       if (props.librarySongId) {
-        if (tagsToRemove.length > 0) {
-          const { error } = await supabase
-            .from('library_song_tags')
-            .delete()
-            .eq('library_song_id', props.librarySongId)
-            .in('tag_id', tagsToRemove)
-          if (error) throw error
-        }
-        if (tagsToAdd.length > 0) {
-          const { error } = await supabase
-            .from('library_song_tags')
-            .insert(tagsToAdd.map(tagId => ({ library_song_id: props.librarySongId!, tag_id: tagId })))
-          if (error) throw error
-        }
+        await setLibrarySongTags(props.librarySongId, tagsToAdd, tagsToRemove)
       }
       
       return { success: true }

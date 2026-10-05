@@ -493,7 +493,12 @@ export type Database = {
           contact_info: Json | null
           created_at: string | null
           description: string | null
+          editing_last_activity: string | null
+          editing_since: string | null
+          editing_user_id: string | null
           id: string
+          last_changed_at: string | null
+          last_changed_by: string | null
           name: string
           notes_field_enabled: boolean | null
           notes_field_label: string | null
@@ -501,13 +506,19 @@ export type Database = {
           slug: string | null
           thumbnail_url: string | null
           updated_at: string | null
+          version: number
         }
         Insert: {
           contact_enabled?: boolean
           contact_info?: Json | null
           created_at?: string | null
           description?: string | null
+          editing_last_activity?: string | null
+          editing_since?: string | null
+          editing_user_id?: string | null
           id?: string
+          last_changed_at?: string | null
+          last_changed_by?: string | null
           name: string
           notes_field_enabled?: boolean | null
           notes_field_label?: string | null
@@ -515,13 +526,19 @@ export type Database = {
           slug?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
+          version?: number
         }
         Update: {
           contact_enabled?: boolean
           contact_info?: Json | null
           created_at?: string | null
           description?: string | null
+          editing_last_activity?: string | null
+          editing_since?: string | null
+          editing_user_id?: string | null
           id?: string
+          last_changed_at?: string | null
+          last_changed_by?: string | null
           name?: string
           notes_field_enabled?: boolean | null
           notes_field_label?: string | null
@@ -529,6 +546,7 @@ export type Database = {
           slug?: string | null
           thumbnail_url?: string | null
           updated_at?: string | null
+          version?: number
         }
         Relationships: []
       }
@@ -734,7 +752,27 @@ export type Database = {
     Functions: {
       community_project_id: { Args: never; Returns: string }
       get_active_public_library_project_ids: { Args: never; Returns: string[] }
+      get_project_status: { Args: { p_project_id: string }; Returns: Json }
+      has_project_edit_flag: { Args: { p_project_id: string }; Returns: boolean }
       immutable_unaccent: { Args: { "": string }; Returns: string }
+      join_project_via_invitation: { Args: { p_token: string }; Returns: Json }
+      library_song_project_id: {
+        Args: { p_library_song_id: string }
+        Returns: string
+      }
+      list_project_id: { Args: { p_list_id: string }; Returns: string }
+      project_edit_ttl: { Args: never; Returns: unknown }
+      push_note_to_project: {
+        Args: { p_note_id: string; p_target_project_id: string }
+        Returns: Json
+      }
+      release_project_editing: { Args: { p_project_id: string }; Returns: Json }
+      renew_project_editing: { Args: { p_project_id: string }; Returns: Json }
+      start_project_editing: {
+        Args: { p_known_version: number; p_project_id: string }
+        Returns: Json
+      }
+      stop_project_editing: { Args: { p_project_id: string }; Returns: Json }
       unaccent: { Args: { "": string }; Returns: string }
       update_list_item_positions: {
         Args: { item_positions: Json }

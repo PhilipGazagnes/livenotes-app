@@ -31,14 +31,3 @@ export function setForceOffline(value: boolean): void {
 export function isOfflineMode(): boolean {
   return forceOffline.value || (typeof navigator !== 'undefined' && navigator.onLine === false)
 }
-
-type WriteListener = () => void
-let writeListener: WriteListener | null = null
-
-export function onDataWritten(listener: WriteListener): void {
-  writeListener = listener
-}
-
-export function notifyDataWritten(): void {
-  writeListener?.()
-}

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockSupabase, MOCK_SUPABASE_URL, USER_ID } from './mockSupabase'
+import { changeByOtherMember, mockSupabase, MOCK_SUPABASE_URL, otherMemberStartsEditing, USER_ID } from './mockSupabase'
 
 const OFFLINE_DB = `livenotes-offline-${USER_ID}`
 const AUTH_STORAGE_KEY = `sb-${new URL(MOCK_SUPABASE_URL).hostname.split('.')[0]}-auth-token`
@@ -36,17 +36,24 @@ function snapshotCount(page: Page): Promise<number> {
 async function loginAndWaitForSnapshot(page: Page) {
   await login(page)
   await expect(card(page, 'Wonderwall')).toBeVisible()
-  // Auto-sync after login writes the snapshot
+  // The first read downloads the project into the local copy (ADR-009)
   await expect.poll(() => snapshotCount(page), { timeout: 15_000 }).toBe(1)
   // App shell is cached by the service worker
   await page.evaluate(() => navigator.serviceWorker.ready)
 }
 
+async function openProjectMenu(page: Page) {
+  await page.getByTestId('project-menu-btn').click()
+}
+
+// Disabled edit controls are aria-disabled but still tappable (they explain why): click with force
+const newButton = (page: Page) => page.getByTestId('sticky-bar-new-btn')
+
 test.describe('Offline mode (mocked Supabase)', () => {
-  test('library, search and setlists stay readable offline, editing is hidden', async ({ page, context }) => {
+  test('library, search and setlists stay readable offline, edit controls are disabled', async ({ page, context }) => {
     const backend = await mockSupabase(context)
     await loginAndWaitForSnapshot(page)
-    await expect(page.getByTestId('sticky-bar-new-btn')).toBeVisible()
+    await expect(newButton(page)).toBeVisible()
 
     backend.offline = true
     await context.setOffline(true)
@@ -58,9 +65,11 @@ test.describe('Offline mode (mocked Supabase)', () => {
     await expect(page.getByText('offline', { exact: true })).toBeVisible()
     await expect(page.getByTestId('offline-no-snapshot')).toHaveCount(0)
 
-    // Read-only
-    await expect(page.getByTestId('sticky-bar-new-btn')).toHaveCount(0)
-    await expect(page.locator('[data-testid="card-menu-btn"]')).toHaveCount(0)
+    // Read-only: controls stay visible, disabled, and say why (ADR-013)
+    await expect(newButton(page)).toHaveAttribute('aria-disabled', 'true')
+    await expect(page.locator('[data-testid="card-menu-btn"]').first()).toHaveAttribute('aria-disabled', 'true')
+    await newButton(page).click({ force: true })
+    await expect(page.getByText('Editing needs a connection')).toBeVisible()
 
     // Search works on local data
     await page.fill('input[placeholder="Search..."]', 'yester')
@@ -113,16 +122,86 @@ test.describe('Offline mode (mocked Supabase)', () => {
     await expect(page.getByTestId('offline-no-snapshot')).toBeVisible({ timeout: 15_000 })
   })
 
-  test('logging out deletes the offline data', async ({ page, context }) => {
+  test('logging out keeps the local data (ADR-014)', async ({ page, context }) => {
     await mockSupabase(context)
     await loginAndWaitForSnapshot(page)
 
-    await page.getByLabel('Project menu').click()
+    await openProjectMenu(page)
     await page.getByRole('button', { name: 'Log out' }).click()
     await page.getByRole('button', { name: 'Sign Out' }).click()
     await page.waitForURL('**/login')
 
-    await expect.poll(() => snapshotCount(page)).toBe(0)
+    expect(await snapshotCount(page)).toBe(1)
     expect(await page.evaluate(() => localStorage.getItem('livenotes-offline-user'))).toBeNull()
+  })
+
+  test('"Delete local data" removes the local copy', async ({ page, context }) => {
+    const backend = await mockSupabase(context)
+    await loginAndWaitForSnapshot(page)
+
+    // Offline, so nothing downloads the project again right after
+    backend.offline = true
+    await context.setOffline(true)
+    await openProjectMenu(page)
+    await page.getByTestId('delete-local-data-btn').click()
+    await page.getByRole('button', { name: 'Delete', exact: true }).click()
+
+    await expect.poll(() => snapshotCount(page)).toBe(0)
+  })
+
+  test('edit mode: start editing to enable edit controls, stop to leave (ADR-011)', async ({ page, context }) => {
+    const backend = await mockSupabase(context)
+    await loginAndWaitForSnapshot(page)
+
+    // Viewing mode by default
+    await expect(newButton(page)).toHaveAttribute('aria-disabled', 'true')
+    await newButton(page).click({ force: true })
+    await expect(page.getByText('Start editing first (project menu)')).toBeVisible()
+
+    await openProjectMenu(page)
+    await page.getByTestId('start-editing-btn').click()
+    await expect(page.getByTestId('editing-indicator')).toBeVisible()
+    await expect(newButton(page)).not.toHaveAttribute('aria-disabled')
+    expect(backend.editorId).toBe(USER_ID)
+
+    await openProjectMenu(page)
+    await page.getByTestId('stop-editing-btn').click()
+    await expect(page.getByTestId('editing-indicator')).toHaveCount(0)
+    await expect(newButton(page)).toHaveAttribute('aria-disabled', 'true')
+    expect(backend.editorId).toBeNull()
+  })
+
+  test('another member editing: controls say who, the header shows it', async ({ page, context }) => {
+    const backend = await mockSupabase(context)
+    await loginAndWaitForSnapshot(page)
+
+    otherMemberStartsEditing(backend)
+    await page.reload()
+    await expect(card(page, 'Wonderwall')).toBeVisible({ timeout: 15_000 })
+
+    await expect(page.getByTestId('editing-indicator')).toBeVisible()
+    await newButton(page).click({ force: true })
+    await expect(page.getByText('Being edited by Alex')).toBeVisible()
+  })
+
+  test('a change by another member shows "sync available"; nothing changes until Sync (ADR-010)', async ({ page, context }) => {
+    const backend = await mockSupabase(context)
+    await loginAndWaitForSnapshot(page)
+    await expect(page.getByTestId('sync-available')).toHaveCount(0)
+
+    changeByOtherMember(backend)
+    await page.reload()
+    await expect(card(page, 'Wonderwall')).toBeVisible({ timeout: 15_000 })
+
+    const banner = page.getByTestId('sync-available')
+    await expect(banner).toContainText('Updated by Alex')
+    // Starting to edit an outdated copy is refused
+    await openProjectMenu(page)
+    await page.getByTestId('start-editing-btn').click()
+    await expect(page.getByText('Your copy is outdated. Sync first.').first()).toBeVisible()
+    await page.getByRole('button', { name: 'Close' }).first().click()
+
+    await banner.getByRole('button', { name: 'Sync' }).click()
+    await expect(banner).toHaveCount(0)
   })
 })

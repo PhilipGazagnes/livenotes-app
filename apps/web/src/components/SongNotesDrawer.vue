@@ -32,8 +32,9 @@
   <!-- Footer -->
   <div v-if="authStore.isEditor" class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4">
     <button
-      @click="openNoteCreation"
+      @click="editMode.runIfEditable(openNoteCreation)"
       class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+      :class="{ 'opacity-40': !editMode.canEditNow }"
     >
       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -47,6 +48,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useDrawerStore } from '@/stores/drawer'
 import { useAuthStore } from '@/stores/auth'
+import { useEditModeStore } from '@/stores/editMode'
 import { fetchLibrarySongWithDetails } from '@/services/libraryService'
 import type { LibrarySongWithDetails, LivenotesJson, Note } from '@livenotes/shared/types'
 import NoteList from './NoteList.vue'
@@ -59,6 +61,7 @@ const props = defineProps<{ librarySongId: string }>()
 
 const drawerStore = useDrawerStore()
 const authStore = useAuthStore()
+const editMode = useEditModeStore()
 
 const librarySong = ref<LibrarySongWithDetails | null>(null)
 const isLoading = ref(true)

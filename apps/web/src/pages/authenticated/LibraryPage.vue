@@ -347,9 +347,7 @@ function handleBulkDeleteSongs() {
     confirmVariant: 'danger',
     confirmCallback: async () => {
       try {
-        for (const librarySongId of ids) {
-          await libraryStore.removeFromLibrary(librarySongId)
-        }
+        await libraryStore.removeManyFromLibrary(ids)
         uiStore.showToast(I18N.TOAST.SONGS_REMOVED_FROM_LIBRARY(ids.length), 'success')
         uiStore.exitSelectionMode()
         drawerStore.popAll()
