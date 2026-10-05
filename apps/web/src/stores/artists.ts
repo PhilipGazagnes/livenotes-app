@@ -1,35 +1,15 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import type { Artist, ArtistV2, ArtistWithCount } from '@livenotes/shared/types'
+import { ref } from 'vue'
+import type { ArtistV2, ArtistWithCount } from '@livenotes/shared/types'
 import { useAuthStore } from './auth'
 import * as artistService from '@/services/artistService'
 
 export const useArtistsStore = defineStore('artists', () => {
   // State
-  const artists = ref<Artist[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  // Getters
-  const artistCount = computed(() => artists.value.length)
-  const sortedArtists = computed(() => {
-    return [...artists.value].sort((a, b) => a.name.localeCompare(b.name))
-  })
-
   // Actions
-  async function fetchArtists(projectId: string) {
-    if (artists.value.length > 0) return
-    isLoading.value = true
-    error.value = null
-    try {
-      artists.value = await artistService.fetchArtists(projectId)
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch artists'
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   async function fetchArtistsWithCount(projectId: string): Promise<ArtistWithCount[]> {
     isLoading.value = true
     error.value = null
@@ -123,41 +103,12 @@ export const useArtistsStore = defineStore('artists', () => {
     }
   }
 
-  function getArtistById(artistId: string): Artist | undefined {
-    return artists.value.find(a => a.id === artistId)
-  }
-
-  function getArtistsByIds(artistIds: string[]): Artist[] {
-    return artists.value.filter(a => artistIds.includes(a.id))
-  }
-
-  function searchArtists(query: string, limit = 5): Artist[] {
-    if (!query.trim()) return []
-    const searchTerm = query.toLowerCase()
-    return artists.value
-      .filter(artist => artist.name.toLowerCase().includes(searchTerm))
-      .slice(0, limit)
-  }
-
-  function findExactMatch(name: string): Artist | undefined {
-    const trimmedName = name.trim()
-    return artists.value.find(a => a.name.toLowerCase() === trimmedName.toLowerCase())
-  }
-
   return {
-    artists,
     isLoading,
     error,
-    artistCount,
-    sortedArtists,
-    fetchArtists,
     fetchArtistsWithCount,
     createArtist,
     updateArtist,
     deleteArtist,
-    getArtistById,
-    getArtistsByIds,
-    searchArtists,
-    findExactMatch,
   }
 })

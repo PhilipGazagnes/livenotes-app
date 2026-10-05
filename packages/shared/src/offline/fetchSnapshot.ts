@@ -31,11 +31,11 @@ const PROJECT_COLUMNS =
 
 const LIBRARY_SELECT = `
   *,
-  song:songs_v2!library_songs_song_id_fkey(
+  song:songs!library_songs_song_id_fkey(
     *,
-    song_artists:song_artists_v2(
+    song_artists:song_artists(
       *,
-      artist:artists_v2(*)
+      artist:artists(*)
     )
   ),
   tags:library_song_tags(*),

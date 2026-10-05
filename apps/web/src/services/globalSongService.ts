@@ -16,12 +16,12 @@ function mapArtists(rows: RawSongArtistJoin[]): (ArtistV2 & { position: number }
 export async function searchSongs(query: string): Promise<SongV2WithArtists[]> {
   const fingerprint = query.toLowerCase().replace(/[^a-z0-9]/g, '')
   const { data, error } = await supabase
-    .from('songs_v2')
+    .from('songs')
     .select(`
       *,
-      artists:song_artists_v2(
+      artists:song_artists(
         position,
-        artist:artists_v2(*)
+        artist:artists(*)
       )
     `)
     .or(`title.ilike.%${query}%,fingerprint.eq.${fingerprint}`)
@@ -36,7 +36,7 @@ export async function searchSongs(query: string): Promise<SongV2WithArtists[]> {
 
 export async function createSong(title: string, artistIds: string[], userId: string): Promise<SongV2> {
   const { data: song, error: songError } = await supabase
-    .from('songs_v2')
+    .from('songs')
     .insert({ title, created_by: userId })
     .select()
     .single()
@@ -44,7 +44,7 @@ export async function createSong(title: string, artistIds: string[], userId: str
 
   if (artistIds.length > 0) {
     const { error: linkError } = await supabase
-      .from('song_artists_v2')
+      .from('song_artists')
       .insert(artistIds.map((artistId, index) => ({
         song_id: song.id,
         artist_id: artistId,
@@ -58,12 +58,12 @@ export async function createSong(title: string, artistIds: string[], userId: str
 
 export async function getSongById(songId: string): Promise<SongV2WithArtists | null> {
   const { data, error } = await supabase
-    .from('songs_v2')
+    .from('songs')
     .select(`
       *,
-      artists:song_artists_v2(
+      artists:song_artists(
         position,
-        artist:artists_v2(*)
+        artist:artists(*)
       )
     `)
     .eq('id', songId)
@@ -78,7 +78,7 @@ export async function getSongById(songId: string): Promise<SongV2WithArtists | n
 
 export async function searchArtists(query: string): Promise<ArtistV2[]> {
   const { data, error } = await supabase
-    .from('artists_v2')
+    .from('artists')
     .select('id, name, fingerprint, is_verified, verified_by, verified_at, bio, image_url, external_links, created_by, created_at, updated_at, merged_into_id, merge_reason')
     .ilike('name', `%${query}%`)
     .order('name')
@@ -89,7 +89,7 @@ export async function searchArtists(query: string): Promise<ArtistV2[]> {
 
 export async function createArtist(name: string, userId: string): Promise<ArtistV2> {
   const { data, error } = await supabase
-    .from('artists_v2')
+    .from('artists')
     .insert({ name, created_by: userId })
     .select()
     .single()

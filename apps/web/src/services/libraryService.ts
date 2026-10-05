@@ -50,11 +50,11 @@ async function fetchLibrarySongWithDetailsRemote(id: string): Promise<LibrarySon
     .from('library_songs')
     .select(`
       *,
-      song:songs_v2!library_songs_song_id_fkey(
+      song:songs!library_songs_song_id_fkey(
         *,
-        artists:song_artists_v2(
+        artists:song_artists(
           position,
-          artist:artists_v2(*)
+          artist:artists(*)
         )
       ),
       tags:library_song_tags(
@@ -76,12 +76,12 @@ async function fetchLibrarySongWithDetailsRemote(id: string): Promise<LibrarySon
 
 const LIBRARY_SONG_SELECT = `
   *,
-  song:songs_v2!library_songs_song_id_fkey(
+  song:songs!library_songs_song_id_fkey(
     id,
     title,
-    artists:song_artists_v2(
+    artists:song_artists(
       position,
-      artist:artists_v2(
+      artist:artists(
         id,
         name
       )

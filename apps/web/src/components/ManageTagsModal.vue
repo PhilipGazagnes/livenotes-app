@@ -116,8 +116,7 @@ import { logger } from '@/utils/logger'
 
 const props = defineProps<{
   isOpen: boolean
-  songId?: string // V1 compatibility
-  librarySongId?: string // V2
+  librarySongId?: string
   songTitle: string
   initialTagIds: string[]
 }>()
@@ -212,7 +211,6 @@ async function handleSave() {
       const tagsToRemove = props.initialTagIds.filter(id => !selectedTagIds.value.includes(id))
       
       if (props.librarySongId) {
-        // V2 path
         if (tagsToRemove.length > 0) {
           const { error } = await supabase
             .from('library_song_tags')
@@ -225,22 +223,6 @@ async function handleSave() {
           const { error } = await supabase
             .from('library_song_tags')
             .insert(tagsToAdd.map(tagId => ({ library_song_id: props.librarySongId!, tag_id: tagId })))
-          if (error) throw error
-        }
-      } else if (props.songId) {
-        // V1 path
-        if (tagsToRemove.length > 0) {
-          const { error } = await supabase
-            .from('song_tags')
-            .delete()
-            .eq('song_id', props.songId)
-            .in('tag_id', tagsToRemove)
-          if (error) throw error
-        }
-        if (tagsToAdd.length > 0) {
-          const { error } = await supabase
-            .from('song_tags')
-            .insert(tagsToAdd.map(tagId => ({ song_id: props.songId!, tag_id: tagId })))
           if (error) throw error
         }
       }

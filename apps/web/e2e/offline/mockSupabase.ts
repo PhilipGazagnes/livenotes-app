@@ -45,9 +45,9 @@ const notes = [{
 }]
 const lists = [{ id: 'l1', project_id: PROJECT_ID, name: 'Friday Gig', description: null, created_at: now, updated_at: now, created_by: USER_ID }]
 const listItems = [
-  { id: 'i1', list_id: 'l1', library_song_id: null, song_id: null, position: 0, type: 'title', title: 'Set 1', added_at: now, note_id: null, list_annotations: null },
-  { id: 'i2', list_id: 'l1', library_song_id: 'ls2', song_id: null, position: 1, type: 'song', title: null, added_at: now, note_id: null, list_annotations: null },
-  { id: 'i3', list_id: 'l1', library_song_id: 'ls1', song_id: null, position: 2, type: 'song', title: null, added_at: now, note_id: null, list_annotations: null },
+  { id: 'i1', list_id: 'l1', library_song_id: null, position: 0, type: 'title', title: 'Set 1', added_at: now, note_id: null, list_annotations: null },
+  { id: 'i2', list_id: 'l1', library_song_id: 'ls2', position: 1, type: 'song', title: null, added_at: now, note_id: null, list_annotations: null },
+  { id: 'i3', list_id: 'l1', library_song_id: 'ls1', position: 2, type: 'song', title: null, added_at: now, note_id: null, list_annotations: null },
 ]
 
 type Row = Record<string, unknown>
@@ -75,7 +75,7 @@ function rowsFor(table: string, select: string): Row[] {
         ? [{ role: 'editor', project }]
         : [{ id: 'm1', project_id: PROJECT_ID, user_id: USER_ID, role: 'editor' }]
     case 'library_songs':
-      if (select.includes('song_artists:song_artists_v2')) {
+      if (select.includes('song_artists:song_artists')) {
         // offline snapshot sync
         return librarySongs.map(ls => ({
           ...ls,
@@ -84,10 +84,10 @@ function rowsFor(table: string, select: string): Row[] {
           notes: notes.filter(n => n.library_song_id === ls.id),
         }))
       }
-      if (select.includes('songs_v2!inner')) {
+      if (select.includes('songs!inner')) {
         return librarySongs.map(ls => ({
           id: ls.id, song_id: ls.song_id,
-          songs_v2: { id: ls.song_id, song_artists_v2: songArtists.filter(sa => sa.song_id === ls.song_id).map(sa => ({ artist_id: sa.artist_id, artists_v2: byId(artists, sa.artist_id) })) },
+          songs: { id: ls.song_id, song_artists: songArtists.filter(sa => sa.song_id === ls.song_id).map(sa => ({ artist_id: sa.artist_id, artists: byId(artists, sa.artist_id) })) },
         }))
       }
       return librarySongs.map(libraryRowForViews)

@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Artist, ArtistV2, ArtistWithCount } from '@livenotes/shared/types'
+import type { ArtistV2, ArtistWithCount } from '@livenotes/shared/types'
 import { selectArtistsWithCount } from '@livenotes/shared/offline'
 import { readThrough } from '@/lib/offline/offlineData'
 
@@ -11,26 +11,16 @@ interface RawArtistV2Field {
 }
 interface RawSongArtistV2Row {
   artist_id: string
-  artists_v2: RawArtistV2Field | null
+  artists: RawArtistV2Field | null
 }
 interface RawSongV2ForCount {
   id: string
-  song_artists_v2: RawSongArtistV2Row[]
+  song_artists: RawSongArtistV2Row[]
 }
 interface RawLibrarySongForCount {
   id: string
   song_id: string
-  songs_v2: RawSongV2ForCount | null
-}
-
-export async function fetchArtists(projectId: string): Promise<Artist[]> {
-  const { data, error } = await supabase
-    .from('artists')
-    .select('id, project_id, name, created_at, updated_at')
-    .eq('project_id', projectId)
-    .order('name', { ascending: true })
-  if (error) throw error
-  return data || []
+  songs: RawSongV2ForCount | null
 }
 
 export function fetchArtistsWithCount(projectId: string): Promise<ArtistWithCount[]> {
@@ -43,11 +33,11 @@ async function fetchArtistsWithCountRemote(projectId: string): Promise<ArtistWit
     .select(`
       id,
       song_id,
-      songs_v2!inner(
+      songs!inner(
         id,
-        song_artists_v2!inner(
+        song_artists!inner(
           artist_id,
-          artists_v2!inner(
+          artists!inner(
             id,
             name,
             created_at,
@@ -62,9 +52,9 @@ async function fetchArtistsWithCountRemote(projectId: string): Promise<ArtistWit
   const artistMap = new Map<string, ArtistWithCount>()
   const rows = (librarySongs as unknown as RawLibrarySongForCount[]) ?? []
   rows.forEach((librarySong) => {
-    const songArtists = librarySong.songs_v2?.song_artists_v2 ?? []
+    const songArtists = librarySong.songs?.song_artists ?? []
     songArtists.forEach((sa) => {
-      const artist = sa.artists_v2
+      const artist = sa.artists
       if (artist) {
         if (artistMap.has(artist.id)) {
           artistMap.get(artist.id)!.song_count++
@@ -86,7 +76,7 @@ async function fetchArtistsWithCountRemote(projectId: string): Promise<ArtistWit
 
 export async function findArtistByFingerprint(fingerprint: string): Promise<ArtistV2 | null> {
   const { data, error } = await supabase
-    .from('artists_v2')
+    .from('artists')
     .select('id, name, fingerprint, is_verified, verified_by, verified_at, bio, image_url, external_links, created_by, created_at, updated_at, merged_into_id, merge_reason')
     .eq('fingerprint', fingerprint)
     .maybeSingle()
@@ -96,7 +86,7 @@ export async function findArtistByFingerprint(fingerprint: string): Promise<Arti
 
 export async function createArtistV2(name: string, fingerprint: string, userId: string): Promise<ArtistV2> {
   const { data, error } = await supabase
-    .from('artists_v2')
+    .from('artists')
     .insert({ name, fingerprint, created_by: userId })
     .select()
     .single()
@@ -106,7 +96,7 @@ export async function createArtistV2(name: string, fingerprint: string, userId: 
 
 export async function fetchArtistCreatedBy(artistId: string): Promise<string> {
   const { data, error } = await supabase
-    .from('artists_v2')
+    .from('artists')
     .select('created_by')
     .eq('id', artistId)
     .single()
@@ -116,7 +106,7 @@ export async function fetchArtistCreatedBy(artistId: string): Promise<string> {
 
 export async function updateArtistV2(artistId: string, name: string, fingerprint: string): Promise<ArtistV2> {
   const { data, error } = await supabase
-    .from('artists_v2')
+    .from('artists')
     .update({ name, fingerprint, updated_at: new Date().toISOString() })
     .eq('id', artistId)
     .select()
@@ -144,7 +134,7 @@ export async function fetchProjectLibrarySongIds(projectId: string): Promise<str
 
 export async function bulkDeleteArtistSongs(artistIds: string[], projectId: string): Promise<void> {
   const { data: songArtists } = await supabase
-    .from('song_artists_v2')
+    .from('song_artists')
     .select('song_id')
     .in('artist_id', artistIds)
 
@@ -166,7 +156,7 @@ export async function bulkDeleteArtistSongs(artistIds: string[], projectId: stri
 
 export async function checkArtistUsedInSongs(artistId: string, songIds: string[]): Promise<boolean> {
   const { data, error } = await supabase
-    .from('song_artists_v2')
+    .from('song_artists')
     .select('id')
     .eq('artist_id', artistId)
     .in('song_id', songIds)

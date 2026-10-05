@@ -1,7 +1,6 @@
 import type { Tag } from './tag'
 import type { List } from './list'
 import type { Note } from './note'
-import type { LivenotesJson } from './note'
 
 export interface Song {
   id: string
@@ -16,27 +15,12 @@ export interface Song {
   updated_by: string | null
 }
 
-export interface SongTag {
-  id: string
-  song_id: string
-  tag_id: string
-  created_at: string
-}
-
 export interface Artist {
   id: string
   project_id: string
   name: string
   created_at: string | null
   updated_at: string | null
-}
-
-export interface SongArtist {
-  id: string
-  song_id: string
-  artist_id: string
-  position: number
-  created_at: string
 }
 
 export interface ArtistWithPosition extends Artist {
@@ -51,17 +35,6 @@ export interface SongWithTags extends Song {
   tags: Tag[]
   lists: List[]
   artists: ArtistWithPosition[]
-}
-
-export interface SongCode {
-  song_id: string
-  songcode: string | null
-  songcode_updated_at: string | null
-  songcode_updated_by: string | null
-  livenotes_json: LivenotesJson | null
-  livenotes_json_updated_at: string | null
-  livenotes_json_updated_by: string | null
-  created_at: string | null
 }
 
 export interface SongV2 {

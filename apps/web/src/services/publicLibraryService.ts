@@ -81,12 +81,12 @@ const PUBLIC_LIBRARY_SONG_SELECT = `
   added_by,
   custom_title,
   custom_notes,
-  song:songs_v2!library_songs_song_id_fkey(
+  song:songs!library_songs_song_id_fkey(
     id,
     title,
-    artists:song_artists_v2(
+    artists:song_artists(
       position,
-      artist:artists_v2(id, name)
+      artist:artists(id, name)
     )
   ),
   tags:library_song_tags(

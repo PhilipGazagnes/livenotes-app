@@ -75,11 +75,11 @@ async function fetchListWithItemsRemote(listId: string): Promise<ListWithItems |
       *,
       library_song:library_songs!list_items_library_song_id_fkey(
         *,
-        song:songs_v2!library_songs_song_id_fkey(
+        song:songs!library_songs_song_id_fkey(
           *,
-          artists:song_artists_v2(
+          artists:song_artists(
             position,
-            artist:artists_v2(*)
+            artist:artists(*)
           )
         ),
         tags:library_song_tags(
@@ -193,32 +193,12 @@ export async function insertLibrarySongToList(
   if (error) throw error
 }
 
-export async function insertSongToList(
-  listId: string,
-  songId: string,
-  position: number
-): Promise<void> {
-  const { error } = await supabase
-    .from('list_items')
-    .insert({ list_id: listId, song_id: songId, position })
-  if (error) throw error
-}
-
 export async function deleteLibrarySongFromList(listId: string, librarySongId: string): Promise<void> {
   const { error } = await supabase
     .from('list_items')
     .delete()
     .eq('list_id', listId)
     .eq('library_song_id', librarySongId)
-  if (error) throw error
-}
-
-export async function deleteSongFromList(listId: string, songId: string): Promise<void> {
-  const { error } = await supabase
-    .from('list_items')
-    .delete()
-    .eq('list_id', listId)
-    .eq('song_id', songId)
   if (error) throw error
 }
 

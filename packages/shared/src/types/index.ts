@@ -20,13 +20,10 @@ export type { Tag, TagWithCount } from './tag'
 
 export type {
   Song,
-  SongTag,
   Artist,
-  SongArtist,
   ArtistWithPosition,
   ArtistWithCount,
   SongWithTags,
-  SongCode,
   SongV2,
   ArtistV2,
   SongArtistV2,

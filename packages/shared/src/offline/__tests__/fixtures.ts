@@ -34,7 +34,7 @@ export function list(id: string, name: string, createdAt: string | null): List {
 
 export function listItem(id: string, listId: string, position: number, librarySongId: string | null, type: 'song' | 'title' = 'song'): ListItem {
   return {
-    id, list_id: listId, song_id: null, library_song_id: librarySongId, position, type,
+    id, list_id: listId, library_song_id: librarySongId, position, type,
     title: type === 'title' ? 'Set 1' : null, added_at: '2026-01-01', note_id: null, list_annotations: null,
   }
 }

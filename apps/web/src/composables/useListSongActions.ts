@@ -4,15 +4,12 @@ import { useUiStore } from '@/stores/ui'
 import { useDrawerStore } from '@/stores/drawer'
 import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
-import { useSongsStore } from '@/stores/songs'
 import { useSettingsStore } from '@/stores/settings'
 import { useRouter } from 'vue-router'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
 import { I18N } from '@/constants/i18n'
-import { MESSAGES } from '@/constants/messages'
-import { executeOperation } from '@/utils/operations'
 import type { ListItem, SongWithTags } from '@livenotes/shared/types'
 
 type SongItem = ListItem & { song: SongWithTags }
@@ -24,7 +21,6 @@ export function useListSongActions(onRefresh: () => Promise<void>) {
   const drawerStore = useDrawerStore()
   const tagsStore = useTagsStore()
   const listsStore = useListsStore()
-  const songsStore = useSongsStore()
   const settingsStore = useSettingsStore()
 
   const selectedSongItem = ref<SongItem | null>(null)
@@ -53,7 +49,6 @@ export function useListSongActions(onRefresh: () => Promise<void>) {
       { label: I18N.DROPDOWN.EDIT, callback: () => { uiStore.showOperationOverlay('Loading song...'); router.push(`/project/song/${item.song.id}/edit`) } },
       { label: I18N.DROPDOWN.MANAGE_TAGS, callback: () => openSongManageTags(item) },
       { label: I18N.DROPDOWN.MANAGE_LISTS, callback: () => openSongManageLists(item) },
-      { label: I18N.DROPDOWN.DELETE, variant: 'danger' as const, callback: () => handleDeleteSong(item) },
     ]
   }
 
@@ -85,24 +80,6 @@ export function useListSongActions(onRefresh: () => Promise<void>) {
     selectedSongItem.value = null
   }
 
-  async function handleDeleteSong(item: SongItem) {
-    const confirmed = await uiStore.showConfirm(
-      'Delete Song', MESSAGES.CONFIRM_DELETE_SONG(item.song.title),
-      I18N.BUTTONS.DELETE, I18N.BUTTONS.CANCEL,
-    )
-    if (!confirmed) return
-    const songId = item.song.id
-    await executeOperation(
-      () => songsStore.deleteSong(item.song.id, item.song.project_id),
-      {
-        loadingMessage: 'Deleting song...',
-        successMessage: MESSAGES.SUCCESS.SONG_DELETED,
-        errorContext: 'delete song',
-        onSuccess: () => handleSongDeleted(songId),
-      },
-    )
-  }
-
   function handleRemove(item: ListItem & { song?: SongWithTags }) {
     if (!item.library_song_id) return
     const { list_id, library_song_id } = item
@@ -124,11 +101,6 @@ export function useListSongActions(onRefresh: () => Promise<void>) {
         }
       },
     })
-  }
-
-  function handleSongDeleted(songId: string) {
-    // nothing to do here — the list refreshes via the store
-    void songId
   }
 
   function handleOpenNotes(item: SongItem) {

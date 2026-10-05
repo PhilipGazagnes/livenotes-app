@@ -13,7 +13,6 @@ export interface List {
 export interface ListItem {
   id: string
   list_id: string
-  song_id: string | null
   library_song_id: string | null
   position: number
   type: 'song' | 'title'

@@ -16,38 +16,6 @@ export type Database = {
     Tables: {
       artists: {
         Row: {
-          created_at: string | null
-          id: string
-          name: string
-          project_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-          project_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-          project_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "artists_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      artists_v2: {
-        Row: {
           bio: string | null
           created_at: string | null
           created_by: string
@@ -97,10 +65,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "artists_v2_merged_into_id_fkey"
+            foreignKeyName: "artists_merged_into_id_fkey"
             columns: ["merged_into_id"]
             isOneToOne: false
-            referencedRelation: "artists_v2"
+            referencedRelation: "artists"
             referencedColumns: ["id"]
           },
         ]
@@ -228,7 +196,7 @@ export type Database = {
             foreignKeyName: "library_songs_song_id_fkey"
             columns: ["song_id"]
             isOneToOne: false
-            referencedRelation: "songs_v2"
+            referencedRelation: "songs"
             referencedColumns: ["id"]
           },
         ]
@@ -242,7 +210,6 @@ export type Database = {
           list_id: string
           note_id: string | null
           position: number
-          song_id: string | null
           title: string | null
           type: string
         }
@@ -254,7 +221,6 @@ export type Database = {
           list_id: string
           note_id?: string | null
           position: number
-          song_id?: string | null
           title?: string | null
           type?: string
         }
@@ -266,7 +232,6 @@ export type Database = {
           list_id?: string
           note_id?: string | null
           position?: number
-          song_id?: string | null
           title?: string | null
           type?: string
         }
@@ -290,13 +255,6 @@ export type Database = {
             columns: ["note_id"]
             isOneToOne: false
             referencedRelation: "notes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "list_items_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
             referencedColumns: ["id"]
           },
         ]
@@ -687,170 +645,7 @@ export type Database = {
           },
         ]
       }
-      song_artists_v2: {
-        Row: {
-          artist_id: string
-          created_at: string | null
-          id: string
-          position: number
-          song_id: string
-        }
-        Insert: {
-          artist_id: string
-          created_at?: string | null
-          id?: string
-          position: number
-          song_id: string
-        }
-        Update: {
-          artist_id?: string
-          created_at?: string | null
-          id?: string
-          position?: number
-          song_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "song_artists_v2_artist_id_fkey"
-            columns: ["artist_id"]
-            isOneToOne: false
-            referencedRelation: "artists_v2"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "song_artists_v2_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs_v2"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      song_tags: {
-        Row: {
-          created_at: string | null
-          id: string
-          song_id: string
-          tag_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          song_id: string
-          tag_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          song_id?: string
-          tag_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "song_tags_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "song_tags_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      songcode: {
-        Row: {
-          created_at: string | null
-          livenotes_json: Json | null
-          livenotes_json_updated_at: string | null
-          livenotes_json_updated_by: string | null
-          song_id: string
-          songcode: string | null
-          songcode_updated_at: string | null
-          songcode_updated_by: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          livenotes_json?: Json | null
-          livenotes_json_updated_at?: string | null
-          livenotes_json_updated_by?: string | null
-          song_id: string
-          songcode?: string | null
-          songcode_updated_at?: string | null
-          songcode_updated_by?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          livenotes_json?: Json | null
-          livenotes_json_updated_at?: string | null
-          livenotes_json_updated_by?: string | null
-          song_id?: string
-          songcode?: string | null
-          songcode_updated_at?: string | null
-          songcode_updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "songcode_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: true
-            referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       songs: {
-        Row: {
-          artist: string | null
-          created_at: string | null
-          created_by: string | null
-          id: string
-          livenotes_poc_id: string | null
-          notes: string | null
-          project_id: string
-          title: string
-          updated_at: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          artist?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          livenotes_poc_id?: string | null
-          notes?: string | null
-          project_id: string
-          title: string
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          artist?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          livenotes_poc_id?: string | null
-          notes?: string | null
-          project_id?: string
-          title?: string
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "songs_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      songs_v2: {
         Row: {
           created_at: string | null
           created_by: string
@@ -895,10 +690,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "songs_v2_merged_into_id_fkey"
+            foreignKeyName: "songs_merged_into_id_fkey"
             columns: ["merged_into_id"]
             isOneToOne: false
-            referencedRelation: "songs_v2"
+            referencedRelation: "songs"
             referencedColumns: ["id"]
           },
         ]

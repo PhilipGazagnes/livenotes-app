@@ -174,42 +174,6 @@ export const useListsStore = defineStore('lists', () => {
     }
   }
 
-  // Legacy V1 methods (kept for backward compatibility during migration)
-  async function addSongToList(listId: string, songId: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      const position = await listService.fetchListMaxPosition(listId)
-      await listService.insertSongToList(listId, songId, position)
-      if (currentList.value?.id === listId) await fetchListById(listId)
-      return { success: true }
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to add song to list'
-      return { success: false, error: error.value }
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function removeSongFromList(listId: string, songId: string) {
-    isLoading.value = true
-    error.value = null
-    try {
-      await listService.deleteSongFromList(listId, songId)
-      if (currentList.value?.id === listId) {
-        currentList.value.items = currentList.value.items.filter(
-          item => item.song_id !== songId
-        )
-      }
-      return { success: true }
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to remove song from list'
-      return { success: false, error: error.value }
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   async function reorderListItems(_listId: string, itemIds: string[]) {
     error.value = null
     try {
@@ -238,8 +202,6 @@ export const useListsStore = defineStore('lists', () => {
     addLibrarySongToList,
     removeLibrarySongFromList,
     bulkAddLibrarySongsToList,
-    addSongToList,
-    removeSongFromList,
     reorderListItems,
   }
 })
