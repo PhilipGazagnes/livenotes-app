@@ -8,6 +8,7 @@ import {
 } from '@livenotes/shared/offline'
 import type { ArtistV2 } from '@livenotes/shared/types'
 import { supabase } from '@/lib/supabase'
+import { I18N } from '@/constants/i18n'
 import { logger } from '@/utils/logger'
 import {
   getOfflineActiveProjectId,
@@ -48,6 +49,7 @@ export class EditNotAllowedError extends Error {
 
 let writeGuard: () => void = () => {}
 let writeCommitted: () => void = () => {}
+let editingLost: () => void = () => {}
 
 /** Rule checked before every project write (set by the edit-mode store). */
 export function setWriteGuard(guard: () => void): void {
@@ -57,6 +59,11 @@ export function setWriteGuard(guard: () => void): void {
 /** Called after every successful project write (edit activity). */
 export function onWriteCommitted(listener: () => void): void {
   writeCommitted = listener
+}
+
+/** Called when a write is refused because the user no longer holds the editing flag. */
+export function onEditingLost(listener: () => void): void {
+  editingLost = listener
 }
 
 function unique(ids: string[] | undefined): string[] {
@@ -73,10 +80,27 @@ export async function commitWrite<T>(
 ): Promise<T> {
   writeGuard()
   const projectId = getOfflineActiveProjectId()
+  if (projectId) await ensureStillEditing(projectId)
   const result = await write()
   writeCommitted()
   if (projectId) await patchAfterWrite(projectId, typeof refresh === 'function' ? refresh(result) : refresh)
   return result
+}
+
+/**
+ * The flag may have been released (admin, expiry) since the screen last
+ * checked. The database would then silently ignore updates and deletes, so
+ * check first and refuse the write instead of reporting a fake success.
+ */
+async function ensureStillEditing(projectId: string): Promise<void> {
+  const status = await fetchProjectStatus(supabase, projectId)
+  if (status?.editor?.userId === getOfflineUserId()) {
+    setProjectStatus(projectId, status)
+    return
+  }
+  editingLost()
+  setProjectStatus(projectId, status)
+  throw new EditNotAllowedError(I18N.EDIT_MODE.NOT_SAVED_LOST)
 }
 
 async function patchAfterWrite(projectId: string, refresh: LocalRefresh): Promise<void> {

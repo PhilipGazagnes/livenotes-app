@@ -57,6 +57,7 @@ export const I18N = {
     BLOCKED_OUTDATED: 'Your copy is outdated. Sync first.',
     NOT_ALLOWED: 'Your role in this project does not allow editing',
     LOST: 'You are no longer editing this project',
+    NOT_SAVED_LOST: 'Not saved: you are no longer editing this project',
     SOMEONE: 'another member',
   },
 

@@ -10,7 +10,7 @@ import {
   projectStatusReceivedAt,
   setProjectStatus,
 } from '@/lib/offline/projectStatus'
-import { EditNotAllowedError, onWriteCommitted, setWriteGuard } from '@/lib/offline/projectWrites'
+import { EditNotAllowedError, onEditingLost, onWriteCommitted, setWriteGuard } from '@/lib/offline/projectWrites'
 import { I18N } from '@/constants/i18n'
 import { logger } from '@/utils/logger'
 import { useAuthStore } from './auth'
@@ -98,6 +98,11 @@ export const useEditModeStore = defineStore('editMode', () => {
   // A write by the holder refreshes the flag on the server: restart the countdown
   onWriteCommitted(() => {
     if (isEditing.value) deadline.value = Date.now() + EDIT_FLAG_TTL_MS
+  })
+  // A refused write already tells the user (its own error toast): leave edit mode quietly
+  onEditingLost(() => {
+    deadline.value = null
+    editingProjectId = null
   })
 
   // Follow the server: we hold the flag only while the status says so

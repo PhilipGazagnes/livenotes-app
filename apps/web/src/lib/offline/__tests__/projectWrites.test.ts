@@ -31,7 +31,7 @@ const offlineData = {
 vi.mock('../offlineData', () => offlineData)
 vi.mock('../projectStatus', () => ({ setProjectStatus: vi.fn() }))
 
-const { commitWrite, setWriteGuard, onWriteCommitted, EditNotAllowedError } = await import('../projectWrites')
+const { commitWrite, setWriteGuard, onWriteCommitted, onEditingLost, EditNotAllowedError } = await import('../projectWrites')
 
 function status(editorId: string | null, version = 8): ProjectStatus {
   return {
@@ -49,6 +49,7 @@ beforeEach(() => {
   remote.fetchProjectStatus.mockResolvedValue(status('u1'))
   setWriteGuard(() => {})
   onWriteCommitted(() => {})
+  onEditingLost(() => {})
 })
 
 describe('commitWrite (ADR-012)', () => {
@@ -88,8 +89,25 @@ describe('commitWrite (ADR-012)', () => {
     expect(remote.fetchListAggregates).toHaveBeenCalledWith({}, ['l9'])
   })
 
-  it('marks the copy outdated when we no longer hold the editing flag', async () => {
-    remote.fetchProjectStatus.mockResolvedValue(status('u2'))
+  it('refuses the write when the flag was released since the screen last checked', async () => {
+    remote.fetchProjectStatus.mockResolvedValue(status(null))
+    const lost = vi.fn()
+    onEditingLost(lost)
+    const write = vi.fn()
+    const committed = vi.fn()
+    onWriteCommitted(committed)
+
+    await expect(commitWrite(write, { librarySongIds: ['ls1'] })).rejects.toThrow('Not saved: you are no longer editing this project')
+
+    expect(write).not.toHaveBeenCalled()
+    expect(committed).not.toHaveBeenCalled()
+    expect(lost).toHaveBeenCalledTimes(1)
+    // nothing changed: the copy is not marked outdated
+    expect(offlineData.markLocalCopyOutdated).not.toHaveBeenCalled()
+  })
+
+  it('marks the copy outdated when the flag is lost during the write', async () => {
+    remote.fetchProjectStatus.mockResolvedValueOnce(status('u1')).mockResolvedValueOnce(status('u2'))
     await commitWrite(async () => 'ok', { librarySongIds: ['ls1'] })
     expect(offlineData.patchLocalCopy).not.toHaveBeenCalled()
     expect(offlineData.markLocalCopyOutdated).toHaveBeenCalledWith('p1')

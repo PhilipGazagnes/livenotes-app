@@ -43,6 +43,8 @@ async function loginAndWaitForSnapshot(page: Page) {
 }
 
 async function openProjectMenu(page: Page) {
+  // A panel that is still sliding out would be found twice
+  await expect(page.locator('.drawer-panel')).toHaveCount(0)
   await page.getByTestId('project-menu-btn').click()
 }
 
@@ -211,7 +213,7 @@ test.describe('Offline mode (mocked Supabase)', () => {
     await openProjectMenu(page)
     await page.getByTestId('start-editing-btn').click()
     await expect(page.getByText('Your copy is outdated. Sync first.').first()).toBeVisible()
-    await page.getByRole('button', { name: 'Close' }).first().click()
+    await page.locator('.drawer-panel').getByRole('button', { name: 'Close' }).click()
 
     await banner.getByRole('button', { name: 'Sync' }).click()
     await expect(banner).toHaveCount(0)

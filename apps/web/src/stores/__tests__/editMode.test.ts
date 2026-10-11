@@ -24,7 +24,7 @@ vi.mock('../ui', () => ({
   }),
 }))
 
-const { localVersion, __setSnapshotStoreFactory, setOfflineActiveProject } = await import('@/lib/offline/offlineData')
+const { localVersion, __setSnapshotStoreFactory, setOfflineActiveProject, setOfflineUser } = await import('@/lib/offline/offlineData')
 const { setProjectStatus, resetProjectStatus } = await import('@/lib/offline/projectStatus')
 const { commitWrite, EditNotAllowedError } = await import('@/lib/offline/projectWrites')
 const { useEditModeStore, EDIT_FLAG_TTL_MS, KEEP_EDITING_PROMPT_MS } = await import('../editMode')
@@ -44,6 +44,7 @@ beforeEach(async () => {
     load: async () => null, save: async () => {}, remove: async () => {}, close: () => {}, destroy: async () => {},
     stats: async () => ({ projects: 0, bytes: 0 }),
   }))
+  setOfflineUser('u1')
   setOfflineActiveProject('p1')
   // let the (empty) local copy finish loading before setting its version
   await new Promise(resolve => setTimeout(resolve))
@@ -161,11 +162,13 @@ describe('inactivity (ADR-011)', () => {
 
   it('a write restarts the countdown', async () => {
     vi.useFakeTimers()
+    // The server still lists us as the editor (checked before the write)
+    rpc.mockResolvedValue({ data: { version: 5, last_changed_at: null, last_changed_by: null, editor: { user_id: 'u1', name: 'Me', since: null, expires_in_seconds: 900 } }, error: null })
     const store = useEditModeStore()
     setProjectStatus('p1', status('u1'))
     await nextTick()
     await vi.advanceTimersByTimeAsync(10 * 60 * 1000)
-    await commitWrite(async () => 'ok', {}).catch(() => {})
+    await commitWrite(async () => 'ok', {})
     await nextTick()
     await vi.advanceTimersByTimeAsync(EDIT_FLAG_TTL_MS - KEEP_EDITING_PROMPT_MS - 1000)
     expect(store.showKeepEditing).toBe(false)
