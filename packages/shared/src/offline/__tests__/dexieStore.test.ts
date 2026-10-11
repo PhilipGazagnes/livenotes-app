@@ -38,14 +38,13 @@ describe('DexieSnapshotStore', () => {
     expect(await store.load('p1')).toBeNull()
   })
 
-  it('reports the number and size of stored projects', async () => {
+  it('reports the size of one project copy', async () => {
     const store = open('u1')
-    expect(await store.stats()).toEqual({ projects: 0, bytes: 0 })
+    expect(await store.size('p1')).toBe(0)
     await store.save(makeSnapshot())
-    await store.save(makeSnapshot({ projectId: 'p2' }))
-    const stats = await store.stats()
-    expect(stats.projects).toBe(2)
-    expect(stats.bytes).toBeGreaterThan(1000)
+    await store.save(makeSnapshot({ projectId: 'p2', librarySongs: [] }))
+    expect(await store.size('p1')).toBeGreaterThan(await store.size('p2'))
+    expect(await store.size('p2')).toBeGreaterThan(0)
   })
 
   it('ignores snapshots without a project version', async () => {

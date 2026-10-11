@@ -11,8 +11,8 @@ export interface SnapshotStore {
   load(projectId: string): Promise<ProjectSnapshot | null>
   save(snapshot: ProjectSnapshot): Promise<void>
   remove(projectId: string): Promise<void>
-  /** Number of stored projects and their approximate size in bytes */
-  stats(): Promise<{ projects: number; bytes: number }>
+  /** Approximate size in bytes of one project's stored copy (0 when absent) */
+  size(projectId: string): Promise<number>
   /** Close the underlying database (does not delete data) */
   close(): void
   /** Delete the whole database of this store */

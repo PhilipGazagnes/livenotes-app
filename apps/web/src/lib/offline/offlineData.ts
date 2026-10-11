@@ -23,8 +23,9 @@ import { isOfflineMode } from './offlineState'
  * - The Sync button is the only thing that refreshes a copy (ADR-010).
  * - Writes go to the server, then patch the copy (`projectWrites.ts`, ADR-012).
  * - Local data stays on logout; deleting it is a user action (ADR-014).
- *   After "Delete local data", screens stay empty until the user syncs: the
- *   automatic first download is paused (what you see = what is stored).
+ *   "Delete local data" removes one project's copy; that project's screens
+ *   stay empty until the user syncs it: its automatic first download is
+ *   paused (what you see = what is stored).
  */
 
 const LEGACY_LAST_SYNCED_PREFIX = 'livenotes-last-synced-'
@@ -46,8 +47,10 @@ export const lastSyncedAt = ref<Date | null>(null)
 export const lastSyncError = ref<string | null>(null)
 /** Server version the active project's copy matches; null without a copy */
 export const localVersion = ref<number | null>(null)
-/** The user deleted local data: no automatic download until they sync */
+/** The user deleted the active project's local data: no automatic download until they sync */
 export const isDownloadPaused = ref(false)
+/** Projects whose local data the current user deleted (persisted per user) */
+let pausedProjects = new Set<string>()
 /**
  * Increases when the active project's local copy is replaced as a whole
  * (Sync, "Delete local data"): screens drop what they show and read again.
@@ -58,21 +61,26 @@ function downloadPausedKey(userId: string): string {
   return `${DOWNLOAD_PAUSED_PREFIX}${userId}`
 }
 
-function setDownloadPaused(userId: string, paused: boolean): void {
-  if (userId === currentUserId) isDownloadPaused.value = paused
+function setDownloadPaused(projectId: string, paused: boolean): void {
+  if (!currentUserId) return
+  if (paused) pausedProjects.add(projectId)
+  else pausedProjects.delete(projectId)
+  if (projectId === activeProjectId) isDownloadPaused.value = paused
   try {
-    if (paused) localStorage.setItem(downloadPausedKey(userId), '1')
-    else localStorage.removeItem(downloadPausedKey(userId))
+    const key = downloadPausedKey(currentUserId)
+    if (pausedProjects.size) localStorage.setItem(key, JSON.stringify([...pausedProjects]))
+    else localStorage.removeItem(key)
   } catch {
     // storage unavailable: paused for this session only
   }
 }
 
-function readDownloadPaused(userId: string): boolean {
+function readPausedProjects(userId: string): Set<string> {
   try {
-    return localStorage.getItem(downloadPausedKey(userId)) === '1'
+    const stored = JSON.parse(localStorage.getItem(downloadPausedKey(userId)) ?? '[]')
+    return new Set(Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : [])
   } catch {
-    return false
+    return new Set()
   }
 }
 
@@ -103,7 +111,8 @@ export function setOfflineUser(userId: string | null): void {
   refreshActiveState(null)
   currentUserId = userId
   store = userId ? createStore(userId) : null
-  isDownloadPaused.value = userId ? readDownloadPaused(userId) : false
+  pausedProjects = userId ? readPausedProjects(userId) : new Set()
+  isDownloadPaused.value = !!activeProjectId && pausedProjects.has(activeProjectId)
   if (userId) removeLegacyLastSyncedKeys()
 }
 
@@ -111,6 +120,7 @@ export function setOfflineActiveProject(projectId: string | null): void {
   if (projectId === activeProjectId) return
   activeProjectId = projectId
   refreshActiveState(null)
+  isDownloadPaused.value = !!projectId && pausedProjects.has(projectId)
   if (projectId) {
     getSnapshot(projectId)
       // A copy downloaded meanwhile wins over the (possibly empty) result of this load
@@ -119,25 +129,24 @@ export function setOfflineActiveProject(projectId: string | null): void {
   }
 }
 
-/** "Delete local data": remove this user's local copies on this device. */
-export async function deleteLocalData(): Promise<void> {
-  if (!store || !currentUserId) return
-  const userId = currentUserId
-  const previous = store
-  store = null
-  snapshots.clear()
-  pendingLoads.clear()
-  refreshActiveState(null)
-  setDownloadPaused(userId, true)
-  notifyLocalCopyReplaced()
+/**
+ * "Delete local data" for one project (the active one by default): its copy
+ * is removed from this device, and it is not downloaded again until synced.
+ */
+export async function deleteLocalData(projectId: string | null = activeProjectId): Promise<void> {
+  if (!store || !projectId) return
+  snapshots.delete(projectId)
+  pendingLoads.delete(projectId)
+  setDownloadPaused(projectId, true)
+  if (projectId === activeProjectId) {
+    refreshActiveState(null)
+    notifyLocalCopyReplaced()
+  }
   try {
-    await previous.destroy()
+    await store.remove(projectId)
   } catch (err) {
     logger.error('Failed to delete local data', err)
     throw err
-  } finally {
-    // Reopen an empty database for the same user (unless they switched meanwhile)
-    if (currentUserId === userId && !store) store = createStore(userId)
   }
 }
 
@@ -208,7 +217,7 @@ export function syncProject(projectId: string | null = activeProjectId): Promise
       })
       if (store !== owner) throw new Error('Signed out during sync')
       await saveSnapshot(owner, snapshot)
-      setDownloadPaused(userId, false)
+      setDownloadPaused(projectId, false)
       if (isActive()) lastSyncError.value = null
       return snapshot
     } catch (err) {
@@ -236,23 +245,22 @@ export async function patchLocalCopy(projectId: string, patch: SnapshotPatch): P
 }
 
 export interface LocalDataUsage {
-  /** This user's local copies on this device */
-  projects: number
+  /** Size of the project's local copy on this device */
   bytes: number
-  /** Everything this site stores in the browser (all users' copies, app files), if the browser reports it */
+  /** Everything this site stores in the browser (all projects and users, app files), if the browser reports it */
   originBytes: number | null
 }
 
-/** Space taken by local data, for the "Local data" panel. */
-export async function getLocalDataUsage(): Promise<LocalDataUsage> {
-  const { projects, bytes } = store ? await store.stats() : { projects: 0, bytes: 0 }
+/** Space taken by a project's local copy (the active one by default), for the "Local data" panel. */
+export async function getLocalDataUsage(projectId: string | null = activeProjectId): Promise<LocalDataUsage> {
+  const bytes = store && projectId ? await store.size(projectId) : 0
   let originBytes: number | null = null
   try {
     originBytes = (await navigator.storage?.estimate?.())?.usage ?? null
   } catch {
-    // not supported: only the local copies are shown
+    // not supported: only the project's copy is shown
   }
-  return { projects, bytes, originBytes }
+  return { bytes, originBytes }
 }
 
 /** Drop one project's local copy (e.g. the project was deleted). */
@@ -295,7 +303,7 @@ export async function readLocal<T>(
 
   const snapshot = await getSnapshot(projectId)
   if (snapshot) return select(snapshot)
-  if (isDownloadPaused.value) return select(emptySnapshot(projectId))
+  if (pausedProjects.has(projectId)) return select(emptySnapshot(projectId))
   if (isOfflineMode()) throw new OfflineDataUnavailableError()
   return select(await syncProject(projectId))
 }

@@ -42,7 +42,7 @@ beforeEach(async () => {
   setActivePinia(createPinia())
   __setSnapshotStoreFactory(() => ({
     load: async () => null, save: async () => {}, remove: async () => {}, close: () => {}, destroy: async () => {},
-    stats: async () => ({ projects: 0, bytes: 0 }),
+    size: async () => 0,
   }))
   setOfflineUser('u1')
   setOfflineActiveProject('p1')

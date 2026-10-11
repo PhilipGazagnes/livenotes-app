@@ -28,7 +28,7 @@ function memoryStore(userId: string): SnapshotStore {
     load: async id => db().get(id) ?? null,
     save: async s => { db().set(s.projectId, s) },
     remove: async id => { db().delete(id) },
-    stats: async () => ({ projects: db().size, bytes: 0 }),
+    size: async id => (db().has(id) ? 1 : 0),
     close: () => {},
     destroy: async () => { databases.delete(userId); destroyed.push(userId) },
   }
@@ -183,17 +183,38 @@ describe('users and local data (ADR-014)', () => {
     expect(destroyed).toEqual([])
   })
 
-  it('deleteLocalData deletes only the current user data, and the store keeps working', async () => {
-    await seed()
-    offline.setOfflineUser('u2')
-    await seed('p1', 'u2-copy')
+  it('deleteLocalData removes only the active project, and pauses its download until Sync', async () => {
+    await seed('p1', 'p1-copy')
+    await seed('p2', 'p2-copy')
+    const epoch = offline.localCopyEpoch.value
+
     await offline.deleteLocalData()
-    expect(destroyed).toEqual(['u2'])
+
+    expect(databases.get('u1')!.has('p1')).toBe(false)
+    expect(databases.get('u1')!.has('p2')).toBe(true)
     expect(offline.lastSyncedAt.value).toBeNull()
-    await seed('p1', 'after')
-    await expect(offline.readLocal(marker)).resolves.toBe('after')
+    expect(offline.isDownloadPaused.value).toBe(true)
+    expect(offline.localCopyEpoch.value).toBe(epoch + 1)
+    // p1 reads empty without downloading; p2 is untouched
+    await expect(offline.readLocal(s => s.tags.length)).resolves.toBe(0)
+    expect(fetchProjectSnapshot).toHaveBeenCalledTimes(2)
+    await expect(offline.readLocal(marker, { projectId: 'p2' })).resolves.toBe('p2-copy')
+
+    // the pause survives a restart (same user) and is lifted by a sync
+    offline.setOfflineUser(null)
     offline.setOfflineUser('u1')
-    await expect(offline.readLocal(marker)).resolves.toBe('local')
+    offline.setOfflineActiveProject(null)
+    offline.setOfflineActiveProject('p1')
+    expect(offline.isDownloadPaused.value).toBe(true)
+    await seed('p1', 'synced')
+    expect(offline.isDownloadPaused.value).toBe(false)
+    await expect(offline.readLocal(marker)).resolves.toBe('synced')
+  })
+
+  it('getLocalDataUsage reports the active project only', async () => {
+    await seed('p1')
+    expect((await offline.getLocalDataUsage()).bytes).toBe(1)
+    expect((await offline.getLocalDataUsage('p9')).bytes).toBe(0)
   })
 
   it('removes legacy last-synced keys', async () => {

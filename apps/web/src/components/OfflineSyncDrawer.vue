@@ -18,8 +18,7 @@
       <p v-if="!usage" class="text-sm text-gray-500 mt-1">{{ I18N.OFFLINE.STORAGE_LOADING }}</p>
       <template v-else>
         <p class="text-sm font-medium text-white mt-1">
-          {{ formatBytes(usage.bytes) }}
-          <span class="text-gray-400 font-normal">· {{ I18N.OFFLINE.STORAGE_PROJECTS(usage.projects) }}</span>
+          {{ usage.bytes ? formatBytes(usage.bytes) : I18N.OFFLINE.STORAGE_NONE }}
         </p>
         <p v-if="usage.originBytes !== null" class="text-xs text-gray-500 mt-1">
           {{ I18N.OFFLINE.STORAGE_TOTAL(formatBytes(usage.originBytes)) }}
@@ -145,7 +144,7 @@ function formatBytes(bytes: number): string {
 async function handleDeleteLocalData() {
   const confirmed = await uiStore.showConfirm(
     I18N.OFFLINE.DELETE_LOCAL_DATA_TITLE,
-    I18N.OFFLINE.DELETE_LOCAL_DATA_MESSAGE,
+    I18N.OFFLINE.DELETE_LOCAL_DATA_MESSAGE(projectName.value),
     I18N.BUTTONS.DELETE,
     I18N.BUTTONS.CANCEL,
   )

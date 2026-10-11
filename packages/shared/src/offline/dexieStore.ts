@@ -43,15 +43,10 @@ export class DexieSnapshotStore implements SnapshotStore {
     await this.db.snapshots.delete(projectId)
   }
 
-  async stats(): Promise<{ projects: number; bytes: number }> {
-    let projects = 0
-    let bytes = 0
-    await this.db.snapshots.each(snapshot => {
-      projects++
-      // Serialized size: close to what IndexedDB stores (the browser doesn't report per-database usage)
-      bytes += new Blob([JSON.stringify(snapshot)]).size
-    })
-    return { projects, bytes }
+  async size(projectId: string): Promise<number> {
+    const snapshot = await this.db.snapshots.get(projectId)
+    // Serialized size: close to what IndexedDB stores (the browser doesn't report per-record usage)
+    return snapshot ? new Blob([JSON.stringify(snapshot)]).size : 0
   }
 
   close(): void {
