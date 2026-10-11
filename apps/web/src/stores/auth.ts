@@ -159,6 +159,19 @@ export const useAuthStore = defineStore('auth', () => {
     activeProjectRole.value = role
   }
 
+  /** Re-read the active project and role (its local copy was replaced: Sync, delete). */
+  async function reloadActiveProject(): Promise<void> {
+    const projectId = activeProjectId.value
+    if (!projectId || !user.value) return
+    const [project, role] = await Promise.all([
+      fetchProjectById(projectId),
+      fetchUserRoleInProject(projectId, user.value.id),
+    ])
+    if (activeProjectId.value !== projectId) return
+    activeProject.value = project
+    activeProjectRole.value = role
+  }
+
   // Actions
   async function initialize(): Promise<void> {
     if (initPromise) return initPromise
@@ -315,5 +328,6 @@ export const useAuthStore = defineStore('auth', () => {
     loginWithOAuth,
     logout,
     setActiveProject,
+    reloadActiveProject,
   }
 })

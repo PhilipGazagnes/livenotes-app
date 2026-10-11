@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
 import type { Project, ProjectRole } from '@livenotes/shared/types'
-import { readLocal, removeLocalCopy } from '@/lib/offline/offlineData'
+import { fetchProjectRow } from '@livenotes/shared/offline'
+import { hasLocalCopy, readLocal, removeLocalCopy } from '@/lib/offline/offlineData'
+import { isOfflineMode } from '@/lib/offline/offlineState'
 
 export interface ProjectWithRole extends Project {
   membership_role: ProjectRole
@@ -30,8 +32,15 @@ export async function fetchCommunityProject(): Promise<Project | null> {
   return data as unknown as Project
 }
 
-export function fetchProjectById(projectId: string): Promise<Project | null> {
-  return readLocal(snapshot => snapshot.project, { projectId })
+/**
+ * The project row, from its local copy. Without a copy (local data deleted),
+ * fetched online: the project's identity (name, picture) is always shown, its
+ * content only once synced.
+ */
+export async function fetchProjectById(projectId: string): Promise<Project | null> {
+  const project = await readLocal(snapshot => snapshot.project, { projectId })
+  if (project || isOfflineMode() || await hasLocalCopy(projectId)) return project
+  return fetchProjectRow(supabase, projectId)
 }
 
 export async function deleteProject(projectId: string): Promise<void> {

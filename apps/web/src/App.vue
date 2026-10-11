@@ -18,6 +18,8 @@ import { useNotesStore } from '@/stores/notes'
 import { useSettingsStore } from '@/stores/settings'
 import { useDrawerStore } from '@/stores/drawer'
 import { localCopyEpoch } from '@/lib/offline/offlineData'
+import { useAuthStore } from '@/stores/auth'
+import { logger } from '@/utils/logger'
 
 // Registers the write guard and the editing-flag countdown for the whole app
 useEditModeStore()
@@ -31,6 +33,7 @@ const tagsStore = useTagsStore()
 const notesStore = useNotesStore()
 const settingsStore = useSettingsStore()
 const drawerStore = useDrawerStore()
+const authStore = useAuthStore()
 
 watch(localCopyEpoch, () => {
   libraryStore.$patch({ librarySongs: [], currentLibrarySong: null })
@@ -43,6 +46,7 @@ watch(localCopyEpoch, () => {
   })
   drawerStore.popAll()
   viewKey.value++
+  authStore.reloadActiveProject().catch(err => logger.warn('Could not reload the active project', err))
 })
 
 // Supabase's internal auto-refresh timer can get stuck when the browser tab

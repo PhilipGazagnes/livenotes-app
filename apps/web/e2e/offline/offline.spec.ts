@@ -155,12 +155,21 @@ test.describe('Offline mode (mocked Supabase)', () => {
     await page.reload()
     await expect(banner).toContainText('not on this device', { timeout: 15_000 })
     expect(await snapshotCount(page)).toBe(0)
+    // The project's identity still shows (fetched online), its content doesn't
+    await expect(page.getByText('Offline Band')).toBeVisible()
+    await openProjectMenu(page)
+    await expect(page.getByTestId('local-data-menu-btn')).toBeVisible()
+    await page.locator('.drawer-panel').getByRole('button', { name: 'Close' }).click()
 
-    // Sync brings it back
+    // Sync brings it back, without a page reload
+    await expect(page.locator('.drawer-panel')).toHaveCount(0)
     await banner.getByRole('button', { name: 'Sync' }).click()
     await expect(card(page, 'Wonderwall')).toBeVisible({ timeout: 15_000 })
     await expect(banner).toHaveCount(0)
     expect(await snapshotCount(page)).toBe(1)
+    await expect(page.getByText('Offline Band')).toBeVisible()
+    await openProjectMenu(page)
+    await expect(page.getByTestId('local-data-menu-btn')).toBeVisible()
   })
 
   test('edit mode: start editing to enable edit controls, stop to leave (ADR-011)', async ({ page, context }) => {

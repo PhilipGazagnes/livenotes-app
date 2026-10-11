@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { ProjectRole, InvitationLink, Project } from '@livenotes/shared/types'
-import { readLocal } from '@/lib/offline/offlineData'
+import { hasLocalCopy, readLocal } from '@/lib/offline/offlineData'
+import { isOfflineMode } from '@/lib/offline/offlineState'
 
 export interface MemberWithProfile {
   id: string
@@ -15,9 +16,18 @@ export interface InvitationWithProject extends InvitationLink {
   project: Pick<Project, 'id' | 'name' | 'thumbnail_url'>
 }
 
-/** The user's role in the project, as of the project's local copy. */
-export function fetchUserRoleInProject(projectId: string, _userId: string): Promise<ProjectRole | null> {
-  return readLocal(snapshot => snapshot.role, { projectId })
+/** The user's role in the project, as of its local copy (online without a copy, like the project row). */
+export async function fetchUserRoleInProject(projectId: string, userId: string): Promise<ProjectRole | null> {
+  const role = await readLocal(snapshot => snapshot.role, { projectId })
+  if (role || isOfflineMode() || await hasLocalCopy(projectId)) return role
+  const { data, error } = await supabase
+    .from('project_memberships')
+    .select('role')
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (error) throw error
+  return (data?.role as ProjectRole | undefined) ?? null
 }
 
 export async function fetchProjectMembers(projectId: string): Promise<MemberWithProfile[]> {

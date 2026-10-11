@@ -235,6 +235,11 @@ export function syncProject(projectId: string | null = activeProjectId): Promise
   return sync
 }
 
+/** True when the project has a local copy on this device. */
+export async function hasLocalCopy(projectId: string): Promise<boolean> {
+  return (await getSnapshot(projectId)) !== null
+}
+
 /** Apply a change to a project's local copy (no-op without a copy). */
 export async function patchLocalCopy(projectId: string, patch: SnapshotPatch): Promise<void> {
   const owner = store
