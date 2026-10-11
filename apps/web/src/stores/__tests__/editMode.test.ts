@@ -42,6 +42,7 @@ beforeEach(async () => {
   setActivePinia(createPinia())
   __setSnapshotStoreFactory(() => ({
     load: async () => null, save: async () => {}, remove: async () => {}, close: () => {}, destroy: async () => {},
+    stats: async () => ({ projects: 0, bytes: 0 }),
   }))
   setOfflineActiveProject('p1')
   // let the (empty) local copy finish loading before setting its version

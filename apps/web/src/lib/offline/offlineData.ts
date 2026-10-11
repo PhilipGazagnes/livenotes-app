@@ -235,6 +235,26 @@ export async function patchLocalCopy(projectId: string, patch: SnapshotPatch): P
   await saveSnapshot(owner, applySnapshotPatch(snapshot, patch))
 }
 
+export interface LocalDataUsage {
+  /** This user's local copies on this device */
+  projects: number
+  bytes: number
+  /** Everything this site stores in the browser (all users' copies, app files), if the browser reports it */
+  originBytes: number | null
+}
+
+/** Space taken by local data, for the "Local data" panel. */
+export async function getLocalDataUsage(): Promise<LocalDataUsage> {
+  const { projects, bytes } = store ? await store.stats() : { projects: 0, bytes: 0 }
+  let originBytes: number | null = null
+  try {
+    originBytes = (await navigator.storage?.estimate?.())?.usage ?? null
+  } catch {
+    // not supported: only the local copies are shown
+  }
+  return { projects, bytes, originBytes }
+}
+
 /** Drop one project's local copy (e.g. the project was deleted). */
 export async function removeLocalCopy(projectId: string): Promise<void> {
   snapshots.delete(projectId)

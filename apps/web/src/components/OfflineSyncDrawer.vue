@@ -1,7 +1,7 @@
 <template>
   <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold text-white">Sync</h2>
+      <h2 class="text-xl font-semibold text-white">{{ I18N.OFFLINE.LOCAL_DATA }}</h2>
       <button @click="drawerStore.pop()" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" aria-label="Close">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -11,6 +11,21 @@
   </div>
 
   <div class="flex-1 overflow-y-auto p-4 space-y-6">
+
+    <!-- Space used -->
+    <section class="p-3 bg-gray-800 border border-gray-700 rounded-lg" data-testid="local-data-usage">
+      <p class="text-xs text-gray-400 uppercase tracking-wider">{{ I18N.OFFLINE.STORAGE_TITLE }}</p>
+      <p v-if="!usage" class="text-sm text-gray-500 mt-1">{{ I18N.OFFLINE.STORAGE_LOADING }}</p>
+      <template v-else>
+        <p class="text-sm font-medium text-white mt-1">
+          {{ formatBytes(usage.bytes) }}
+          <span class="text-gray-400 font-normal">· {{ I18N.OFFLINE.STORAGE_PROJECTS(usage.projects) }}</span>
+        </p>
+        <p v-if="usage.originBytes !== null" class="text-xs text-gray-500 mt-1">
+          {{ I18N.OFFLINE.STORAGE_TOTAL(formatBytes(usage.originBytes)) }}
+        </p>
+      </template>
+    </section>
 
     <!-- Explanation -->
     <section class="space-y-3 text-sm text-gray-400">
@@ -74,16 +89,28 @@
     <p v-if="!isOnline" class="text-xs text-orange-400 text-center">You are offline — connect to sync.</p>
     <p v-else-if="lastSyncError" class="text-xs text-red-400 text-center">{{ lastSyncError }}</p>
 
+    <!-- Delete (ADR-014) -->
+    <div class="pt-4 border-t border-gray-800">
+      <button
+        @click="handleDeleteLocalData"
+        data-testid="delete-local-data-btn"
+        class="w-full py-2.5 border border-red-600/60 text-red-400 text-sm rounded-lg hover:bg-red-600/10 transition-colors"
+      >
+        {{ I18N.OFFLINE.DELETE_LOCAL_DATA }}
+      </button>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useDrawerStore } from '@/stores/drawer'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
 import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
+import { getLocalDataUsage, type LocalDataUsage } from '@/lib/offline/offlineData'
 import { I18N } from '@/constants/i18n'
 import { logger } from '@/utils/logger'
 
@@ -94,7 +121,42 @@ const { isOnline } = useOnlineStatus()
 
 const projectName = computed(() => authStore.activeProject?.name ?? '')
 
-const { isSyncing, progress, lastSyncedAt, lastSyncError, sync } = useOfflineSync()
+const { isSyncing, progress, lastSyncedAt, lastSyncError, sync, deleteLocalData } = useOfflineSync()
+
+const usage = ref<LocalDataUsage | null>(null)
+
+async function refreshUsage() {
+  try {
+    usage.value = await getLocalDataUsage()
+  } catch (err) {
+    logger.warn('Could not measure local data', err)
+  }
+}
+
+onMounted(refreshUsage)
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
+}
+
+async function handleDeleteLocalData() {
+  const confirmed = await uiStore.showConfirm(
+    I18N.OFFLINE.DELETE_LOCAL_DATA_TITLE,
+    I18N.OFFLINE.DELETE_LOCAL_DATA_MESSAGE,
+    I18N.BUTTONS.DELETE,
+    I18N.BUTTONS.CANCEL,
+  )
+  if (!confirmed) return
+  try {
+    await deleteLocalData()
+    uiStore.showToast(I18N.OFFLINE.LOCAL_DATA_DELETED, 'success')
+  } catch (err) {
+    uiStore.showErrorToast('delete local data', err as Error)
+  }
+}
 
 async function handleSync() {
   try {

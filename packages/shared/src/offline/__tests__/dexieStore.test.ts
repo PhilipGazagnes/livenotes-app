@@ -38,6 +38,16 @@ describe('DexieSnapshotStore', () => {
     expect(await store.load('p1')).toBeNull()
   })
 
+  it('reports the number and size of stored projects', async () => {
+    const store = open('u1')
+    expect(await store.stats()).toEqual({ projects: 0, bytes: 0 })
+    await store.save(makeSnapshot())
+    await store.save(makeSnapshot({ projectId: 'p2' }))
+    const stats = await store.stats()
+    expect(stats.projects).toBe(2)
+    expect(stats.bytes).toBeGreaterThan(1000)
+  })
+
   it('ignores snapshots without a project version', async () => {
     const store = open('u1')
     await store.save({ ...makeSnapshot(), version: undefined as unknown as number })

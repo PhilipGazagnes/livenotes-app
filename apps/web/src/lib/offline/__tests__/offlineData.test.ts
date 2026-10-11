@@ -28,6 +28,7 @@ function memoryStore(userId: string): SnapshotStore {
     load: async id => db().get(id) ?? null,
     save: async s => { db().set(s.projectId, s) },
     remove: async id => { db().delete(id) },
+    stats: async () => ({ projects: db().size, bytes: 0 }),
     close: () => {},
     destroy: async () => { databases.delete(userId); destroyed.push(userId) },
   }

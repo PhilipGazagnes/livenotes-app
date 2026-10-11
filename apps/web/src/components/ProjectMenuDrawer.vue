@@ -93,19 +93,13 @@
       </button>
       <button
         @click="openOfflineSync"
-        data-testid="sync-menu-btn"
+        data-testid="local-data-menu-btn"
         class="flex items-center justify-between px-6 py-2.5 text-gray-400 hover:text-white hover:bg-gray-800 transition-colors text-sm w-full"
       >
-        <span>{{ I18N.OFFLINE.SYNC }}</span>
+        <span>{{ I18N.OFFLINE.LOCAL_DATA }}</span>
         <span v-if="lastSyncedAt" class="text-xs text-gray-600">synced {{ formatSyncDate(lastSyncedAt) }}</span>
       </button>
-      <button
-        @click="handleDeleteLocalData"
-        data-testid="delete-local-data-btn"
-        class="flex items-center px-6 py-2.5 text-gray-500 hover:text-red-400 hover:bg-gray-800 transition-colors text-sm w-full"
-      >
-        {{ I18N.OFFLINE.DELETE_LOCAL_DATA }}
-      </button>
+
 
       <div class="border-t border-gray-800 mx-4 my-1" />
     </template>
@@ -234,7 +228,7 @@ const otherProjects = computed(() =>
   allProjects.value.filter(p => p.id !== authStore.activeProjectId && p.slug !== 'community')
 )
 
-const { lastSyncedAt, deleteLocalData } = useOfflineSync()
+const { lastSyncedAt } = useOfflineSync()
 const { isOnline } = useOnlineStatus()
 
 function isActiveProject(id: string) {
@@ -294,22 +288,6 @@ async function handleStartEditing() {
 
 async function handleStopEditing() {
   await editMode.stopEditing()
-}
-
-async function handleDeleteLocalData() {
-  const confirmed = await uiStore.showConfirm(
-    I18N.OFFLINE.DELETE_LOCAL_DATA_TITLE,
-    I18N.OFFLINE.DELETE_LOCAL_DATA_MESSAGE,
-    I18N.BUTTONS.DELETE,
-    I18N.BUTTONS.CANCEL,
-  )
-  if (!confirmed) return
-  try {
-    await deleteLocalData()
-    uiStore.showToast(I18N.OFFLINE.LOCAL_DATA_DELETED, 'success')
-  } catch (err) {
-    uiStore.showErrorToast('delete local data', err as Error)
-  }
 }
 
 function showJoinInfo() {

@@ -140,6 +140,8 @@ test.describe('Offline mode (mocked Supabase)', () => {
     await loginAndWaitForSnapshot(page)
 
     await openProjectMenu(page)
+    await page.getByTestId('local-data-menu-btn').click()
+    await expect(page.getByTestId('local-data-usage')).toContainText('1 project')
     await page.getByTestId('delete-local-data-btn').click()
     await page.getByRole('button', { name: 'Delete', exact: true }).click()
 
