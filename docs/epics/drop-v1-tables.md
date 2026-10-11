@@ -1,7 +1,7 @@
 # Epic: Drop the V1 song tables
 
 **Branch:** `chore/drop-v1-tables` (from `feat/monorepo-offline`)
-**Status:** Stories 1–3 and 5 done on dev · Story 4 (prod) pending
+**Status:** Done. In production since 2026-10-11 (GitHub #42, #43)
 
 ## Context
 
@@ -55,7 +55,7 @@ from the shared type, fixtures and the e2e mock.
 ### 3. Apply on dev + regenerate types — ✅
 Apply 044 on the dev Supabase project; regenerate `packages/shared/src/types/supabase.ts`.
 
-### 4. Ship to prod — ⏳
+### 4. Ship to prod — ✅ (2026-10-11: backup, then 044 + 045 + 046, then `main` deployed)
 Migrations 044 and 045 go out together with the frontend from this branch. The new bundle only knows the
 un-suffixed names and the old bundle only knows `_v2`, so there is no order that is safe for both.
 
