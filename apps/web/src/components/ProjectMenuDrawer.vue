@@ -289,8 +289,7 @@ function openOfflineSync() {
 }
 
 async function handleStartEditing() {
-  await editMode.startEditing()
-  if (editMode.isEditing) drawerStore.popAll()
+  if (await editMode.startEditing()) drawerStore.popAll()
 }
 
 async function handleStopEditing() {

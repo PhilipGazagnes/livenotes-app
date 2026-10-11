@@ -138,13 +138,17 @@ export const useEditModeStore = defineStore('editMode', () => {
     await checkProjectStatus({ force: true })
   }
 
-  async function startEditing(): Promise<void> {
+  /** Take the editing flag. Resolves true when the user is now editing. */
+  async function startEditing(): Promise<boolean> {
     const projectId = authStore.activeProjectId
-    if (!projectId || !hasEditorRole.value || isBusy.value) return
-    if (!authStore.isOnline) return explainBlock()
+    if (!projectId || !hasEditorRole.value || isBusy.value) return false
+    if (!authStore.isOnline) {
+      explainBlock()
+      return false
+    }
     if (localVersion.value === null) {
       uiStore.showToast(I18N.EDIT_MODE.BLOCKED_OUTDATED, 'error')
-      return
+      return false
     }
     isBusy.value = true
     try {
@@ -155,7 +159,9 @@ export const useEditModeStore = defineStore('editMode', () => {
       setProjectStatus(projectId, result.status)
       if (result.ok) {
         uiStore.showToast(I18N.EDIT_MODE.STARTED, 'success', 4000)
-      } else if (result.reason === 'locked') {
+        return true
+      }
+      if (result.reason === 'locked') {
         uiStore.showToast(blockMessage('locked'), 'error')
       } else if (result.reason === 'outdated') {
         uiStore.showToast(I18N.EDIT_MODE.BLOCKED_OUTDATED, 'error')
@@ -168,6 +174,7 @@ export const useEditModeStore = defineStore('editMode', () => {
     } finally {
       isBusy.value = false
     }
+    return false
   }
 
   /** Release our flag. `projectId` defaults to the active project. */

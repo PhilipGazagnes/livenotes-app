@@ -135,18 +135,28 @@ test.describe('Offline mode (mocked Supabase)', () => {
     expect(await page.evaluate(() => localStorage.getItem('livenotes-offline-user'))).toBeNull()
   })
 
-  test('"Delete local data" removes the local copy', async ({ page, context }) => {
-    const backend = await mockSupabase(context)
+  test('"Delete local data" empties the screen until Sync (what you see = what is stored)', async ({ page, context }) => {
+    await mockSupabase(context)
     await loginAndWaitForSnapshot(page)
 
-    // Offline, so nothing downloads the project again right after
-    backend.offline = true
-    await context.setOffline(true)
     await openProjectMenu(page)
     await page.getByTestId('delete-local-data-btn').click()
     await page.getByRole('button', { name: 'Delete', exact: true }).click()
 
+    // Nothing in the database, nothing on screen, no automatic download
     await expect.poll(() => snapshotCount(page)).toBe(0)
+    await expect(card(page, 'Wonderwall')).toHaveCount(0)
+    const banner = page.getByTestId('sync-available')
+    await expect(banner).toContainText('not on this device')
+    await page.reload()
+    await expect(banner).toContainText('not on this device', { timeout: 15_000 })
+    expect(await snapshotCount(page)).toBe(0)
+
+    // Sync brings it back
+    await banner.getByRole('button', { name: 'Sync' }).click()
+    await expect(card(page, 'Wonderwall')).toBeVisible({ timeout: 15_000 })
+    await expect(banner).toHaveCount(0)
+    expect(await snapshotCount(page)).toBe(1)
   })
 
   test('edit mode: start editing to enable edit controls, stop to leave (ADR-011)', async ({ page, context }) => {

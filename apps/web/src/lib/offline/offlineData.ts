@@ -4,6 +4,7 @@ import {
   DexieSnapshotStore,
   fetchProjectSnapshot,
   OfflineDataUnavailableError,
+  SNAPSHOT_SCHEMA_VERSION,
   type ProjectSnapshot,
   type SnapshotPatch,
   type SnapshotStore,
@@ -22,9 +23,12 @@ import { isOfflineMode } from './offlineState'
  * - The Sync button is the only thing that refreshes a copy (ADR-010).
  * - Writes go to the server, then patch the copy (`projectWrites.ts`, ADR-012).
  * - Local data stays on logout; deleting it is a user action (ADR-014).
+ *   After "Delete local data", screens stay empty until the user syncs: the
+ *   automatic first download is paused (what you see = what is stored).
  */
 
 const LEGACY_LAST_SYNCED_PREFIX = 'livenotes-last-synced-'
+const DOWNLOAD_PAUSED_PREFIX = 'livenotes-download-paused-'
 
 let createStore: (userId: string) => SnapshotStore = userId => new DexieSnapshotStore(userId)
 
@@ -42,6 +46,40 @@ export const lastSyncedAt = ref<Date | null>(null)
 export const lastSyncError = ref<string | null>(null)
 /** Server version the active project's copy matches; null without a copy */
 export const localVersion = ref<number | null>(null)
+/** The user deleted local data: no automatic download until they sync */
+export const isDownloadPaused = ref(false)
+/**
+ * Increases when the active project's local copy is replaced as a whole
+ * (Sync, "Delete local data"): screens drop what they show and read again.
+ */
+export const localCopyEpoch = ref(0)
+
+function downloadPausedKey(userId: string): string {
+  return `${DOWNLOAD_PAUSED_PREFIX}${userId}`
+}
+
+function setDownloadPaused(userId: string, paused: boolean): void {
+  if (userId === currentUserId) isDownloadPaused.value = paused
+  try {
+    if (paused) localStorage.setItem(downloadPausedKey(userId), '1')
+    else localStorage.removeItem(downloadPausedKey(userId))
+  } catch {
+    // storage unavailable: paused for this session only
+  }
+}
+
+function readDownloadPaused(userId: string): boolean {
+  try {
+    return localStorage.getItem(downloadPausedKey(userId)) === '1'
+  } catch {
+    return false
+  }
+}
+
+/** Tell the screens the active project's copy was replaced as a whole. */
+export function notifyLocalCopyReplaced(): void {
+  localCopyEpoch.value++
+}
 
 function refreshActiveState(snapshot: ProjectSnapshot | null): void {
   lastSyncedAt.value = snapshot ? new Date(snapshot.syncedAt) : null
@@ -65,6 +103,7 @@ export function setOfflineUser(userId: string | null): void {
   refreshActiveState(null)
   currentUserId = userId
   store = userId ? createStore(userId) : null
+  isDownloadPaused.value = userId ? readDownloadPaused(userId) : false
   if (userId) removeLegacyLastSyncedKeys()
 }
 
@@ -89,6 +128,8 @@ export async function deleteLocalData(): Promise<void> {
   snapshots.clear()
   pendingLoads.clear()
   refreshActiveState(null)
+  setDownloadPaused(userId, true)
+  notifyLocalCopyReplaced()
   try {
     await previous.destroy()
   } catch (err) {
@@ -167,6 +208,7 @@ export function syncProject(projectId: string | null = activeProjectId): Promise
       })
       if (store !== owner) throw new Error('Signed out during sync')
       await saveSnapshot(owner, snapshot)
+      setDownloadPaused(userId, false)
       if (isActive()) lastSyncError.value = null
       return snapshot
     } catch (err) {
@@ -210,9 +252,19 @@ export interface ReadLocalOptions {
   projectId?: string | null
 }
 
+/** What reads see when there is no local copy and downloading is paused. */
+function emptySnapshot(projectId: string): ProjectSnapshot {
+  return {
+    projectId, schemaVersion: SNAPSHOT_SCHEMA_VERSION, syncedAt: '', version: -1,
+    project: null, role: null, librarySongs: [], songs: [], songArtists: [], artists: [],
+    librarySongTags: [], notes: [], tags: [], lists: [], listItems: [],
+  }
+}
+
 /**
  * Read from the project's local copy (ADR-009). Without a copy yet, download
- * it first; offline without a copy, throw OfflineDataUnavailableError.
+ * it first, unless the user deleted local data (then: empty until Sync).
+ * Offline without a copy, throw OfflineDataUnavailableError.
  */
 export async function readLocal<T>(
   select: (snapshot: ProjectSnapshot) => T,
@@ -223,6 +275,7 @@ export async function readLocal<T>(
 
   const snapshot = await getSnapshot(projectId)
   if (snapshot) return select(snapshot)
+  if (isDownloadPaused.value) return select(emptySnapshot(projectId))
   if (isOfflineMode()) throw new OfflineDataUnavailableError()
   return select(await syncProject(projectId))
 }

@@ -1,7 +1,9 @@
 import { computed } from 'vue'
 import {
   deleteLocalData,
+  isDownloadPaused,
   isSyncing,
+  notifyLocalCopyReplaced,
   lastSyncedAt,
   lastSyncError,
   syncProgress,
@@ -32,6 +34,8 @@ export function useOfflineSync() {
   /** Download the active project (the only sync, ADR-010). Rejects if it fails (previous copy kept). */
   async function sync(): Promise<void> {
     await syncProject()
+    // Screens show exactly the new copy
+    notifyLocalCopyReplaced()
     await checkProjectStatus({ force: true })
   }
 
@@ -43,5 +47,6 @@ export function useOfflineSync() {
     hasSnapshot,
     sync,
     deleteLocalData,
+    isDownloadPaused,
   }
 }

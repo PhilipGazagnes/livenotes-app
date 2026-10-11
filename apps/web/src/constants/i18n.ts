@@ -29,6 +29,7 @@ export const I18N = {
     STALE_UPDATED_BY: (name: string, when: string) => `Updated by ${name}, ${when}`,
     STALE_UPDATED: (when: string) => `Updated ${when}`,
     STALE_LOCAL: 'Your local copy needs a sync.',
+    NOT_ON_DEVICE: 'This project is not on this device. Sync to download it.',
     STALE_DISMISS: 'Hide',
   },
 

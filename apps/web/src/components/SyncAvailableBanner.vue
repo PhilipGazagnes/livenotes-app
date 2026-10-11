@@ -31,7 +31,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useOfflineSync, formatSyncDate } from '@/composables/useOfflineSync'
 import { isLocalCopyOutdated, projectStatus } from '@/lib/offline/projectStatus'
-import { localVersion } from '@/lib/offline/offlineData'
+import { isDownloadPaused, localVersion } from '@/lib/offline/offlineData'
 import { I18N } from '@/constants/i18n'
 import { logger } from '@/utils/logger'
 
@@ -46,13 +46,18 @@ const { isSyncing, sync } = useOfflineSync()
 /** Hidden for this server version; shows again on the next change */
 const dismissedVersion = ref<number | null>(null)
 
+/** Local data was deleted: nothing shows until the user syncs */
+const noLocalCopy = computed(() => isDownloadPaused.value && localVersion.value === null && !!authStore.activeProjectId)
+
 const visible = computed(() =>
-  authStore.isOnline &&
-  isLocalCopyOutdated.value &&
-  projectStatus.value?.version !== dismissedVersion.value
+  authStore.isOnline && (
+    noLocalCopy.value ||
+    (isLocalCopyOutdated.value && projectStatus.value?.version !== dismissedVersion.value)
+  )
 )
 
 const message = computed(() => {
+  if (noLocalCopy.value) return I18N.OFFLINE.NOT_ON_DEVICE
   const status = projectStatus.value
   if (!status?.lastChangedAt || localVersion.value === -1) return I18N.OFFLINE.STALE_LOCAL
   const when = formatSyncDate(new Date(status.lastChangedAt))
