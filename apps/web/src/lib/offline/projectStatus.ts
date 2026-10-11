@@ -20,7 +20,7 @@ export const projectStatusReceivedAt = ref(0)
 
 let statusProjectId: string | null = null
 let lastCheckAt = 0
-let pending: Promise<ProjectStatus | null> | null = null
+let pending: { projectId: string; promise: Promise<ProjectStatus | null> } | null = null
 
 /** The server has a different version than the local copy: a sync is needed. */
 export const isLocalCopyOutdated = computed(() =>
@@ -54,10 +54,10 @@ export function checkProjectStatus({ force = false } = {}): Promise<ProjectStatu
   if (!projectId || isOfflineMode()) return Promise.resolve(projectStatus.value)
   const fresh = statusProjectId === projectId && Date.now() - lastCheckAt < STATUS_CHECK_INTERVAL_MS
   if (!force && fresh) return Promise.resolve(projectStatus.value)
-  if (pending) return pending
+  if (pending?.projectId === projectId) return pending.promise
 
   lastCheckAt = Date.now()
-  pending = fetchProjectStatus(supabase, projectId)
+  const promise = fetchProjectStatus(supabase, projectId)
     .then(status => {
       setProjectStatus(projectId, status)
       return status
@@ -66,8 +66,9 @@ export function checkProjectStatus({ force = false } = {}): Promise<ProjectStatu
       logger.warn('Project status check failed', err)
       return projectStatus.value
     })
-    .finally(() => { pending = null })
-  return pending
+    .finally(() => { if (pending?.promise === promise) pending = null })
+  pending = { projectId, promise }
+  return promise
 }
 
 let initialized = false

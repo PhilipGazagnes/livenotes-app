@@ -30,7 +30,8 @@ export class DexieSnapshotStore implements SnapshotStore {
 
   async load(projectId: string): Promise<ProjectSnapshot | null> {
     const snapshot = await this.db.snapshots.get(projectId)
-    if (!snapshot || snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION) return null
+    // A copy without a version can't be compared with the server (ADR-010): treat it as missing
+    if (!snapshot || snapshot.schemaVersion !== SNAPSHOT_SCHEMA_VERSION || typeof snapshot.version !== 'number') return null
     return snapshot
   }
 

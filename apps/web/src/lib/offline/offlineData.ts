@@ -74,7 +74,8 @@ export function setOfflineActiveProject(projectId: string | null): void {
   refreshActiveState(null)
   if (projectId) {
     getSnapshot(projectId)
-      .then(snapshot => { if (activeProjectId === projectId) refreshActiveState(snapshot) })
+      // A copy downloaded meanwhile wins over the (possibly empty) result of this load
+      .then(snapshot => { if (activeProjectId === projectId) refreshActiveState(snapshots.get(projectId) ?? snapshot) })
       .catch(err => logger.warn('Could not load the local copy', err))
   }
 }

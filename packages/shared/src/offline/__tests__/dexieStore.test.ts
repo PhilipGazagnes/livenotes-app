@@ -38,6 +38,12 @@ describe('DexieSnapshotStore', () => {
     expect(await store.load('p1')).toBeNull()
   })
 
+  it('ignores snapshots without a project version', async () => {
+    const store = open('u1')
+    await store.save({ ...makeSnapshot(), version: undefined as unknown as number })
+    expect(await store.load('p1')).toBeNull()
+  })
+
   it('keeps users apart: one database per user', async () => {
     await open('u1').save(makeSnapshot())
     expect(await open('u2').load('p1')).toBeNull()
