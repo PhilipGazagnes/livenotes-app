@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="fixed top-0 left-0 right-0 z-[200] p-4 pointer-events-none">
+    <div class="fixed top-0 left-0 right-0 z-[600] p-4 pointer-events-none">
       <TransitionGroup
         tag="div"
         enter-active-class="transition-all duration-300"
