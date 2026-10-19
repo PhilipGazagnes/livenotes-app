@@ -12,8 +12,16 @@ test.describe('Library → create list → verify song', () => {
     // Capture the first song's title so we can verify it at the end
     const songTitle = await firstCard.locator('h3').innerText()
 
-    // Edit controls are disabled until the user starts editing (ADR-011)
+    // Edit controls are disabled until the user starts editing (ADR-011).
+    // A failed earlier run may have left the account editing: stop first, then start.
     await philip.getByTestId('project-menu-btn').click()
+    const stopEditing = philip.getByTestId('stop-editing-btn')
+    await expect(philip.getByTestId('start-editing-btn').or(stopEditing)).toBeVisible()
+    if (await stopEditing.isVisible()) {
+      // The project menu stays open after Stop editing
+      await stopEditing.click()
+      await expect(philip.getByTestId('editing-indicator')).toHaveCount(0)
+    }
     await philip.getByTestId('start-editing-btn').click()
     await expect(philip.getByTestId('editing-indicator')).toBeVisible({ timeout: 10_000 })
 
