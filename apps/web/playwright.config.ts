@@ -1,4 +1,9 @@
+import { existsSync } from 'node:fs'
 import { defineConfig, devices } from '@playwright/test'
+
+// e2e credentials (E2E_EMAIL, E2E_PASSWORD), see e2e/users.ts
+const envFile = new URL('../../.env.test', import.meta.url)
+if (existsSync(envFile)) process.loadEnvFile(envFile)
 
 export default defineConfig({
   testDir: './e2e',

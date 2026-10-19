@@ -51,9 +51,11 @@ npm run dev            # web dev server
 npm run build          # type check + production build (apps/web/dist)
 npm run preview        # preview the production build
 npm test               # unit tests (web + shared packages)
-npm run test:e2e       # Playwright e2e tests (apps/web/e2e)
+npm run test:e2e       # Playwright e2e tests against the dev database (needs .env.test)
 npm run typecheck      # type check every workspace
 ```
+
+The e2e test account is read from `.env.test` at the repo root (gitignored): copy `.env.test.example` and fill in `E2E_EMAIL` and `E2E_PASSWORD`. Never commit credentials (ADR-019).
 
 To add a dependency to one workspace: `npm install <pkg> -w @livenotes/web` (or `-w @livenotes/shared`).
 

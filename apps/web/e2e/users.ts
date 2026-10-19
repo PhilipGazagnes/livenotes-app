@@ -4,20 +4,22 @@ export interface TestUser {
   displayName: string
 }
 
+// Credentials never live in the repository (ADR-019): they come from the gitignored
+// `.env.test` at the repo root, loaded by playwright.config.ts.
+function fromEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) throw new Error(`${name} is missing: copy .env.test.example to .env.test at the repo root and fill it in`)
+  return value
+}
+
 // Registry of all e2e test accounts.
-// Add an entry here when you need a new persona for community tests.
+// Add an entry here (and its variables in .env.test) when you need a new persona for community tests.
 export const USERS = {
   philip: {
-    email: 'philip.slimprod@gmail.com',
-    password: 'Live129225!895$',
+    email: fromEnv('E2E_EMAIL'),
+    password: fromEnv('E2E_PASSWORD'),
     displayName: 'Philip',
   },
-  // Example — add community test accounts:
-  // member1: {
-  //   email: 'member1@yourdomain.com',
-  //   password: '...',
-  //   displayName: 'Member One',
-  // },
 } satisfies Record<string, TestUser>
 
 export type UserKey = keyof typeof USERS
