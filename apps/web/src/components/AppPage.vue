@@ -1,6 +1,6 @@
 <template>
   <!-- Full-screen page with its own scroll container (replaced Ionic's ion-page + ion-content, ADR-003) -->
-  <div class="absolute inset-0 flex flex-col bg-gray-900">
+  <div class="absolute inset-0 flex flex-col bg-gray-900 font-page">
     <div ref="scrollElement" class="flex-1 overflow-y-auto overscroll-contain">
       <slot />
     </div>
