@@ -1,6 +1,6 @@
 <template>
   <!-- Header -->
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">{{ I18N.MODALS.FILTER_BY_TAGS }}</h2>
       <button
@@ -41,7 +41,7 @@
   </div>
 
   <!-- Selected tags strip -->
-  <div v-if="selectedTagIds.length > 0" class="flex-shrink-0 p-4 border-b border-gray-700">
+  <div v-if="selectedTagIds.length > 0" class="shrink-0 p-4 border-b border-gray-700">
     <div class="flex items-center justify-between mb-3">
       <span class="text-sm font-medium text-gray-300">{{ I18N.FILTER.SELECTED_TAGS }}:</span>
       <button @click="selectedTagIds = []" class="text-sm text-blue-400 hover:text-blue-300 transition-colors">
@@ -52,7 +52,7 @@
       <div
         v-for="tagId in selectedTagIds"
         :key="tagId"
-        class="inline-flex items-center gap-2 px-3 py-1 bg-blue-900/30 border border-blue-700 rounded text-blue-400 text-sm"
+        class="inline-flex items-center gap-2 px-3 py-1 bg-blue-900/30 border border-blue-700 rounded-sm text-blue-400 text-sm"
       >
         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
@@ -82,7 +82,7 @@
           type="checkbox"
           :checked="selectedTagIds.includes(tag.id)"
           @change="toggleTag(tag.id)"
-          class="w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
+          class="w-5 h-5 rounded-sm border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
         />
         <span class="text-white">{{ tag.name }}</span>
       </label>
@@ -90,7 +90,7 @@
   </div>
 
   <!-- Apply button -->
-  <div class="flex-shrink-0 p-4 border-t border-gray-700">
+  <div class="shrink-0 p-4 border-t border-gray-700">
     <button
       @click="handleApply"
       class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"

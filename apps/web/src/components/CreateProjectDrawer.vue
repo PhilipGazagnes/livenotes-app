@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">Create a project</h2>
       <button
@@ -24,7 +24,7 @@
       maxlength="100"
       placeholder="My Band"
       :disabled="isLoading"
-      class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
+      class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden disabled:opacity-50"
       :class="error ? 'border-red-500' : 'border-gray-700'"
       @input="error = ''"
       @keyup.enter="handleSubmit"
@@ -32,7 +32,7 @@
     <p v-if="error" class="mt-1 text-sm text-red-400">{{ error }}</p>
   </div>
 
-  <div class="flex-shrink-0 p-4 border-t border-gray-700 flex gap-3">
+  <div class="shrink-0 p-4 border-t border-gray-700 flex gap-3">
     <button
       @click="drawerStore.pop()"
       :disabled="isLoading"

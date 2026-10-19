@@ -8,7 +8,7 @@
     >
       <div
         v-if="uiStore.isHamburgerMenuOpen"
-        class="fixed inset-0 z-[100] bg-black/50"
+        class="fixed inset-0 z-100 bg-black/50"
         @mousedown.self="closeMenu"
       >
         <Transition

@@ -1,6 +1,6 @@
 <template>
   <Teleport to="body">
-    <div class="fixed top-0 left-0 right-0 z-[600] p-4 pointer-events-none">
+    <div class="fixed top-0 left-0 right-0 z-600 p-4 pointer-events-none">
       <TransitionGroup
         tag="div"
         enter-active-class="transition-all duration-300"
@@ -20,7 +20,7 @@
           ]"
         >
           <!-- Icon -->
-          <div class="flex-shrink-0">
+          <div class="shrink-0">
             <svg
               v-if="toast.type === 'success'"
               class="w-5 h-5 text-green-400"
@@ -56,7 +56,7 @@
           <button
             @click="uiStore.removeToast(toast.id)"
             :class="toast.type === 'success' ? 'text-green-400 hover:text-green-300' : 'text-red-400 hover:text-red-300'"
-            class="flex-shrink-0 p-1 transition-colors"
+            class="shrink-0 p-1 transition-colors"
             :aria-label="I18N.ARIA.CLOSE"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

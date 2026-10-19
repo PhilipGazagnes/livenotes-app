@@ -8,7 +8,7 @@
     >
       <div
         v-if="uiStore.operationOverlay.isVisible"
-        class="fixed inset-0 z-[500] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+        class="fixed inset-0 z-500 flex items-center justify-center bg-black/60 backdrop-blur-xs"
         @click.prevent.stop
       >
         <div class="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-8 max-w-sm w-full mx-4">

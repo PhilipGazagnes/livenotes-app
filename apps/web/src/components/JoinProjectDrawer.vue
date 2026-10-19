@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center gap-3">
       <button
         @click="drawerStore.pop()"
@@ -24,7 +24,7 @@
         type="text"
         placeholder="Paste invitation key…"
         :disabled="isLoading"
-        class="w-full px-3 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50"
+        class="w-full px-3 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-hidden disabled:opacity-50"
         :class="error ? 'border-red-500' : 'border-gray-700'"
         @input="error = ''"
         @keyup.enter="handleJoin"

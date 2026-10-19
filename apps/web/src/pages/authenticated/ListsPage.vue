@@ -53,7 +53,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.FORM.LIST_NAME }}</label>
             <input
               v-model="newListName" type="text" maxlength="50"
-              class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               :class="createError ? 'border-red-500' : 'border-gray-700'"
               :placeholder="I18N.PLACEHOLDERS.LIST_NAME"
               @keyup.enter="handleCreateSubmit" @input="createError = ''"
@@ -84,7 +84,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.FORM.LIST_NAME }}</label>
             <input
               v-model="renameListName" type="text" maxlength="50"
-              class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              class="w-full px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               :class="renameError ? 'border-red-500' : 'border-gray-700'"
               :placeholder="I18N.PLACEHOLDERS.LIST_NAME"
               @keyup.enter="handleRenameSubmit" @input="renameError = ''"

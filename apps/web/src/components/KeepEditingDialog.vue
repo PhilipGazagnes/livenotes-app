@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="editMode.showKeepEditing"
-      class="fixed inset-0 z-[350] flex items-center justify-center bg-black/60 p-4"
+      class="fixed inset-0 z-350 flex items-center justify-center bg-black/60 p-4"
       role="alertdialog"
       aria-labelledby="keep-editing-title"
     >

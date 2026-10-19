@@ -3,7 +3,7 @@
     v-if="visible"
     role="status"
     data-testid="sync-available"
-    class="fixed top-16 left-1/2 -translate-x-1/2 z-[55] flex w-[calc(100%-2rem)] max-w-md items-center gap-3 rounded-lg border border-blue-500/40 bg-gray-800 px-4 py-2.5 text-sm text-gray-200 shadow-lg"
+    class="fixed top-16 left-1/2 -translate-x-1/2 z-55 flex w-[calc(100%-2rem)] max-w-md items-center gap-3 rounded-lg border border-blue-500/40 bg-gray-800 px-4 py-2.5 text-sm text-gray-200 shadow-lg"
   >
     <span class="flex-1 truncate">{{ message }}</span>
     <button

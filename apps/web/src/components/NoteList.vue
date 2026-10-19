@@ -23,14 +23,14 @@
         >
           <div class="flex items-start justify-between mb-2">
             <div class="flex items-center gap-2">
-              <div class="flex-shrink-0">
+              <div class="shrink-0">
                 <component :is="getNoteIcon(note.type)" class="w-5 h-5" :class="getNoteIconColor(note.type)" />
               </div>
               <h3 class="text-base font-semibold text-white">
                 {{ note.title || getNoteTypeLabel(note.type) }}
               </h3>
             </div>
-            <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
           </div>
@@ -39,10 +39,10 @@
             <div class="space-y-1">
               <div class="text-cyan-400 font-bold text-sm">{{ getLooperData(note)!.bpm }} BPM</div>
               <div class="flex flex-wrap items-baseline gap-x-2">
-                <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-xs">{{ getLooperData(note)!.pattern1 }}</span>
+                <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded-sm text-xs">{{ getLooperData(note)!.pattern1 }}</span>
                 <span v-if="getLooperData(note)!.pattern1_var" class="text-white text-xs">{{ getLooperData(note)!.pattern1_var }}</span>
                 <template v-if="getLooperData(note)!.pattern2">
-                  <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-xs">{{ getLooperData(note)!.pattern2 }}</span>
+                  <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded-sm text-xs">{{ getLooperData(note)!.pattern2 }}</span>
                   <span v-if="getLooperData(note)!.pattern2_var" class="text-white text-xs">{{ getLooperData(note)!.pattern2_var }}</span>
                 </template>
               </div>
@@ -69,12 +69,12 @@
         >
           <div class="flex items-start justify-between mb-2">
             <div class="flex items-center gap-2">
-              <svg class="w-5 h-5 text-pink-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg class="w-5 h-5 text-pink-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
               </svg>
               <h3 class="text-base font-semibold text-white">Lyrics</h3>
             </div>
-            <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-gray-400 group-hover:text-white transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
           </div>

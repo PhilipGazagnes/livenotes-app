@@ -37,18 +37,18 @@
     <!-- Content Preview -->
     <div class="text-gray-300 text-sm">
       <!-- SongCode: show formatted preview -->
-      <div v-if="note.type === 'songcode'" class="bg-black/30 rounded p-3 font-mono text-xs overflow-x-auto">
+      <div v-if="note.type === 'songcode'" class="bg-black/30 rounded-sm p-3 font-mono text-xs overflow-x-auto">
         <pre class="whitespace-pre-wrap">{{ contentPreview }}</pre>
       </div>
 
       <!-- Tablature: show formatted preview -->
-      <div v-else-if="note.type === 'tablature'" class="bg-black/30 rounded p-3 font-mono text-xs overflow-x-auto">
+      <div v-else-if="note.type === 'tablature'" class="bg-black/30 rounded-sm p-3 font-mono text-xs overflow-x-auto">
         <pre class="whitespace-pre-wrap">{{ contentPreview }}</pre>
       </div>
 
       <!-- URL-based types: show link -->
       <div v-else-if="isUrlType" class="flex items-center gap-2">
-        <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="w-4 h-4 text-gray-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
         </svg>
@@ -66,10 +66,10 @@
       <div v-else-if="note.type === 'looper' && looperData" class="space-y-1">
         <div class="text-cyan-400 font-bold text-base">{{ looperData.bpm }} {{ I18N.NOTES.LOOPER_BPM }}</div>
         <div class="flex flex-wrap items-baseline gap-x-2">
-          <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-sm">{{ looperData.pattern1 }}</span>
+          <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded-sm text-sm">{{ looperData.pattern1 }}</span>
           <span v-if="looperData.pattern1_var" class="text-white text-sm">{{ looperData.pattern1_var }}</span>
           <template v-if="looperData.pattern2">
-            <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded text-sm">{{ looperData.pattern2 }}</span>
+            <span class="bg-violet-700/60 text-violet-200 font-semibold px-2 py-0.5 rounded-sm text-sm">{{ looperData.pattern2 }}</span>
             <span v-if="looperData.pattern2_var" class="text-white text-sm">{{ looperData.pattern2_var }}</span>
           </template>
         </div>

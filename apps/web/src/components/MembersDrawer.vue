@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
         <button
@@ -63,7 +63,7 @@
             :value="member.role"
             :disabled="!!changingRoleId"
             @change="handleRoleChange(member.id, ($event.target as HTMLSelectElement).value as ProjectRole)"
-            class="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+            class="px-2 py-1 bg-gray-800 border border-gray-700 rounded-sm text-xs text-gray-300 focus:outline-hidden focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
           >
             <option value="reader">Reader</option>
             <option value="editor">Editor</option>
@@ -72,7 +72,7 @@
           <button
             @click="handleRemove(member)"
             :disabled="!!removingId"
-            class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-800 rounded transition-colors disabled:opacity-50"
+            class="p-1.5 text-gray-500 hover:text-red-400 hover:bg-gray-800 rounded-sm transition-colors disabled:opacity-50"
             title="Remove member"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -8,7 +8,7 @@
     >
       <div
         v-if="uiStore.confirmDialog"
-        class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50"
+        class="fixed inset-0 z-300 flex items-center justify-center p-4 bg-black/50"
         @mousedown.self="!uiStore.confirmDialog.isLoading && handleCancel()"
       >
         <Transition

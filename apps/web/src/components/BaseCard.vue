@@ -12,9 +12,9 @@
     <div class="flex-1 p-4 min-w-0" @click="handleClick">
       <div class="flex items-start gap-3">
         <!-- Checkbox (Selection Mode) -->
-        <div v-if="id && uiStore.selectionMode" class="flex-shrink-0 pt-1">
+        <div v-if="id && uiStore.selectionMode" class="shrink-0 pt-1">
           <div
-            class="w-5 h-5 rounded border-2 flex items-center justify-center"
+            class="w-5 h-5 rounded-sm border-2 flex items-center justify-center"
             :class="isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-400'"
           >
             <svg v-if="isSelected" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@
           <h3 class="text-lg font-semibold text-white mb-1 truncate notranslate" translate="no">
             <template v-if="effectiveTitleSegments && effectiveTitleSegments.length > 0">
               <template v-for="seg in effectiveTitleSegments" :key="seg.text + seg.highlighted">
-                <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>
+                <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-xs not-italic">{{ seg.text }}</mark>
                 <span v-else>{{ seg.text }}</span>
               </template>
             </template>
@@ -40,7 +40,7 @@
           <p v-if="text || (effectiveTextSegments && effectiveTextSegments.length > 0)" class="text-gray-400 text-sm mb-2 truncate notranslate" translate="no">
             <template v-if="effectiveTextSegments && effectiveTextSegments.length > 0">
               <template v-for="seg in effectiveTextSegments" :key="seg.text + seg.highlighted">
-                <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-sm not-italic">{{ seg.text }}</mark>
+                <mark v-if="seg.highlighted" class="bg-yellow-400/30 text-yellow-200 rounded-xs not-italic">{{ seg.text }}</mark>
                 <span v-else>{{ seg.text }}</span>
               </template>
             </template>
@@ -52,7 +52,7 @@
             <span
               v-for="tag in tags"
               :key="tag.id"
-              class="inline-flex items-center px-2 py-1 bg-blue-900/30 border border-blue-700 rounded text-blue-400 text-xs"
+              class="inline-flex items-center px-2 py-1 bg-blue-900/30 border border-blue-700 rounded-sm text-blue-400 text-xs"
             >
               <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
@@ -66,7 +66,7 @@
             <span
               v-for="list in lists"
               :key="list.id"
-              class="inline-flex items-center px-2 py-1 bg-green-900/30 border border-green-700 rounded text-green-400 text-xs"
+              class="inline-flex items-center px-2 py-1 bg-green-900/30 border border-green-700 rounded-sm text-green-400 text-xs"
             >
               <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
@@ -89,7 +89,7 @@
     <!-- Drag handle zone -->
     <div
       v-if="authStore.isEditor && draggable && !(id && uiStore.selectionMode)"
-      class="w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
+      class="w-10 shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
       :class="editMode.canEditNow ? 'drag-handle' : 'opacity-40'"
       @click.stop="editMode.canEditNow || editMode.explainBlock()"
     >

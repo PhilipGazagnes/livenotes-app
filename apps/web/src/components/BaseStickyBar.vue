@@ -6,12 +6,12 @@
         v-if="uiStore.selectionMode"
         class="bg-gray-900 border-t border-gray-700 px-4 py-2 flex items-center gap-3"
       >
-        <span class="text-white text-sm font-medium flex-shrink-0">
+        <span class="text-white text-sm font-medium shrink-0">
           {{ uiStore.selectedIds.length }} selected
         </span>
         <button
           @click="uiStore.deselectAll()"
-          class="p-1 text-gray-500 hover:text-white transition-colors flex-shrink-0"
+          class="p-1 text-gray-500 hover:text-white transition-colors shrink-0"
           aria-label="Deselect all"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -21,14 +21,14 @@
         <div class="flex-1" />
         <button
           @click="uiStore.selectAll(allItemIds)"
-          class="text-sm text-gray-300 hover:text-white transition-colors flex-shrink-0"
+          class="text-sm text-gray-300 hover:text-white transition-colors shrink-0"
         >
           Select all
         </button>
         <button
           :disabled="uiStore.selectedIds.length === 0"
           @click="emit('chooseActionClicked')"
-          class="px-3 py-1 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex-shrink-0"
+          class="px-3 py-1 text-sm font-medium bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition-colors shrink-0"
         >
           Choose action
         </button>
@@ -50,12 +50,12 @@
             v-model="localQuery"
             type="text"
             placeholder="Search..."
-            class="w-full pl-10 pr-10 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            class="w-full pl-10 pr-10 py-2.5 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
           <button
             v-if="localQuery"
             @click="localQuery = ''"
-            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+            class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-5 h-5 rounded-sm bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
             aria-label="Clear search"
           >
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -68,7 +68,7 @@
         <button
           :disabled="!filtersEnabled"
           @click="filtersEnabled && emit('filtersClicked')"
-          class="flex-shrink-0 p-2.5 rounded-lg border transition-colors"
+          class="shrink-0 p-2.5 rounded-lg border transition-colors"
           :class="!filtersEnabled
             ? 'border-gray-700 text-gray-600 bg-gray-900 cursor-not-allowed'
             : filtersActive
@@ -85,7 +85,7 @@
         <button
           v-if="authStore.isEditor"
           @click="editMode.runIfEditable(toggleBulkMode)"
-          class="flex-shrink-0 p-2.5 rounded-lg border transition-colors"
+          class="shrink-0 p-2.5 rounded-lg border transition-colors"
           :class="[uiStore.selectionMode
             ? 'border-blue-500 text-blue-400 bg-blue-500/10'
             : 'border-gray-700 text-gray-400 bg-gray-900 hover:text-white hover:border-gray-600',
@@ -104,7 +104,7 @@
           @click="editMode.runIfEditable(() => emit('newClicked'))"
           data-testid="sticky-bar-new-btn"
           :aria-disabled="!editMode.canEditNow || undefined"
-          class="flex-shrink-0 p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+          class="shrink-0 p-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
           :class="{ 'opacity-40': !editMode.canEditNow }"
           aria-label="Create new"
         >

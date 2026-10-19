@@ -20,7 +20,7 @@
           v-for="type in NOTE_TYPES"
           :key="type"
           @click="handleAddNote(type)"
-          class="px-3 py-2 bg-gray-800 text-white text-sm rounded hover:bg-gray-700 transition-colors text-left"
+          class="px-3 py-2 bg-gray-800 text-white text-sm rounded-sm hover:bg-gray-700 transition-colors text-left"
         >
           {{ noteTypeLabel(type) }}
         </button>

@@ -1,6 +1,6 @@
 <template>
   <!-- Header -->
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-start justify-between">
       <div class="flex-1 min-w-0 mr-3">
         <h2 class="text-xl font-semibold text-white truncate mb-1 notranslate" translate="no">
@@ -13,7 +13,7 @@
       <button
         @click="drawerStore.pop()"
         :aria-label="I18N.ARIA.CLOSE"
-        class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+        class="shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -45,7 +45,7 @@
 
   <!-- Fallback: plain text -->
   <div v-else class="flex-1 overflow-y-auto p-4">
-    <p class="text-gray-200 whitespace-pre-wrap break-words text-sm leading-relaxed notranslate" translate="no">{{ lyricsNote.content }}</p>
+    <p class="text-gray-200 whitespace-pre-wrap wrap-break-word text-sm leading-relaxed notranslate" translate="no">{{ lyricsNote.content }}</p>
   </div>
 </template>
 

@@ -1,6 +1,6 @@
 <template>
   <!-- Header -->
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
     <div>
       <h2 class="text-lg font-semibold text-white">Push note to project</h2>
       <p class="text-sm text-gray-400 mt-0.5 truncate max-w-xs">{{ noteTitle }}</p>

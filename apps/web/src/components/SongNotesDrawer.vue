@@ -1,6 +1,6 @@
 <template>
   <!-- Header -->
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-start justify-between">
       <div class="flex-1 min-w-0 mr-3">
         <h2 class="text-xl font-semibold text-white truncate mb-1 notranslate" translate="no">
@@ -13,7 +13,7 @@
       <button
         @click="drawerStore.pop()"
         :aria-label="I18N.ARIA.CLOSE"
-        class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+        class="shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -30,7 +30,7 @@
   />
 
   <!-- Footer -->
-  <div v-if="authStore.isEditor" class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4">
+  <div v-if="authStore.isEditor" class="shrink-0 bg-gray-800 border-t border-gray-700 p-4">
     <button
       @click="editMode.runIfEditable(openNoteCreation)"
       class="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"

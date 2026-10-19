@@ -3,14 +3,14 @@
     <!-- Backdrop -->
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-[60] bg-black/50"
+      class="fixed inset-0 z-60 bg-black/50"
       @mousedown.self="handleCancel"
     ></div>
 
     <!-- Modal -->
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none"
+      class="fixed inset-0 z-60 flex items-center justify-center p-4 pointer-events-none"
     >
       <div class="bg-gray-800 rounded-lg w-full max-w-md max-h-[80vh] flex flex-col pointer-events-auto">
         <!-- Header -->
@@ -20,7 +20,7 @@
           </h2>
           <button
             @click="handleCancel"
-            class="flex-shrink-0 p-1 text-gray-400 hover:text-white transition-colors"
+            class="shrink-0 p-1 text-gray-400 hover:text-white transition-colors"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -38,7 +38,7 @@
               v-model="newTagName"
               type="text"
               maxlength="50"
-              class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               :class="createError ? 'border-red-500' : 'border-gray-700'"
               :placeholder="I18N.PLACEHOLDERS.TAG_NAME_SHORT"
               @keyup.enter="handleCreateTag"
@@ -76,7 +76,7 @@
                 type="checkbox"
                 :checked="selectedTagIds.includes(tag.id)"
                 @change="toggleTag(tag.id)"
-                class="w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
+                class="w-5 h-5 rounded-sm border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
               />
               <span class="text-white">{{ tag.name }}</span>
             </label>

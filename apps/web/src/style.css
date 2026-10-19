@@ -1,6 +1,46 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --spacing-safe-bottom: env(safe-area-inset-bottom);
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* Tailwind v4 dropped these v3 defaults: pointer cursor on buttons, gray-400 placeholders */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
+
+@utility pb-safe {
+  /* Safe area utilities for devices with notches */
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+@utility pt-safe {
+  padding-top: calc(1rem + env(safe-area-inset-top));
+}
 
 @layer base {
   * {
@@ -42,16 +82,5 @@
     @apply bg-gray-900;
     min-height: 100vh;
     min-height: 100dvh; /* Use dynamic viewport height on mobile */
-  }
-}
-
-@layer utilities {
-  /* Safe area utilities for devices with notches */
-  .pb-safe {
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
-  }
-  
-  .pt-safe {
-    padding-top: calc(1rem + env(safe-area-inset-top));
   }
 }

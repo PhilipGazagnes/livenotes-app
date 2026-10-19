@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center gap-3">
       <button
         @click="drawerStore.pop()"
@@ -24,7 +24,7 @@
           <label class="block text-xs font-medium text-gray-400 mb-1">Role</label>
           <select
             v-model="selectedRole"
-            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm"
+            class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm"
           >
             <option value="reader">Reader — can view songs and lists</option>
             <option value="editor">Editor — can add and edit songs</option>
@@ -64,18 +64,18 @@
             <input
               :value="link.token"
               readonly
-              class="flex-1 px-2 py-1.5 bg-gray-900 border border-gray-700 rounded text-xs text-gray-300 font-mono truncate focus:outline-none"
+              class="flex-1 px-2 py-1.5 bg-gray-900 border border-gray-700 rounded-sm text-xs text-gray-300 font-mono truncate focus:outline-hidden"
             />
             <button
               @click="copyLink(link.token, link.id)"
-              class="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs transition-colors shrink-0"
+              class="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-sm text-xs transition-colors shrink-0"
             >
               {{ copiedId === link.id ? 'Copied!' : 'Copy' }}
             </button>
             <button
               @click="handleRevoke(link.id)"
               :disabled="revokingId === link.id"
-              class="px-2 py-1.5 bg-red-900/50 hover:bg-red-800 text-red-300 rounded text-xs transition-colors shrink-0 disabled:opacity-50"
+              class="px-2 py-1.5 bg-red-900/50 hover:bg-red-800 text-red-300 rounded-sm text-xs transition-colors shrink-0 disabled:opacity-50"
             >
               Revoke
             </button>

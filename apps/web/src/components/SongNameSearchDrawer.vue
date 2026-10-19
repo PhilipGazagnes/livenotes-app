@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">{{ I18N.MODALS.SONG_NAME }}</h2>
       <button
@@ -20,7 +20,7 @@
       v-model="query"
       type="text"
       data-testid="song-name-input"
-      class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      class="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
       :placeholder="I18N.PLACEHOLDERS.SEARCH_SONGS"
       @input="handleInput"
     />

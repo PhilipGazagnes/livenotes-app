@@ -1,6 +1,6 @@
 <template>
   <!-- Header -->
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">
         {{ isEditing ? `${I18N.BUTTONS.EDIT} ${noteTypeLabel}` : I18N.NOTES.NEW_NOTE(noteTypeLabel) }}
@@ -21,28 +21,28 @@
   <div class="flex-1 overflow-y-auto p-6">
     <form @submit.prevent="handleSave" class="space-y-4 h-full flex flex-col">
       <!-- Title -->
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.FORM.TITLE }}</label>
         <input
           v-model="formData.title"
           type="text"
           :maxlength="VALIDATION.NOTE_TITLE_MAX_LENGTH"
           :placeholder="I18N.PLACEHOLDERS.NOTE_TITLE"
-          class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500"
         />
         <p class="text-xs text-gray-500 mt-1">{{ formData.title.length }} / {{ VALIDATION.NOTE_TITLE_MAX_LENGTH }}</p>
       </div>
 
       <!-- Content (varies by note type) -->
       <div v-if="effectiveNoteType !== 'looper'" class="flex flex-col flex-1 min-h-0">
-        <label class="block text-sm font-medium text-gray-300 mb-2 flex-shrink-0">{{ I18N.NOTES.URL_CONTENT }}</label>
+        <label class="block text-sm font-medium text-gray-300 mb-2 shrink-0">{{ I18N.NOTES.URL_CONTENT }}</label>
 
         <input
           v-if="isUrlType"
           v-model="formData.content"
           type="url"
           :placeholder="urlPlaceholder"
-          class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500"
         />
 
         <textarea
@@ -50,7 +50,7 @@
           v-model="formData.content"
           :maxlength="VALIDATION.NOTE_CONTENT_MAX_LENGTH"
           :placeholder="contentPlaceholder"
-          class="flex-1 w-full px-4 py-3 bg-black/40 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 font-mono text-sm resize-none"
+          class="flex-1 w-full px-4 py-3 bg-black/40 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500 font-mono text-sm resize-none"
         />
 
         <textarea
@@ -59,52 +59,52 @@
           :maxlength="VALIDATION.NOTE_CONTENT_MAX_LENGTH"
           :rows="10"
           :placeholder="contentPlaceholder"
-          class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none"
+          class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500 resize-none"
         />
 
-        <p v-if="!isUrlType" class="text-xs text-gray-500 mt-1 flex-shrink-0">
+        <p v-if="!isUrlType" class="text-xs text-gray-500 mt-1 shrink-0">
           {{ formData.content.length }} / {{ VALIDATION.NOTE_CONTENT_MAX_LENGTH }}
         </p>
       </div>
 
       <!-- Looper form -->
-      <div v-else class="space-y-4 flex-shrink-0">
+      <div v-else class="space-y-4 shrink-0">
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_BPM }}</label>
           <input v-model="looperData.bpm" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_BPM"
-            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 1</label>
           <input v-model="looperData.pattern1" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN"
-            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 1 Variation</label>
           <input v-model="looperData.pattern1_var" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN"
-            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 2</label>
           <input v-model="looperData.pattern2" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN"
-            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_PATTERN }} 2 Variation</label>
           <input v-model="looperData.pattern2_var" type="text" :placeholder="I18N.PLACEHOLDERS.LOOPER_PATTERN"
-            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-2">{{ I18N.NOTES.LOOPER_ADDITIONAL_NOTES }}</label>
           <textarea v-model="looperData.comment" rows="3" :placeholder="I18N.PLACEHOLDERS.LOOPER_NOTES"
-            class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 resize-none" />
+            class="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-hidden focus:border-blue-500 resize-none" />
         </div>
       </div>
     </form>
   </div>
 
   <!-- Footer -->
-  <div class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4 flex gap-3">
+  <div class="shrink-0 bg-gray-800 border-t border-gray-700 p-4 flex gap-3">
     <button
       @click="drawerStore.pop()"
       class="flex-1 px-4 py-3 text-gray-400 hover:text-white transition-colors rounded-lg"

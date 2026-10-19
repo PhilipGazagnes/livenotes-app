@@ -3,7 +3,7 @@
     v-if="show"
     :class="[
       'flex items-center justify-center',
-      overlay ? 'fixed inset-0 z-[400] bg-black/30' : ''
+      overlay ? 'fixed inset-0 z-400 bg-black/30' : ''
     ]"
   >
     <div class="relative">

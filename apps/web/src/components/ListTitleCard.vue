@@ -3,7 +3,7 @@
     <!-- Main content area -->
     <div class="flex items-center gap-3 px-4 py-3 flex-1 min-w-0">
       <!-- Title Icon -->
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
         </svg>
@@ -27,7 +27,7 @@
     <!-- Drag handle zone (only in draggable contexts, not in selection mode) -->
     <div
       v-if="authStore.isEditor && draggable && !uiStore.selectionMode"
-      class="w-10 flex-shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
+      class="w-10 shrink-0 border-l border-gray-700/50 bg-gray-900/30 flex items-center justify-center"
       :class="editMode.canEditNow ? 'drag-handle' : 'opacity-40'"
       @click.stop="editMode.canEditNow || editMode.explainBlock()"
     >

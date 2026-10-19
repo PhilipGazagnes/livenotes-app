@@ -1,6 +1,6 @@
 <template>
   <!-- Header -->
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-start justify-between">
       <div class="flex-1 min-w-0 mr-3">
         <div class="flex items-center gap-2 mb-1">
@@ -14,7 +14,7 @@
       <button
         @click="drawerStore.pop()"
         :aria-label="I18N.ARIA.CLOSE"
-        class="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
+        class="shrink-0 p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -28,13 +28,13 @@
     <div v-if="localNote" class="space-y-4">
       <!-- Public/Shareable badges -->
       <div v-if="localNote.is_public || localNote.is_shareable" class="flex gap-2">
-        <span v-if="localNote.is_public" class="inline-flex items-center gap-1 px-3 py-1 bg-green-900/30 border border-green-700 text-green-400 text-xs rounded">
+        <span v-if="localNote.is_public" class="inline-flex items-center gap-1 px-3 py-1 bg-green-900/30 border border-green-700 text-green-400 text-xs rounded-sm">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
           Public
         </span>
-        <span v-if="localNote.is_shareable" class="inline-flex items-center gap-1 px-3 py-1 bg-blue-900/30 border border-blue-700 text-blue-400 text-xs rounded">
+        <span v-if="localNote.is_shareable" class="inline-flex items-center gap-1 px-3 py-1 bg-blue-900/30 border border-blue-700 text-blue-400 text-xs rounded-sm">
           <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
           </svg>
@@ -55,31 +55,31 @@
           <div class="space-y-3">
             <div>
               <label class="block text-xs font-medium text-gray-400 mb-1">Pattern 1</label>
-              <div class="text-gray-200 bg-gray-900/50 rounded px-3 py-2">{{ looperContent.pattern1 || '—' }}</div>
+              <div class="text-gray-200 bg-gray-900/50 rounded-sm px-3 py-2">{{ looperContent.pattern1 || '—' }}</div>
             </div>
             <div v-if="looperContent.pattern1_var">
               <label class="block text-xs font-medium text-gray-400 mb-1">Pattern 1 Variation</label>
-              <div class="text-gray-200 bg-gray-900/50 rounded px-3 py-2">{{ looperContent.pattern1_var }}</div>
+              <div class="text-gray-200 bg-gray-900/50 rounded-sm px-3 py-2">{{ looperContent.pattern1_var }}</div>
             </div>
             <div v-if="looperContent.pattern2">
               <label class="block text-xs font-medium text-gray-400 mb-1">Pattern 2</label>
-              <div class="text-gray-200 bg-gray-900/50 rounded px-3 py-2">{{ looperContent.pattern2 }}</div>
+              <div class="text-gray-200 bg-gray-900/50 rounded-sm px-3 py-2">{{ looperContent.pattern2 }}</div>
             </div>
             <div v-if="looperContent.pattern2_var">
               <label class="block text-xs font-medium text-gray-400 mb-1">Pattern 2 Variation</label>
-              <div class="text-gray-200 bg-gray-900/50 rounded px-3 py-2">{{ looperContent.pattern2_var }}</div>
+              <div class="text-gray-200 bg-gray-900/50 rounded-sm px-3 py-2">{{ looperContent.pattern2_var }}</div>
             </div>
             <div v-if="looperContent.comment">
               <label class="block text-xs font-medium text-gray-400 mb-1">{{ I18N.NOTES.LOOPER_ADDITIONAL_NOTES }}</label>
-              <div class="text-gray-200 bg-gray-900/50 rounded px-3 py-2 whitespace-pre-wrap">{{ looperContent.comment }}</div>
+              <div class="text-gray-200 bg-gray-900/50 rounded-sm px-3 py-2 whitespace-pre-wrap">{{ looperContent.comment }}</div>
             </div>
           </div>
         </div>
 
-        <pre v-else-if="localNote.type === 'songcode'" class="font-mono text-sm text-gray-200 whitespace-pre-wrap break-words overflow-x-auto">{{ localNote.content }}</pre>
+        <pre v-else-if="localNote.type === 'songcode'" class="font-mono text-sm text-gray-200 whitespace-pre-wrap wrap-break-word overflow-x-auto">{{ localNote.content }}</pre>
 
         <div v-else-if="localNote.type === 'youtube'" class="space-y-3">
-          <div v-if="getYouTubeId(localNote.content ?? '')" class="aspect-video bg-gray-900 rounded overflow-hidden">
+          <div v-if="getYouTubeId(localNote.content ?? '')" class="aspect-video bg-gray-900 rounded-sm overflow-hidden">
             <iframe
               :src="`https://www.youtube.com/embed/${getYouTubeId(localNote.content ?? '')}`"
               class="w-full h-full"
@@ -92,11 +92,11 @@
         </div>
 
         <div v-else-if="localNote.type === 'image'" class="space-y-3">
-          <img v-if="isValidUrl(localNote.content ?? '')" :src="localNote.content ?? undefined" :alt="I18N.NOTES.URL_CONTENT" class="w-full rounded border border-gray-700" />
+          <img v-if="isValidUrl(localNote.content ?? '')" :src="localNote.content ?? undefined" :alt="I18N.NOTES.URL_CONTENT" class="w-full rounded-sm border border-gray-700" />
           <p class="text-sm text-gray-400 break-all">{{ localNote.content }}</p>
         </div>
 
-        <p v-else class="text-gray-200 whitespace-pre-wrap break-words notranslate" translate="no">{{ localNote.content }}</p>
+        <p v-else class="text-gray-200 whitespace-pre-wrap wrap-break-word notranslate" translate="no">{{ localNote.content }}</p>
       </div>
 
       <!-- Metadata -->
@@ -112,7 +112,7 @@
   </div>
 
   <!-- Footer -->
-  <div class="flex-shrink-0 bg-gray-800 border-t border-gray-700 p-4 flex gap-3">
+  <div class="shrink-0 bg-gray-800 border-t border-gray-700 p-4 flex gap-3">
     <template v-if="authStore.isEditor">
       <button
         @click="editMode.runIfEditable(handleEdit)"

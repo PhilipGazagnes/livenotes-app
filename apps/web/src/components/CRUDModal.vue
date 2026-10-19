@@ -51,7 +51,7 @@
           @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
           type="text"
           :maxlength="maxLength"
-          class="w-full px-4 py-3 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          class="w-full px-4 py-3 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
           :class="error ? 'border-red-500' : 'border-gray-700'"
           :placeholder="placeholder"
           @keyup.enter="emit('submitted')"

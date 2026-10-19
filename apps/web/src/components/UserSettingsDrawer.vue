@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">User settings</h2>
       <button @click="drawerStore.pop()" class="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors" aria-label="Close">
@@ -19,7 +19,7 @@
       <div class="mb-4">
         <label class="block text-xs font-medium text-gray-400 mb-1">Email</label>
         <div class="flex gap-2">
-          <input v-model="emailInput" type="email" class="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" @input="emailError = ''" @keyup.enter="handleUpdateEmail" />
+          <input v-model="emailInput" type="email" class="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm" @input="emailError = ''" @keyup.enter="handleUpdateEmail" />
           <button @click="handleUpdateEmail" :disabled="isSavingEmail || !emailInput.trim() || emailInput === authStore.user?.email" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm">Save</button>
         </div>
         <p v-if="emailError" class="mt-1 text-xs text-red-400">{{ emailError }}</p>
@@ -29,7 +29,7 @@
       <div class="mb-4">
         <label class="block text-xs font-medium text-gray-400 mb-1">Display name</label>
         <div class="flex gap-2">
-          <input v-model="displayNameInput" type="text" maxlength="50" placeholder="Your name" class="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" @keyup.enter="handleSaveDisplayName" />
+          <input v-model="displayNameInput" type="text" maxlength="50" placeholder="Your name" class="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm" @keyup.enter="handleSaveDisplayName" />
           <button @click="handleSaveDisplayName" :disabled="isSavingName || !displayNameInput.trim()" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm">Save</button>
         </div>
       </div>
@@ -37,8 +37,8 @@
       <div class="bg-gray-800 rounded-lg p-3 border border-gray-700">
         <p class="text-sm font-medium text-white mb-3">Change password</p>
         <div class="space-y-2">
-          <input v-model="newPassword" type="password" placeholder="New password (min. 8 characters)" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" @input="updatePasswordMismatch(); passwordError = ''" />
-          <input v-model="confirmPassword" type="password" placeholder="Confirm new password" class="w-full px-3 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" :class="passwordMismatch ? 'border-red-500' : 'border-gray-700'" @keyup.enter="handleChangePassword" @input="updatePasswordMismatch(); passwordError = ''" />
+          <input v-model="newPassword" type="password" placeholder="New password (min. 8 characters)" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm" @input="updatePasswordMismatch(); passwordError = ''" />
+          <input v-model="confirmPassword" type="password" placeholder="Confirm new password" class="w-full px-3 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm" :class="passwordMismatch ? 'border-red-500' : 'border-gray-700'" @keyup.enter="handleChangePassword" @input="updatePasswordMismatch(); passwordError = ''" />
           <p v-if="passwordMismatch" class="text-xs text-red-400">Passwords do not match.</p>
           <p v-if="passwordError" class="text-xs text-red-400">{{ passwordError }}</p>
           <button @click="handleChangePassword" :disabled="isSavingPassword || !newPassword || passwordMismatch" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium">{{ isSavingPassword ? 'Updating…' : 'Update password' }}</button>
@@ -56,7 +56,7 @@
               <p class="text-white text-sm font-medium">{{ toggle.label }}</p>
               <p v-if="toggle.desc" class="text-xs text-gray-400 mt-0.5">{{ toggle.desc }}</p>
             </div>
-            <button @click="toggle.toggle()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0" :class="toggle.value() ? 'bg-blue-600' : 'bg-gray-600'" role="switch" :aria-checked="toggle.value()">
+            <button @click="toggle.toggle()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden shrink-0" :class="toggle.value() ? 'bg-blue-600' : 'bg-gray-600'" role="switch" :aria-checked="toggle.value()">
               <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform" :class="toggle.value() ? 'translate-x-6' : 'translate-x-1'" />
             </button>
           </div>
@@ -69,9 +69,9 @@
               <p class="text-xs text-gray-400 mt-0.5">Starting zoom when opening lyrics</p>
             </div>
             <div class="flex items-center gap-2 ml-4">
-              <button @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.max(0.75, settingsStore.lyricsDefaultFontSize - 0.125)) * 1000) / 1000" :disabled="settingsStore.lyricsDefaultFontSize <= 0.75" class="w-7 h-7 flex items-center justify-center rounded bg-gray-700 text-gray-300 hover:text-white disabled:opacity-30 transition-colors text-xs font-bold">A−</button>
+              <button @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.max(0.75, settingsStore.lyricsDefaultFontSize - 0.125)) * 1000) / 1000" :disabled="settingsStore.lyricsDefaultFontSize <= 0.75" class="w-7 h-7 flex items-center justify-center rounded-sm bg-gray-700 text-gray-300 hover:text-white disabled:opacity-30 transition-colors text-xs font-bold">A−</button>
               <span class="w-10 text-center text-white text-sm font-mono">{{ Math.round(settingsStore.lyricsDefaultFontSize * 100) }}%</span>
-              <button @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.min(3.0, settingsStore.lyricsDefaultFontSize + 0.125)) * 1000) / 1000" :disabled="settingsStore.lyricsDefaultFontSize >= 3.0" class="w-7 h-7 flex items-center justify-center rounded bg-gray-700 text-gray-300 hover:text-white disabled:opacity-30 transition-colors text-xs font-bold">A+</button>
+              <button @click="settingsStore.lyricsDefaultFontSize = Math.round((Math.min(3.0, settingsStore.lyricsDefaultFontSize + 0.125)) * 1000) / 1000" :disabled="settingsStore.lyricsDefaultFontSize >= 3.0" class="w-7 h-7 flex items-center justify-center rounded-sm bg-gray-700 text-gray-300 hover:text-white disabled:opacity-30 transition-colors text-xs font-bold">A+</button>
             </div>
           </div>
         </div>
@@ -85,16 +85,16 @@
         <div>
           <label class="block text-xs font-medium text-gray-400 mb-1">Scroll-down character</label>
           <p class="text-xs text-gray-500 mb-1">Single character from a Bluetooth controller that scrolls the lyrics down.</p>
-          <input :value="localScrollChar" @input="localScrollChar = ($event.target as HTMLInputElement).value.slice(-1)" type="text" maxlength="1" class="w-16 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-center font-mono text-sm" placeholder="—" />
+          <input :value="localScrollChar" @input="localScrollChar = ($event.target as HTMLInputElement).value.slice(-1)" type="text" maxlength="1" class="w-16 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-center font-mono text-sm" placeholder="—" />
         </div>
         <div class="flex gap-3">
           <div class="flex-1">
             <label class="block text-xs font-medium text-gray-400 mb-1">Scroll amount (px)</label>
-            <input v-model.number="localScrollAmount" type="number" min="10" max="2000" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+            <input v-model.number="localScrollAmount" type="number" min="10" max="2000" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm" />
           </div>
           <div class="flex-1">
             <label class="block text-xs font-medium text-gray-400 mb-1">Duration (ms)</label>
-            <input v-model.number="localScrollDuration" type="number" min="0" max="2000" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm" />
+            <input v-model.number="localScrollDuration" type="number" min="0" max="2000" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm" />
           </div>
         </div>
         <button @click="handleSaveScrollSettings" class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">{{ I18N.BUTTONS.SAVE }}</button>

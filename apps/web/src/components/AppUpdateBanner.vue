@@ -2,7 +2,7 @@
   <div
     v-if="showUpdateBanner"
     role="status"
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3 px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg shadow-lg text-sm text-gray-200"
+    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-60 flex items-center gap-3 px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-lg shadow-lg text-sm text-gray-200"
   >
     <span>{{ I18N.APP_UPDATE.AVAILABLE }}</span>
     <button

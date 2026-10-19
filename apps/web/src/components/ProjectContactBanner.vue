@@ -5,7 +5,7 @@
       class="flex items-center gap-3 w-full text-left"
     >
       <!-- Thumbnail -->
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <img
           v-if="project.thumbnail_url"
           :src="project.thumbnail_url"
@@ -26,7 +26,7 @@
         </p>
       </div>
       <!-- CTA -->
-      <span class="flex-shrink-0 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
+      <span class="shrink-0 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm font-medium rounded-lg transition-colors whitespace-nowrap">
         {{ I18N.PUBLIC_CONTACT.SEE_CONTACT }}
       </span>
     </button>

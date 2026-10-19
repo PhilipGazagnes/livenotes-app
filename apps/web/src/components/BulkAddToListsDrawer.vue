@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">{{ I18N.MODAL_CONTENT.BULK_ADD_TO_LISTS_TITLE }}</h2>
       <button
@@ -23,7 +23,7 @@
           v-model="newListName"
           type="text"
           maxlength="50"
-          class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
           :class="createError ? 'border-red-500' : 'border-gray-700'"
           :placeholder="I18N.PLACEHOLDERS.LIST_NAME_SHORT"
           @keyup.enter="handleCreateList"
@@ -55,7 +55,7 @@
             type="checkbox"
             :checked="selectedListIds.includes(list.id)"
             @change="toggleList(list.id)"
-            class="w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
+            class="w-5 h-5 rounded-sm border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
           />
           <span class="text-white">{{ list.name }}</span>
         </label>
@@ -63,7 +63,7 @@
     </div>
   </div>
 
-  <div class="flex-shrink-0 p-4 border-t border-gray-700 flex gap-3">
+  <div class="shrink-0 p-4 border-t border-gray-700 flex gap-3">
     <button
       @click="drawerStore.pop()"
       :disabled="isLoading"

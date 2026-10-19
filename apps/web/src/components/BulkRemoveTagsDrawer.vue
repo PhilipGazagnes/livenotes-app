@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">{{ I18N.MODAL_CONTENT.BULK_REMOVE_TAGS_TITLE }}</h2>
       <button
@@ -28,14 +28,14 @@
           type="checkbox"
           :checked="selectedTagIds.includes(tag.id)"
           @change="toggleTag(tag.id)"
-          class="w-5 h-5 rounded border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
+          class="w-5 h-5 rounded-sm border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 focus:ring-offset-gray-800 bg-gray-700"
         />
         <span class="text-white">{{ tag.name }}</span>
       </label>
     </div>
   </div>
 
-  <div class="flex-shrink-0 p-4 border-t border-gray-700 flex gap-3">
+  <div class="shrink-0 p-4 border-t border-gray-700 flex gap-3">
     <button
       @click="drawerStore.pop()"
       :disabled="isLoading"

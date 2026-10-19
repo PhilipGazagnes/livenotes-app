@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-shrink-0 bg-gray-800 border-b border-gray-700 p-4">
+  <div class="shrink-0 bg-gray-800 border-b border-gray-700 p-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold text-white">{{ I18N.MODALS.ADD_SONG_TO_LIBRARY }}</h2>
       <button
@@ -45,7 +45,7 @@
     <p v-if="errorMessage" class="text-sm text-red-400">{{ errorMessage }}</p>
   </div>
 
-  <div class="flex-shrink-0 p-4 border-t border-gray-700">
+  <div class="shrink-0 p-4 border-t border-gray-700">
     <button
       @click="handleAddToLibrary"
       :disabled="!canSubmit || isSubmitting"

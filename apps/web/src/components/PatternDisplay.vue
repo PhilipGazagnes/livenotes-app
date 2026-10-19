@@ -8,12 +8,12 @@
       <span v-if="repeat > 1" :class="REPEAT_CLASS + ' mr-0.5'">[</span>
       <span
         v-if="cutStartVal !== null"
-        :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded mr-1' + SEPARATOR_CLASS"
+        :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded-sm mr-1' + SEPARATOR_CLASS"
       >{{ cutStartVal }}</span>
       <span v-for="(seg, i) in mainSegs" :key="`${i}-${seg.t}`" :class="seg.hi ? REPEAT_CLASS : seg.sep ? SEPARATOR_CLASS : 'text-gray-300'">{{ seg.t }}</span>
       <span
         v-if="cutEndVal !== null"
-        :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded ml-1' + SEPARATOR_CLASS"
+        :class="'inline-block bg-black text-[10px] font-bold leading-none px-1 py-0.5 rounded-sm ml-1' + SEPARATOR_CLASS"
       >{{ cutEndVal }}</span>
       <span v-if="repeat > 1" :class="REPEAT_CLASS + ' ml-0.5'">]{{ repeat }}</span>
     </div>

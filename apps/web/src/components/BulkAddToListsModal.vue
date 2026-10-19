@@ -23,7 +23,7 @@
               v-model="newListName"
               type="text"
               maxlength="50"
-              class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              class="flex-1 px-4 py-2 bg-gray-900 border rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
               :class="createError ? 'border-red-500' : 'border-gray-700'"
               :placeholder="I18N.PLACEHOLDERS.LIST_NAME_SHORT"
               @keyup.enter="handleCreateList"
@@ -59,7 +59,7 @@
                 type="checkbox"
                 :checked="selectedListIds.includes(list.id)"
                 @change="toggleList(list.id)"
-                class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded-sm focus:ring-blue-500"
               />
               <div class="flex-1 min-w-0">
                 <div class="text-white font-medium truncate">{{ list.name }}</div>

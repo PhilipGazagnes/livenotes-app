@@ -28,7 +28,7 @@
                 type="checkbox"
                 :checked="selectedTagIds.includes(tag.id)"
                 @change="toggleTag(tag.id)"
-                class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded-sm focus:ring-blue-500"
               />
               <div class="flex-1 min-w-0">
                 <div class="text-white font-medium truncate">{{ tag.name }}</div>
