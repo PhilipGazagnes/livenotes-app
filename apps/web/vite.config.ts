@@ -6,7 +6,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   // .env files live at the monorepo root (shared with scripts/)
-  envDir: path.resolve(__dirname, '../..'),
+  envDir: path.resolve(import.meta.dirname, '../..'),
   plugins: [
     vue(),
     VitePWA({
@@ -42,7 +42,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   test: {
@@ -64,20 +64,18 @@ export default defineConfig({
   },
   build: {
     // Enable code splitting for better caching
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunk for third-party libraries
-          'vendor': ['vue', 'vue-router', 'pinia'],
-          // Supabase in separate chunk
-          'supabase': ['@supabase/supabase-js'],
+        codeSplitting: {
+          groups: [
+            // Vendor chunk for third-party libraries
+            { name: 'vendor', test: /node_modules[\\/](vue|vue-router|pinia|@vue)[\\/]/ },
+            // Supabase in separate chunk
+            { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
+          ],
         },
       },
     },
-    // Use esbuild for minification (faster than terser, built into Vite)
-    minify: 'esbuild',
-    // Note: To remove console.logs, install terser: npm install -D terser
-    // Then change minify to 'terser' and add terserOptions
   },
   // Optimize dependencies
   optimizeDeps: {
