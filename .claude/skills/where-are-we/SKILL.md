@@ -38,12 +38,51 @@ Repo: `/opt/projects/livenotes-app`. GitHub writes/reads use the `PhilipGazagnes
 
 Cross-check sources and flag mismatches (e.g. issue closed but board still "In Progress", epic says Done but branch unmerged, branch with no issue, milestone with all issues closed but still open).
 
-## 3. Report (in the terminal, concise)
+## 3. Report (in the terminal: dashboard first, details underneath)
+
+Start with a heading and one sentence (current phase and overall state), then **one fenced code block** holding the at-a-glance dashboard below. Then the detail sections.
+
+### Dashboard (inside a ``` block, monospace)
+
+Four panels, separated by a blank line. Fill them with the real data; this is an example:
 
 ```
-# Where we are — <date>
-<one sentence: current phase and overall state>
+PHASES                                           closed/total
+  0  Monorepo        ██████████  7/7    ✓
+  1  Offline         ██████████  11/11  ✓
+  1b Local-first     ██████████  11/11  ✓
+  2  Cleanup         ███░░░░░░░  2/6    ◀ now
+  3  Musician        ░░░░░░░░░░  0/3
+  4  Mobile MVP      ░░░░░░░░░░  0/1
+     Backlog         · 5 open
 
+BOARD
+  ┌─ Done (2 wk) ─┬─ Doing ───────┬─ Next ────────┬─ Planned ─────┐
+  │ 33 issues     │ 0             │ #48 creds     │ Phase 3   · 3 │
+  │ last: #43     │               │ #44 npm audit │ Phase 4   · 1 │
+  │ 2026-10-11    │               │ #46 Ionic     │ Backlog   · 5 │
+  │               │               │ #47 errors    │               │
+  └───────────────┴───────────────┴───────────────┴───────────────┘
+
+BRANCHES                               vs main    vs develop
+  main      ●── 22064cf  (prod)         —          0↑ 0↓
+  develop   ●── 22064cf                 0↑ 0↓      —
+  feat/x    ●── 22064cf  ✓ merged → delete?
+
+HEALTH
+  ⚠ 2 loose ends   ✎ 2 uncommitted   ☰ 4 stashes   ⇄ 0 open PRs
+```
+
+Drawing rules:
+- Progress bars: 10 cells, `█` per closed tenth (round down, but full only when all closed), `░` for the rest. `✓` when the milestone is closed, `◀ now` on the current phase.
+- Board columns: at most 5 rows each. Next = issue number + 1–2 word label (+ priority if set); overflow becomes `+N more`. Keep the box widths aligned.
+- Branches: `n↑` = commits ahead, `n↓` = behind. Mark `(prod)` on main, `✓ merged → delete?` for branches fully merged into main, `⚠ stale` for no commit in 30+ days. List only local branches plus remote-only ones.
+- Health: one line of counters. Omit a counter when it is 0, except open PRs.
+- Keep the dashboard under ~30 lines, and no wider than ~80 columns.
+
+### Details (normal markdown, under the dashboard)
+
+```
 ## Done (last ~2 weeks)
 ## Doing
 ## Next
@@ -51,4 +90,4 @@ Cross-check sources and flag mismatches (e.g. issue closed but board still "In P
 ## Loose ends   (mismatches, stale/merged branches, uncommitted files, blockers)
 ```
 
-Rules: bullets, one line each, with `#issue` numbers and branch names; facts only, no guessing — say "unknown" when a source is missing. Keep it under ~40 lines. End with at most 1-2 suggested next actions.
+Rules: bullets, one line each, with `#issue` numbers and branch names. Don't repeat what the dashboard already shows: add the detail it can't (titles, why, links between items). Facts only, no guessing — say "unknown" when a source is missing. Keep the details under ~30 lines. End with at most 1-2 suggested next actions.
