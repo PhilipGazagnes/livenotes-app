@@ -11,6 +11,7 @@ import SongNotesDrawer from '@/components/SongNotesDrawer.vue'
 import LiveLyricsDrawer from '@/components/LiveLyricsDrawer.vue'
 import { I18N } from '@/constants/i18n'
 import type { ListItem, SongWithTags } from '@livenotes/shared/types'
+import { orThrow } from '@/utils/operations'
 
 type SongItem = ListItem & { song: SongWithTags }
 
@@ -92,7 +93,7 @@ export function useListSongActions(onRefresh: () => Promise<void>) {
       cancelLabel: I18N.BUTTONS.CANCEL,
       confirmCallback: async () => {
         try {
-          await listsStore.removeLibrarySongFromList(list_id, library_song_id)
+          orThrow(await listsStore.removeLibrarySongFromList(list_id, library_song_id))
           uiStore.showToast(I18N.TOAST.REMOVED_FROM_LIST(''), 'success')
           drawerStore.popAll()
         } catch (err) {

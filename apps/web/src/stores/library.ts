@@ -11,6 +11,7 @@ import {
   removeManyFromLibrary as serviceRemoveManyFromLibrary,
   updateLibrarySong as serviceUpdateLibrarySong,
 } from '@/services/libraryService'
+import { failure, type OperationResult } from '@/utils/operations'
 
 function getTitle(librarySong: LibrarySongWithDetails): string {
   return librarySong.custom_title || librarySong.song.title
@@ -67,63 +68,68 @@ export const useLibraryStore = defineStore('library', () => {
   const librarySongCount = computed(() => librarySongs.value.length)
   const filteredSongCount = computed(() => filteredLibrarySongs.value.length)
 
-  // Actions
+  // Actions (failures are returned, not thrown: docs/ERROR_HANDLING.md)
 
-  async function loadLibrary({ force = false } = {}) {
-    if (!currentProjectId.value) return
-    if (!force && librarySongs.value.length > 0) return
+  function fail(err: unknown, fallback: string): OperationResult<never> {
+    const result = failure(err, fallback)
+    error.value = result.error ?? fallback
+    return result
+  }
+
+  async function loadLibrary({ force = false } = {}): Promise<OperationResult> {
+    if (!currentProjectId.value) return { success: true }
+    if (!force && librarySongs.value.length > 0) return { success: true }
     isLoading.value = true
     error.value = null
     try {
       librarySongs.value = await fetchLibrarySongs(currentProjectId.value)
+      return { success: true }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load library'
-      throw err
+      return fail(err, 'Failed to load library')
     } finally {
       isLoading.value = false
     }
   }
 
-  async function addToLibrary(songId: string): Promise<LibrarySong> {
-    if (!currentProjectId.value) throw new Error('No project selected')
-    if (!authStore.userId) throw new Error('User not authenticated')
+  async function addToLibrary(songId: string): Promise<OperationResult<LibrarySong>> {
+    if (!currentProjectId.value) return fail(null, 'No project selected')
+    if (!authStore.userId) return fail(null, 'User not authenticated')
     isLoading.value = true
     error.value = null
     try {
       const data = await serviceAddToLibrary(currentProjectId.value, songId, authStore.userId)
       await loadLibrary({ force: true })
-      return data
+      return { success: true, data }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to add to library'
-      throw err
+      return fail(err, 'Failed to add to library')
     } finally {
       isLoading.value = false
     }
   }
 
-  async function removeFromLibrary(librarySongId: string) {
+  async function removeFromLibrary(librarySongId: string): Promise<OperationResult> {
     isLoading.value = true
     error.value = null
     try {
       await serviceRemoveFromLibrary(librarySongId)
       await loadLibrary({ force: true })
+      return { success: true }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to remove from library'
-      throw err
+      return fail(err, 'Failed to remove from library')
     } finally {
       isLoading.value = false
     }
   }
 
-  async function removeManyFromLibrary(librarySongIds: string[]) {
+  async function removeManyFromLibrary(librarySongIds: string[]): Promise<OperationResult> {
     isLoading.value = true
     error.value = null
     try {
       await serviceRemoveManyFromLibrary(librarySongIds)
       await loadLibrary({ force: true })
+      return { success: true }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to remove from library'
-      throw err
+      return fail(err, 'Failed to remove from library')
     } finally {
       isLoading.value = false
     }
@@ -132,15 +138,15 @@ export const useLibraryStore = defineStore('library', () => {
   async function updateLibrarySong(
     librarySongId: string,
     updates: { custom_title?: string; custom_notes?: string }
-  ) {
+  ): Promise<OperationResult> {
     isLoading.value = true
     error.value = null
     try {
       await serviceUpdateLibrarySong(librarySongId, updates)
       await loadLibrary({ force: true })
+      return { success: true }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to update library song'
-      throw err
+      return fail(err, 'Failed to update library song')
     } finally {
       isLoading.value = false
     }
@@ -150,7 +156,7 @@ export const useLibraryStore = defineStore('library', () => {
     try {
       return await fetchLibrarySongWithDetails(librarySongId)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch library song'
+      fail(err, 'Failed to fetch library song')
       return null
     }
   }

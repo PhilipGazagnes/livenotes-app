@@ -76,6 +76,7 @@ import ArtistDeductionDrawer from './ArtistDeductionDrawer.vue'
 import ArtistSelectionDrawer from './ArtistSelectionDrawer.vue'
 import SongNotesDrawer from './SongNotesDrawer.vue'
 import LiveLyricsDrawer from './LiveLyricsDrawer.vue'
+import { orThrow } from '@/utils/operations'
 
 const drawerStore = useDrawerStore()
 const globalSongsStore = useGlobalSongsStore()
@@ -141,12 +142,12 @@ async function handleAddToLibrary() {
   try {
     const artistIds: string[] = []
     for (const name of artistNames.value) {
-      const artist = await globalSongsStore.getOrCreateArtist(name)
+      const artist = orThrow(await globalSongsStore.getOrCreateArtist(name))
       artistIds.push(artist.id)
     }
 
-    const { song, created } = await globalSongsStore.getOrCreateSong(songTitle.value, artistIds)
-    const librarySong = await libraryStore.addToLibrary(song.id)
+    const { song, created } = orThrow(await globalSongsStore.getOrCreateSong(songTitle.value, artistIds))
+    const librarySong = orThrow(await libraryStore.addToLibrary(song.id))
 
     uiStore.showToast(
       created ? MESSAGES.SUCCESS.SONG_CREATED : MESSAGES.SUCCESS.SONG_ADDED_TO_LIBRARY,

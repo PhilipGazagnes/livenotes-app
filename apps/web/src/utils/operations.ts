@@ -32,7 +32,7 @@ export interface OperationOptions {
 }
 
 /**
- * Result object returned by executeOperation
+ * Result of a store action or of executeOperation (docs/ERROR_HANDLING.md)
  * @template T - Type of the data returned on success
  */
 export interface OperationResult<T = void> {
@@ -42,23 +42,47 @@ export interface OperationResult<T = void> {
   data?: T
   /** Error message (if failed) */
   error?: string
+  /** The error that caused the failure, for showErrorToast (e.g. EditNotAllowedError) */
+  cause?: unknown
+}
+
+/** Message of an unknown error, or `fallback` when it has none. */
+export function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback
+}
+
+/** The failed result a store action returns from its catch block. */
+export function failure(err: unknown, fallback: string): OperationResult<never> {
+  return { success: false, error: errorMessage(err, fallback), cause: err }
+}
+
+/** For try/catch code: the data of a successful result, or throw what made it fail. */
+export function orThrow<T>(result: OperationResult<T>): T {
+  if (!result.success) throw result.cause ?? new Error(result.error ?? 'An unexpected error occurred')
+  return result.data as T
+}
+
+function isOperationResult(value: unknown): value is OperationResult<unknown> {
+  return !!value && typeof value === 'object' && 'success' in value && typeof value.success === 'boolean'
 }
 
 /**
  * Executes an async operation with timeout, loading state, and error handling
- * 
- * This is the standard pattern for all async operations in the app.
+ *
+ * This is the standard pattern for user actions in the app.
  * It handles:
  * - Loading overlay display
  * - Timeout management
  * - Success/error toast notifications
  * - Consistent error messaging
- * 
+ *
+ * The operation fails when it throws or returns `{ success: false }` (a store action).
+ *
  * @template T - Type of data returned by the operation
  * @param operation - Async function to execute
  * @param options - Configuration options
  * @returns Promise resolving to OperationResult
- * 
+ *
  * @example
  * ```typescript
  * await executeOperation(
@@ -88,6 +112,7 @@ export async function executeOperation<T = void>(
     useOverlay = true,
   } = options
 
+  let result: OperationResult<T>
   try {
     // Show loading overlay if enabled
     if (useOverlay) {
@@ -95,45 +120,15 @@ export async function executeOperation<T = void>(
     }
 
     // Execute operation with timeout
-    const result = await withTimeout(operation, timeout, errorContext)
+    const value = await withTimeout(operation, timeout, errorContext)
 
-    // Show success message if provided
-    if (successMessage) {
-      uiStore.showToast(successMessage, 'success')
-    }
-
-    // Call success callback
-    if (onSuccess) {
-      onSuccess()
-    }
-
-    // Handle result format (some operations return { success, data }, others return data directly)
-    if (result && typeof result === 'object' && 'success' in result) {
-      return result
-    }
-
-    return { success: true, data: result }
+    // Store actions return { success, data }, other operations return data directly
+    result = isOperationResult(value) ? (value as OperationResult<T>) : { success: true, data: value }
   } catch (error) {
-    // Format error message
-    let errorMessage: string
-    
-    if (error instanceof TimeoutError) {
-      errorMessage = 'Operation timed out. Please try again.'
-    } else if (error instanceof Error) {
-      errorMessage = error.message
-    } else {
-      errorMessage = 'An unexpected error occurred'
-    }
-
-    // Show error toast with context
-    uiStore.showErrorToast(errorContext, errorMessage)
-
-    // Call error callback
-    if (onError) {
-      onError(errorMessage)
-    }
-
-    return { success: false, error: errorMessage }
+    const message = error instanceof TimeoutError
+      ? 'Operation timed out. Please try again.'
+      : errorMessage(error, 'An unexpected error occurred')
+    result = { success: false, error: message, cause: error }
   } finally {
     // ALWAYS hide overlay, even if there's an error during error handling
     if (useOverlay) {
@@ -144,76 +139,15 @@ export async function executeOperation<T = void>(
       }
     }
   }
-}
 
-/**
- * Executes an operation within a confirm dialog
- * Shows spinner in the dialog and overlay during operation
- */
-export async function executeConfirmedOperation<T = void>(
-  operation: () => Promise<any>,
-  options: Omit<OperationOptions, 'useOverlay'>
-): Promise<OperationResult<T>> {
-  const uiStore = useUiStore()
-  
-  try {
-    // Show loading state in confirm dialog
-    uiStore.setConfirmDialogLoading(true)
-
-    // Show overlay with loading message
-    const loadingMessage = options.loadingMessage || 'Processing...'
-    uiStore.showOperationOverlay(loadingMessage)
-
-    // Execute operation with timeout
-    const result = await withTimeout(operation, options.timeout ?? TIMEOUTS.NORMAL, options.errorContext)
-
-    // Close dialog on success
-    uiStore.closeConfirm()
-
-    // Show success message if provided
-    if (options.successMessage) {
-      uiStore.showToast(options.successMessage, 'success')
-    }
-
-    // Call success callback
-    if (options.onSuccess) {
-      options.onSuccess()
-    }
-
-    // Handle result format
-    if (result && typeof result === 'object' && 'success' in result) {
-      return result
-    }
-
-    return { success: true, data: result }
-  } catch (error) {
-    // Format error message
-    let errorMessage: string
-    
-    if (error instanceof TimeoutError) {
-      errorMessage = 'Operation timed out. Please try again.'
-    } else if (error instanceof Error) {
-      errorMessage = error.message
-    } else {
-      errorMessage = 'An unexpected error occurred'
-    }
-
-    // Show error toast with context
-    uiStore.showErrorToast(options.errorContext, errorMessage)
-
-    // Call error callback
-    if (options.onError) {
-      options.onError(errorMessage)
-    }
-
-    return { success: false, error: errorMessage }
-  } finally {
-    // ALWAYS hide loading state and overlay, even if there's an error
-    try {
-      uiStore.setConfirmDialogLoading(false)
-      uiStore.hideOperationOverlay()
-    } catch (e) {
-      logger.error('Failed to reset dialog loading state:', e)
-    }
+  if (result.success) {
+    if (successMessage) uiStore.showToast(successMessage, 'success')
+    onSuccess?.()
+  } else {
+    // A timeout keeps its own wording; other errors are worded by showErrorToast
+    const cause = result.cause instanceof TimeoutError ? result.error : (result.cause ?? result.error)
+    uiStore.showErrorToast(errorContext, cause ?? 'An unexpected error occurred')
+    onError?.(result.error ?? 'An unexpected error occurred')
   }
+  return result
 }

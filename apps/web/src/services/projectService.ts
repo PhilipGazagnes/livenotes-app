@@ -26,10 +26,10 @@ export async function fetchCommunityProject(): Promise<Project | null> {
     .from('projects')
     .select('id, name, slug, owner_id, created_at, updated_at, description, thumbnail_url, contact_enabled, contact_info')
     .eq('slug', 'community')
-    .single()
+    .maybeSingle()
 
-  if (error) return null
-  return data as unknown as Project
+  if (error) throw error
+  return data as unknown as Project | null
 }
 
 /**

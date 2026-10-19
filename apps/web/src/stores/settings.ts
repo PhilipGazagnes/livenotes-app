@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { fetchProjectSettings, updateProjectSettings } from '@/services/settingsService'
 import { logger } from '@/utils/logger'
+import { failure } from '@/utils/operations'
 import { setForceOffline } from '@/lib/offline/offlineState'
 
 const STORAGE_KEY = 'livenotes-settings'
@@ -153,7 +154,7 @@ export const useSettingsStore = defineStore('settings', () => {
       return { success: true }
     } catch (error) {
       logger.error('Failed to update project name', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to update project name' }
+      return failure(error, 'Failed to update project name')
     }
   }
 
@@ -165,7 +166,7 @@ export const useSettingsStore = defineStore('settings', () => {
       return { success: true }
     } catch (error) {
       logger.error('Failed to update project description', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to update description' }
+      return failure(error, 'Failed to update description')
     }
   }
 
@@ -177,10 +178,7 @@ export const useSettingsStore = defineStore('settings', () => {
       projectSlug.value = trimmed || null
       return { success: true }
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update project slug',
-      }
+      return failure(error, 'Failed to update project slug')
     }
   }
 
@@ -192,7 +190,7 @@ export const useSettingsStore = defineStore('settings', () => {
       return { success: true }
     } catch (error) {
       logger.error('Failed to update thumbnail URL', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to update thumbnail' }
+      return failure(error, 'Failed to update thumbnail')
     }
   }
 
@@ -203,7 +201,7 @@ export const useSettingsStore = defineStore('settings', () => {
       return { success: true }
     } catch (error) {
       logger.error('Failed to update contact enabled', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to update setting' }
+      return failure(error, 'Failed to update setting')
     }
   }
 
@@ -217,7 +215,7 @@ export const useSettingsStore = defineStore('settings', () => {
       return { success: true }
     } catch (error) {
       logger.error('Failed to update contact info', error)
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to update contact info' }
+      return failure(error, 'Failed to update contact info')
     }
   }
 

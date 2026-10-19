@@ -169,6 +169,7 @@ import { slugify } from '@/utils/slugify'
 import { useFuseSearch } from '@/composables/useFuseSearch'
 import PublicLibraryFormDrawer from '@/components/PublicLibraryFormDrawer.vue'
 import type { PublicLibraryWithTags } from '@livenotes/shared/types'
+import { orThrow } from '@/utils/operations'
 
 const store = usePublicLibrariesStore()
 const settingsStore = useSettingsStore()
@@ -235,7 +236,7 @@ function handleBulkDelete() {
     confirmCallback: async () => {
       try {
         for (const id of ids) {
-          await store.deleteLibrary(id)
+          orThrow(await store.deleteLibrary(id))
         }
         uiStore.showToast(`Deleted ${count} public ${label}`, 'success')
         uiStore.exitSelectionMode()

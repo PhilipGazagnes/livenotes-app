@@ -267,6 +267,10 @@ export const I18N = {
       TITLE: 'Not found',
       SUBTITLE: "This library doesn't exist or is no longer active.",
     },
+    PUBLIC_LIBRARY_LOAD_FAILED: {
+      TITLE: "Couldn't load this library",
+      SUBTITLE: 'Check your connection and try again.',
+    },
     NO_TAGS_AVAILABLE: 'No tags available',
     SLUG_MISSING_WARNING: 'You need to set a project URL slug in Settings before your public library URLs will work.',
     NO_SONGS_FOUND_CREATE: 'No songs found. Create a new one?',

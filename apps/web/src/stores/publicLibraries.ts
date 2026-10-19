@@ -50,7 +50,7 @@ export const usePublicLibrariesStore = defineStore('publicLibraries', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create public library'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -70,7 +70,7 @@ export const usePublicLibrariesStore = defineStore('publicLibraries', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update public library'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -85,7 +85,7 @@ export const usePublicLibrariesStore = defineStore('publicLibraries', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete public library'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }

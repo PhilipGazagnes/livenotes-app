@@ -13,6 +13,7 @@ import BulkRemoveTagsDrawer from '@/components/BulkRemoveTagsDrawer.vue'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import { I18N } from '@/constants/i18n'
 import type { ListItem, SongWithTags } from '@livenotes/shared/types'
+import { orThrow } from '@/utils/operations'
 
 export function useListBulkActions(
   listId: Ref<string>,
@@ -97,7 +98,7 @@ export function useListBulkActions(
       applyCallback: async (targetListIds: string[]) => {
         try {
           for (const targetListId of targetListIds) {
-            await listsStore.bulkAddLibrarySongsToList(targetListId, librarySongIds)
+            orThrow(await listsStore.bulkAddLibrarySongsToList(targetListId, librarySongIds))
           }
           await onRefresh()
           uiStore.showToast(I18N.TOAST.BULK_ADDED_TO_LISTS(ids.length), 'success')
@@ -119,7 +120,7 @@ export function useListBulkActions(
     drawerStore.push(BulkAssignTagsDrawer, {
       applyCallback: async (tagIds: string[]) => {
         try {
-          await tagsStore.bulkAssignTags(librarySongIds, tagIds)
+          orThrow(await tagsStore.bulkAssignTags(librarySongIds, tagIds))
           await onRefresh()
           uiStore.showToast(I18N.TOAST.BULK_TAGS_ASSIGNED(ids.length), 'success')
           uiStore.exitSelectionMode()
@@ -140,7 +141,7 @@ export function useListBulkActions(
     drawerStore.push(BulkRemoveTagsDrawer, {
       applyCallback: async (tagIds: string[]) => {
         try {
-          await tagsStore.bulkRemoveTags(librarySongIds, tagIds)
+          orThrow(await tagsStore.bulkRemoveTags(librarySongIds, tagIds))
           await onRefresh()
           uiStore.showToast(I18N.TOAST.BULK_TAGS_REMOVED(ids.length), 'success')
           uiStore.exitSelectionMode()

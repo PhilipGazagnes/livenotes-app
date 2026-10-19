@@ -48,6 +48,7 @@
 import { ref, computed, onMounted } from 'vue'
 import type { LibrarySongWithDetails, Note, SongcodeNoteData, LivenotesJson } from '@livenotes/shared/types'
 import { useDrawerStore } from '@/stores/drawer'
+import { useUiStore } from '@/stores/ui'
 import { I18N } from '@/constants/i18n'
 import { fetchFirstLyricsNote } from '@/services/publicLibraryService'
 import SongcodeLyricsContent from './SongcodeLyricsContent.vue'
@@ -64,7 +65,12 @@ const livenotesJson = computed((): LivenotesJson | null => {
 })
 
 onMounted(async () => {
-  lyricsNote.value = await fetchFirstLyricsNote(props.song.id)
-  isLoading.value = false
+  try {
+    lyricsNote.value = await fetchFirstLyricsNote(props.song.id)
+  } catch (err) {
+    useUiStore().showErrorToast('load the lyrics', err)
+  } finally {
+    isLoading.value = false
+  }
 })
 </script>

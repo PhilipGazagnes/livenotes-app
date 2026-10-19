@@ -26,7 +26,7 @@ export const useArtistsStore = defineStore('artists', () => {
   async function createArtist(
     _projectId: string,
     name: string
-  ): Promise<{ success: true; data: ArtistV2; isDuplicate: boolean } | { success: false; error: string }> {
+  ): Promise<{ success: true; data: ArtistV2; isDuplicate: boolean } | { success: false; error: string; cause?: unknown }> {
     isLoading.value = true
     error.value = null
     try {
@@ -43,7 +43,7 @@ export const useArtistsStore = defineStore('artists', () => {
       return { success: true, data: newArtist, isDuplicate: false }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create artist'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -67,7 +67,7 @@ export const useArtistsStore = defineStore('artists', () => {
       return { success: true, data: updatedArtist }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update artist'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -97,7 +97,7 @@ export const useArtistsStore = defineStore('artists', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete artist'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }

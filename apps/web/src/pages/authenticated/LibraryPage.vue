@@ -121,6 +121,7 @@ const route = useRoute()
 const ManageTagsModal = defineAsyncComponent(() => import('@/components/ManageTagsModal.vue'))
 const ManageListsModal = defineAsyncComponent(() => import('@/components/ManageListsModal.vue'))
 import FilterByTagsDrawer from '@/components/FilterByTagsDrawer.vue'
+import { orThrow } from '@/utils/operations'
 
 const libraryStore = useLibraryStore()
 const tagsStore = useTagsStore()
@@ -309,7 +310,7 @@ async function handleRemoveFromLibrary(librarySong: LibrarySongWithDetails) {
   if (!confirmed) return
   
   try {
-    await libraryStore.removeFromLibrary(librarySong.id)
+    orThrow(await libraryStore.removeFromLibrary(librarySong.id))
     uiStore.showToast(I18N.TOAST.SONGS_REMOVED_FROM_LIBRARY(1), 'success')
   } catch (err) {
     uiStore.showErrorToast('remove song from library', err as Error)
@@ -343,7 +344,7 @@ function handleBulkDeleteSongs() {
     confirmVariant: 'danger',
     confirmCallback: async () => {
       try {
-        await libraryStore.removeManyFromLibrary(ids)
+        orThrow(await libraryStore.removeManyFromLibrary(ids))
         uiStore.showToast(I18N.TOAST.SONGS_REMOVED_FROM_LIBRARY(ids.length), 'success')
         uiStore.exitSelectionMode()
         drawerStore.popAll()
@@ -362,7 +363,7 @@ function handleBulkAssignTags() {
   drawerStore.push(BulkAssignTagsDrawer, {
     applyCallback: async (tagIds: string[]) => {
       try {
-        await tagsStore.bulkAssignTags(ids, tagIds)
+        orThrow(await tagsStore.bulkAssignTags(ids, tagIds))
         await libraryStore.loadLibrary({ force: true })
         uiStore.showToast(I18N.TOAST.BULK_TAGS_ASSIGNED(ids.length), 'success')
         uiStore.exitSelectionMode()
@@ -382,7 +383,7 @@ function handleBulkRemoveTags() {
   drawerStore.push(BulkRemoveTagsDrawer, {
     applyCallback: async (tagIds: string[]) => {
       try {
-        await tagsStore.bulkRemoveTags(ids, tagIds)
+        orThrow(await tagsStore.bulkRemoveTags(ids, tagIds))
         await libraryStore.loadLibrary({ force: true })
         uiStore.showToast(I18N.TOAST.BULK_TAGS_REMOVED(ids.length), 'success')
         uiStore.exitSelectionMode()
@@ -403,7 +404,7 @@ function handleBulkAddToLists() {
     applyCallback: async (listIds: string[]) => {
       try {
         for (const listId of listIds) {
-          await listsStore.bulkAddLibrarySongsToList(listId, ids)
+          orThrow(await listsStore.bulkAddLibrarySongsToList(listId, ids))
         }
         await libraryStore.loadLibrary({ force: true })
         uiStore.showToast(I18N.TOAST.BULK_ADDED_TO_LISTS(ids.length), 'success')

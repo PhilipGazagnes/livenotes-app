@@ -164,6 +164,7 @@ import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
 import NoteEditor from './NoteEditor.vue'
 import PushNoteDrawer from './PushNoteDrawer.vue'
+import { orThrow } from '@/utils/operations'
 
 const props = defineProps<{
   note: Note
@@ -219,7 +220,7 @@ async function handleDelete() {
 
   isDeleting.value = true
   try {
-    await notesStore.deleteNote(localNote.value.id, props.librarySongId)
+    orThrow(await notesStore.deleteNote(localNote.value.id, props.librarySongId))
     uiStore.showToast(MESSAGES.SUCCESS.NOTE_DELETED, 'success')
     drawerStore.pop()
     props.onNoteChanged?.()

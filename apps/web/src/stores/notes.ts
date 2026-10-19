@@ -2,9 +2,9 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { LooperNoteData, Note, NoteType, SongcodeNoteData } from '@livenotes/shared/types'
 import { generateLivenotesJson } from '@/utils/songcodeConverter'
-import { useUiStore } from './ui'
 import { useAuthStore } from './auth'
 import * as noteService from '@/services/noteService'
+import { failure, type OperationResult } from '@/utils/operations'
 
 /**
  * Notes Store (V2)
@@ -49,17 +49,28 @@ export const useNotesStore = defineStore('notes', () => {
 
   // Actions
 
-  async function loadNotes(librarySongId: string) {
+  // Actions (failures are returned, not thrown: docs/ERROR_HANDLING.md)
+
+  async function run<T>(fallback: string, action: () => Promise<T>): Promise<OperationResult<T>> {
     isLoading.value = true
     error.value = null
     try {
-      notes.value = await noteService.fetchNotes(librarySongId)
+      return { success: true, data: await action() }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load notes'
-      throw err
+      const result = failure(err, fallback)
+      error.value = result.error ?? fallback
+      return result
     } finally {
       isLoading.value = false
     }
+  }
+
+  async function refreshNotes(librarySongId: string): Promise<void> {
+    notes.value = await noteService.fetchNotes(librarySongId)
+  }
+
+  function loadNotes(librarySongId: string): Promise<OperationResult> {
+    return run('Failed to load notes', () => refreshNotes(librarySongId))
   }
 
   async function createNote(
@@ -68,10 +79,8 @@ export const useNotesStore = defineStore('notes', () => {
     content: string | null,
     title?: string,
     data?: SongcodeNoteData | LooperNoteData | null
-  ): Promise<Note> {
-    isLoading.value = true
-    error.value = null
-    try {
+  ): Promise<OperationResult<Note>> {
+    return run('Failed to create note', async () => {
       let resolvedData: SongcodeNoteData | LooperNoteData | null = data ?? null
       if (type === 'songcode' && content) {
         const conversionResult = await generateLivenotesJson(content)
@@ -102,14 +111,9 @@ export const useNotesStore = defineStore('notes', () => {
         display_order: maxOrder + 1,
       })
 
-      await loadNotes(librarySongId)
+      await refreshNotes(librarySongId)
       return created
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to create note'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    })
   }
 
   async function updateNote(
@@ -122,10 +126,8 @@ export const useNotesStore = defineStore('notes', () => {
     },
     librarySongId: string,
     noteType?: NoteType
-  ) {
-    isLoading.value = true
-    error.value = null
-    try {
+  ): Promise<OperationResult> {
+    return run('Failed to update note', async () => {
       const resolvedUpdates = { ...updates }
       if (noteType === 'songcode' && updates.content !== undefined && updates.content) {
         const conversionResult = await generateLivenotesJson(updates.content)
@@ -140,78 +142,25 @@ export const useNotesStore = defineStore('notes', () => {
       if (!authStore.userId) throw new Error('User not authenticated')
 
       await noteService.updateNote(noteId, resolvedUpdates, authStore.userId)
-      await loadNotes(librarySongId)
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to update note'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+      await refreshNotes(librarySongId)
+    })
   }
 
-  async function generateSongcodeJson(noteId: string, librarySongId: string): Promise<{ success: boolean; error?: string }> {
-    const uiStore = useUiStore()
-    const note = notes.value.find(n => n.id === noteId)
-    if (!note || note.type !== 'songcode') return { success: false, error: 'Note not found or not a songcode note' }
-    if (!note.content) return { success: false, error: 'No songcode content to convert' }
-
-    isLoading.value = true
-    error.value = null
-    try {
-      const conversionResult = await generateLivenotesJson(note.content)
-      if (!conversionResult.success) throw new Error(conversionResult.error)
-
-      const authStore = useAuthStore()
-      if (!authStore.userId) throw new Error('User not authenticated')
-
-      const newData: SongcodeNoteData = {
-        livenotes_json: conversionResult.json,
-        livenotes_json_updated_at: new Date().toISOString(),
-      }
-
-      await noteService.updateNote(noteId, { data: newData }, authStore.userId)
-      await loadNotes(librarySongId)
-      uiStore.showToast('Livenotes JSON generated', 'success')
-      return { success: true }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to generate JSON'
-      error.value = msg
-      uiStore.showToast(msg, 'error')
-      return { success: false, error: msg }
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  async function deleteNote(noteId: string, librarySongId: string) {
-    isLoading.value = true
-    error.value = null
-    try {
+  function deleteNote(noteId: string, librarySongId: string): Promise<OperationResult> {
+    return run('Failed to delete note', async () => {
       await noteService.deleteNote(noteId)
-      await loadNotes(librarySongId)
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to delete note'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+      await refreshNotes(librarySongId)
+    })
   }
 
-  async function reorderNotes(noteIds: string[], _type: NoteType) {
-    isLoading.value = true
-    error.value = null
-    try {
+  function reorderNotes(noteIds: string[], _type: NoteType): Promise<OperationResult> {
+    return run('Failed to reorder notes', async () => {
       await noteService.reorderNotes(noteIds)
       notes.value = notes.value.map(note => {
         const newOrder = noteIds.indexOf(note.id)
         return newOrder !== -1 ? { ...note, display_order: newOrder } : note
       })
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to reorder notes'
-      throw err
-    } finally {
-      isLoading.value = false
-    }
+    })
   }
 
   async function getNoteById(noteId: string): Promise<Note | null> {
@@ -243,7 +192,6 @@ export const useNotesStore = defineStore('notes', () => {
     loadNotes,
     createNote,
     updateNote,
-    generateSongcodeJson,
     deleteNote,
     reorderNotes,
     getNoteById,

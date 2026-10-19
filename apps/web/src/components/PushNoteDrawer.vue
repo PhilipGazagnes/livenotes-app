@@ -73,22 +73,27 @@ const targets = ref<Project[]>([])
 const pushingId = ref<string | null>(null)
 
 onMounted(async () => {
-  const [userProjects, community] = await Promise.all([
-    fetchUserProjects(authStore.userId!),
-    fetchCommunityProject(),
-  ])
+  try {
+    const [userProjects, community] = await Promise.all([
+      fetchUserProjects(authStore.userId!),
+      fetchCommunityProject(),
+    ])
 
-  const list: Project[] = userProjects
-    .filter(p => p.id !== authStore.activeProjectId)
-    .map(p => p as unknown as Project)
+    const list: Project[] = userProjects
+      .filter(p => p.id !== authStore.activeProjectId)
+      .map(p => p as unknown as Project)
 
-  if (community && community.id !== authStore.activeProjectId) {
-    const alreadyIn = list.some(p => p.id === community.id)
-    if (!alreadyIn) list.push(community)
+    if (community && community.id !== authStore.activeProjectId) {
+      const alreadyIn = list.some(p => p.id === community.id)
+      if (!alreadyIn) list.push(community)
+    }
+
+    targets.value = list
+  } catch (err) {
+    uiStore.showErrorToast('load projects', err)
+  } finally {
+    isLoading.value = false
   }
-
-  targets.value = list
-  isLoading.value = false
 })
 
 async function handlePush(project: Project) {

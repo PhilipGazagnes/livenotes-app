@@ -6,6 +6,7 @@ import type { NoteType, LooperContent } from '@livenotes/shared/types'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
+import { orThrow } from '@/utils/operations'
 
 export const NOTE_TYPE_CONFIG = [
   {
@@ -101,9 +102,9 @@ export function useNoteCreation(librarySongId: string, onSaved?: () => void) {
     isSaving.value = true
     try {
       if (selectedType.value === 'looper') {
-        await notesStore.createNote(librarySongId, selectedType.value, null, formData.value.name.trim(), looperData.value)
+        orThrow(await notesStore.createNote(librarySongId, selectedType.value, null, formData.value.name.trim(), looperData.value))
       } else {
-        await notesStore.createNote(librarySongId, selectedType.value, formData.value.content.trim(), formData.value.name.trim())
+        orThrow(await notesStore.createNote(librarySongId, selectedType.value, formData.value.content.trim(), formData.value.name.trim()))
       }
       uiStore.showToast(MESSAGES.SUCCESS.NOTE_CREATED, 'success')
       onSaved?.()

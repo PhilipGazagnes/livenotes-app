@@ -4,7 +4,7 @@ import { useUiStore } from '@/stores/ui'
 import { useDrawerStore } from '@/stores/drawer'
 import { useListsStore } from '@/stores/lists'
 import { normalizeText } from '@/utils/validation'
-import { executeOperation } from '@/utils/operations'
+import { executeOperation, orThrow } from '@/utils/operations'
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue'
 import BulkActionsDrawer from '@/components/BulkActionsDrawer.vue'
 import type { BulkAction } from '@/types/bulkAction'
@@ -49,7 +49,7 @@ export function useListCRUD() {
         try {
           const projectId = authStore.activeProjectId
           if (!projectId) throw new Error('Project not found')
-          await listsStore.bulkDeleteLists(ids, projectId)
+          orThrow(await listsStore.bulkDeleteLists(ids, projectId))
           uiStore.showToast(I18N.TOAST.BULK_DELETED_LISTS(count), 'success')
           uiStore.exitSelectionMode()
           drawerStore.popAll()

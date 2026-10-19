@@ -118,7 +118,8 @@ export async function fetchInvitationByToken(token: string): Promise<InvitationW
     .eq('is_revoked', false)
     .is('used_by', null)
     .maybeSingle()
-  if (error || !data) return null
+  if (error) throw error
+  if (!data) return null
   return data as unknown as InvitationWithProject
 }
 

@@ -5,8 +5,8 @@
       <svg class="w-24 h-24 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
       </svg>
-      <h1 class="text-2xl font-bold text-white mb-2">{{ I18N.EMPTY_STATES.PUBLIC_LIBRARY_NOT_FOUND.TITLE }}</h1>
-      <p class="text-gray-400">{{ I18N.EMPTY_STATES.PUBLIC_LIBRARY_NOT_FOUND.SUBTITLE }}</p>
+      <h1 class="text-2xl font-bold text-white mb-2">{{ notFoundText.TITLE }}</h1>
+      <p class="text-gray-400">{{ notFoundText.SUBTITLE }}</p>
     </div>
 
     <template v-else>
@@ -121,6 +121,7 @@ import { fetchProjectPublicInfo } from '@/services/settingsService'
 import { useFuseSearch } from '@/composables/useFuseSearch'
 import type { LibrarySongWithDetails, PublicLibraryWithTags, ContactInfo } from '@livenotes/shared/types'
 import { I18N } from '@/constants/i18n'
+import { logger } from '@/utils/logger'
 
 const route = useRoute()
 const drawerStore = useDrawerStore()
@@ -129,6 +130,11 @@ const library = ref<PublicLibraryWithTags | null>(null)
 const songs = ref<LibrarySongWithDetails[]>([])
 const isLoading = ref(true)
 const notFound = ref(false)
+// A failed request is not "not found": say so (docs/ERROR_HANDLING.md)
+const loadFailed = ref(false)
+const notFoundText = computed(() =>
+  loadFailed.value ? I18N.EMPTY_STATES.PUBLIC_LIBRARY_LOAD_FAILED : I18N.EMPTY_STATES.PUBLIC_LIBRARY_NOT_FOUND
+)
 
 interface ProjectPublicInfo {
   name: string
@@ -145,17 +151,24 @@ onMounted(async () => {
   const projectSlug = route.params.projectSlug as string
   const librarySlug = route.params.librarySlug as string
 
-  const lib = await fetchPublicLibraryBySlug(projectSlug, librarySlug)
-  if (!lib) { notFound.value = true; isLoading.value = false; return }
+  try {
+    const lib = await fetchPublicLibraryBySlug(projectSlug, librarySlug)
+    if (!lib) { notFound.value = true; return }
 
-  library.value = lib
-  const [fetchedSongs, fetchedProject] = await Promise.all([
-    fetchPublicLibrarySongs(lib.project_id, lib.tags.map(t => t.id)),
-    fetchProjectPublicInfo(lib.project_id),
-  ])
-  songs.value = fetchedSongs
-  projectInfo.value = fetchedProject
-  isLoading.value = false
+    library.value = lib
+    const [fetchedSongs, fetchedProject] = await Promise.all([
+      fetchPublicLibrarySongs(lib.project_id, lib.tags.map(t => t.id)),
+      fetchProjectPublicInfo(lib.project_id),
+    ])
+    songs.value = fetchedSongs
+    projectInfo.value = fetchedProject
+  } catch (err) {
+    logger.error('Failed to load public library', err)
+    loadFailed.value = true
+    notFound.value = true
+  } finally {
+    isLoading.value = false
+  }
 })
 
 function getTitle(song: LibrarySongWithDetails): string {

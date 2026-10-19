@@ -24,7 +24,7 @@ A React Native app (`apps/mobile`) and a SongCode editor package (`packages/edit
 
 ## Tech stack (web)
 
-- **Frontend**: Vue 3 + TypeScript (+ Ionic Vue, to be removed, ADR-003)
+- **Frontend**: Vue 3 + TypeScript + Tailwind CSS 4, built with Vite 8
 - **Styling**: Tailwind CSS
 - **State**: Pinia
 - **Backend**: Supabase (PostgreSQL + Auth)

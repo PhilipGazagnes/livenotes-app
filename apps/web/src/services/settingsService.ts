@@ -52,7 +52,7 @@ export async function fetchProjectPublicInfo(projectId: string): Promise<Project
     .from('projects')
     .select('name, description, thumbnail_url, contact_enabled, contact_info')
     .eq('id', projectId)
-    .single()
-  if (error) return null
-  return data as unknown as ProjectPublicInfo
+    .maybeSingle()
+  if (error) throw error
+  return data as unknown as ProjectPublicInfo | null
 }

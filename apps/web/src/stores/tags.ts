@@ -39,7 +39,7 @@ export const useTagsStore = defineStore('tags', () => {
       return { success: true, data: newTag }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create tag'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -58,7 +58,7 @@ export const useTagsStore = defineStore('tags', () => {
       return { success: true, data: updatedTag }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update tag'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -73,7 +73,7 @@ export const useTagsStore = defineStore('tags', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete tag'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -95,7 +95,7 @@ export const useTagsStore = defineStore('tags', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to tag song'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -109,7 +109,7 @@ export const useTagsStore = defineStore('tags', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to untag song'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -123,7 +123,7 @@ export const useTagsStore = defineStore('tags', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to assign tags'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -137,7 +137,7 @@ export const useTagsStore = defineStore('tags', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to remove tags'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }

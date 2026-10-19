@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { executeOperation, executeConfirmedOperation } from '../operations'
+import { executeOperation, failure, orThrow } from '../operations'
 import type { OperationOptions } from '../operations'
 
 // Mock the UI store
@@ -65,10 +65,8 @@ describe('operations', () => {
       expect(result.error).toBeTruthy()
       expect(mockUiStore.showOperationOverlay).toHaveBeenCalled()
       expect(mockUiStore.hideOperationOverlay).toHaveBeenCalled()
-      expect(mockUiStore.showErrorToast).toHaveBeenCalledWith(
-        'test operation',
-        expect.any(String)
-      )
+      // The error itself goes to showErrorToast, which picks the wording
+      expect(mockUiStore.showErrorToast).toHaveBeenCalledWith('test operation', error)
     })
 
     it('should call onSuccess callback', async () => {
@@ -154,42 +152,44 @@ describe('operations', () => {
     })
   })
 
-  describe('executeConfirmedOperation', () => {
-    it('should execute operation and close dialog', async () => {
-      const operation = vi.fn().mockResolvedValue('result')
-      const options: Omit<OperationOptions, 'useOverlay'> = {
-        errorContext: 'delete',
-        loadingMessage: 'Deleting...',
-        successMessage: 'Deleted!',
-      }
-
-      const result = await executeConfirmedOperation(
-        operation,
-        options
-      )
-
-      expect(result.success).toBe(true)
-      expect(operation).toHaveBeenCalled()
-      expect(mockUiStore.setConfirmDialogLoading).toHaveBeenCalledWith(true)
-      expect(mockUiStore.closeConfirm).toHaveBeenCalled()
-      expect(mockUiStore.showToast).toHaveBeenCalledWith('Deleted!', 'success')
-    })
-
-    it('should handle operation failure in confirmed dialog', async () => {
-      const operation = vi.fn().mockRejectedValue(new Error('failed'))
-      const options: Omit<OperationOptions, 'useOverlay'> = {
-        errorContext: 'delete',
-        loadingMessage: 'Deleting...',
-      }
-
-      const result = await executeConfirmedOperation(
-        operation,
-        options
-      )
+  describe('store results (docs/ERROR_HANDLING.md)', () => {
+    it('treats a returned { success: false } as a failure: error toast, no success toast', async () => {
+      const cause = new Error('duplicate name')
+      const onSuccess = vi.fn()
+      const result = await executeOperation(() => Promise.resolve(failure(cause, 'Failed to create tag')), {
+        errorContext: 'create tag',
+        successMessage: 'Tag created',
+        onSuccess,
+      })
 
       expect(result.success).toBe(false)
-      expect(mockUiStore.setConfirmDialogLoading).toHaveBeenCalled()
-      expect(mockUiStore.showErrorToast).toHaveBeenCalled()
+      expect(result.error).toBe('duplicate name')
+      expect(mockUiStore.showToast).not.toHaveBeenCalled()
+      expect(onSuccess).not.toHaveBeenCalled()
+      expect(mockUiStore.showErrorToast).toHaveBeenCalledWith('create tag', cause)
+    })
+
+    it('passes a successful store result through', async () => {
+      const result = await executeOperation(() => Promise.resolve({ success: true, data: 42 }), {
+        errorContext: 'test',
+        successMessage: 'Done',
+      })
+
+      expect(result).toEqual({ success: true, data: 42 })
+      expect(mockUiStore.showToast).toHaveBeenCalledWith('Done', 'success')
+    })
+
+    it('failure() keeps the message and the original error', () => {
+      const cause = new Error('boom')
+      expect(failure(cause, 'Failed')).toEqual({ success: false, error: 'boom', cause })
+      expect(failure('not an error', 'Failed')).toEqual({ success: false, error: 'Failed', cause: 'not an error' })
+    })
+
+    it('orThrow() returns the data, or throws the original error', () => {
+      expect(orThrow({ success: true, data: 'x' })).toBe('x')
+      const cause = new Error('boom')
+      expect(() => orThrow(failure(cause, 'Failed'))).toThrow(cause)
+      expect(() => orThrow({ success: false, error: 'no cause' })).toThrow('no cause')
     })
   })
 })

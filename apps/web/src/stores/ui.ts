@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
+import { EditNotAllowedError } from '@/lib/offline/projectWrites'
 
 export interface Toast {
   id: string
@@ -66,10 +67,15 @@ export const useUiStore = defineStore('ui', () => {
     return id
   }
   
-  function showErrorToast(operationName: string, error: Error | string, duration = 5000) {
-    const errorMessage = error instanceof Error ? error.message : error
-    const message = `Failed to ${operationName}`
-    showToast(message, 'error', duration, errorMessage)
+  /** The one way to tell the user an action failed (docs/ERROR_HANDLING.md). */
+  function showErrorToast(operationName: string, error: unknown, duration = 5000) {
+    // A refused write already says what happened and why (ADR-011): show it as is
+    if (error instanceof EditNotAllowedError) {
+      showToast(error.message, 'error', duration)
+      return
+    }
+    const detail = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined
+    showToast(`Failed to ${operationName}`, 'error', duration, detail)
   }
 
   function removeToast(id: string) {

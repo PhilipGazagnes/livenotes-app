@@ -84,6 +84,7 @@ import { usePageLoad } from '@/composables/usePageLoad'
 import { useFuseSearch } from '@/composables/useFuseSearch'
 import { fetchTagSongCounts } from '@/services/tagService'
 import type { Tag } from '@livenotes/shared/types'
+import { orThrow } from '@/utils/operations'
 
 const router = useRouter()
 const tagsStore = useTagsStore()
@@ -140,7 +141,7 @@ function handleBulkDelete() {
     confirmCallback: async () => {
       try {
         for (const id of ids) {
-          await tagsStore.deleteTag(id)
+          orThrow(await tagsStore.deleteTag(id))
         }
         uiStore.showToast(`Deleted ${count} tag${count !== 1 ? 's' : ''}`, 'success')
         uiStore.exitSelectionMode()

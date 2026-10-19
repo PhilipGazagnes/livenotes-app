@@ -102,8 +102,9 @@ export async function fetchPublicLibraryBySlug(
     .from('projects')
     .select('id')
     .eq('slug', projectSlug)
-    .single()
-  if (projectError || !project) return null
+    .maybeSingle()
+  if (projectError) throw projectError
+  if (!project) return null
 
   const { data: library, error: libraryError } = await db
     .from('public_libraries')
@@ -111,8 +112,9 @@ export async function fetchPublicLibraryBySlug(
     .eq('project_id', project.id)
     .eq('slug', librarySlug)
     .eq('is_active', true)
-    .single()
-  if (libraryError || !library) return null
+    .maybeSingle()
+  if (libraryError) throw libraryError
+  if (!library) return null
 
   const row = library as LibraryRow
   return {
@@ -176,7 +178,7 @@ export async function fetchFirstLyricsNote(librarySongId: string): Promise<Note 
     .in('type', ['songcode', 'lyrics'])
     .order('display_order', { ascending: true })
     .limit(1)
-    .single()
-  if (error) return null
-  return data as Note
+    .maybeSingle()
+  if (error) throw error
+  return data as Note | null
 }

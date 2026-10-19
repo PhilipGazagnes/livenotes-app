@@ -60,7 +60,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true, data: newList }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create list'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -79,7 +79,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true, data: updatedList }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update list'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -95,7 +95,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete list'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -110,7 +110,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete lists'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -128,7 +128,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to add song to list'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -147,7 +147,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to remove song from list'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -166,7 +166,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to add songs to list'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
@@ -180,7 +180,7 @@ export const useListsStore = defineStore('lists', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to reorder list items'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     }
   }
 

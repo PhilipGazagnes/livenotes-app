@@ -92,6 +92,7 @@ import NoteCard from './NoteCard.vue'
 import NoteEditor from './NoteEditor.vue'
 import CRUDEmptyState from './CRUDEmptyState.vue'
 import BaseLoadingSpinner from './BaseLoadingSpinner.vue'
+import { orThrow } from '@/utils/operations'
 
 interface Props {
   librarySongId: string
@@ -153,7 +154,7 @@ async function handleDeleteNote(note: Note) {
   if (!confirmed) return
 
   try {
-    await notesStore.deleteNote(note.id, props.librarySongId)
+    orThrow(await notesStore.deleteNote(note.id, props.librarySongId))
     uiStore.showToast(MESSAGES.SUCCESS.NOTE_DELETED, 'success')
   } catch (err) {
     uiStore.showErrorToast('delete note', err as Error)

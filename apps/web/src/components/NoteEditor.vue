@@ -130,6 +130,7 @@ import type { Note, NoteType, LooperContent } from '@livenotes/shared/types'
 import { VALIDATION } from '@/constants/validation'
 import { MESSAGES } from '@/constants/messages'
 import { I18N } from '@/constants/i18n'
+import { orThrow } from '@/utils/operations'
 
 const props = defineProps<{
   note?: Note | null
@@ -199,18 +200,18 @@ async function handleSave() {
   try {
     if (isEditing.value) {
       if (effectiveNoteType.value === 'looper') {
-        await notesStore.updateNote(
+        orThrow(await notesStore.updateNote(
           props.note!.id,
           { title: formData.value.title, data: looperData.value },
           props.librarySongId
-        )
+        ))
       } else {
-        await notesStore.updateNote(
+        orThrow(await notesStore.updateNote(
           props.note!.id,
           { title: formData.value.title, content: formData.value.content.trim() },
           props.librarySongId,
           effectiveNoteType.value
-        )
+        ))
       }
       uiStore.showToast(MESSAGES.SUCCESS.NOTE_UPDATED, 'success')
       // notesStore.updateNote calls loadNotes internally, so notes are fresh
@@ -219,9 +220,9 @@ async function handleSave() {
       if (updatedNote) props.onSaved?.(updatedNote)
     } else {
       if (effectiveNoteType.value === 'looper') {
-        await notesStore.createNote(props.librarySongId, effectiveNoteType.value, null, formData.value.title.trim(), looperData.value)
+        orThrow(await notesStore.createNote(props.librarySongId, effectiveNoteType.value, null, formData.value.title.trim(), looperData.value))
       } else {
-        await notesStore.createNote(props.librarySongId, effectiveNoteType.value, formData.value.content.trim(), formData.value.title.trim())
+        orThrow(await notesStore.createNote(props.librarySongId, effectiveNoteType.value, formData.value.content.trim(), formData.value.title.trim()))
       }
       uiStore.showToast(MESSAGES.SUCCESS.NOTE_CREATED, 'success')
       drawerStore.pop()

@@ -14,6 +14,7 @@ import { checkProjectStatus, resetProjectStatus } from '@/lib/offline/projectSta
 import { forceOffline, isOfflineMode } from '@/lib/offline/offlineState'
 import { useOnline } from '@vueuse/core'
 import { forgetOfflineUser, readOfflineUser, rememberOfflineUser } from '@/lib/offline/offlineUser'
+import type { OperationResult } from '@/utils/operations'
 
 const ACTIVE_PROJECT_CACHE_KEY = 'livenotes-project-id'
 
@@ -217,7 +218,7 @@ export const useAuthStore = defineStore('auth', () => {
     return initPromise
   }
 
-  async function signup(email: string, password: string): Promise<{ success: boolean; requiresEmailConfirmation?: boolean; error?: string }> {
+  async function signup(email: string, password: string): Promise<OperationResult & { requiresEmailConfirmation?: boolean }> {
     isLoading.value = true
     error.value = null
 
@@ -234,13 +235,13 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: true, requiresEmailConfirmation }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Signup failed'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
   }
 
-  async function login(email: string, password: string): Promise<{ success: boolean; error?: string }> {
+  async function login(email: string, password: string): Promise<OperationResult> {
     isLoading.value = true
     error.value = null
 
@@ -256,13 +257,13 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
   }
 
-  async function loginWithOAuth(provider: 'google' | 'facebook'): Promise<{ success: boolean; error?: string }> {
+  async function loginWithOAuth(provider: 'google' | 'facebook'): Promise<OperationResult> {
     isLoading.value = true
     error.value = null
 
@@ -273,13 +274,13 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'OAuth login failed'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
   }
 
-  async function logout(): Promise<{ success: boolean; error?: string }> {
+  async function logout(): Promise<OperationResult> {
     isLoading.value = true
     error.value = null
 
@@ -298,7 +299,7 @@ export const useAuthStore = defineStore('auth', () => {
       return { success: true }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Logout failed'
-      return { success: false, error: error.value }
+      return { success: false, error: error.value, cause: err }
     } finally {
       isLoading.value = false
     }
