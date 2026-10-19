@@ -1,93 +1,91 @@
 <template>
-  <ion-page>
-    <ion-content ref="contentRef">
-      <!-- Header -->
-      <AppHeader :title="pageTitle">
-      </AppHeader>
+  <AppPage ref="contentRef">
+    <!-- Header -->
+    <AppHeader :title="pageTitle">
+    </AppHeader>
 
-      <!-- Loading State -->
-      <div v-if="libraryStore.isLoading && !loadTimedOut" class="flex items-center justify-center py-24">
-        <BaseLoadingSpinner />
-      </div>
+    <!-- Loading State -->
+    <div v-if="libraryStore.isLoading && !loadTimedOut" class="flex items-center justify-center py-24">
+      <BaseLoadingSpinner />
+    </div>
 
-      <!-- Empty State -->
-      <div v-else-if="libraryStore.librarySongCount === 0" class="text-center py-12 px-4">
-        <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+    <!-- Empty State -->
+    <div v-else-if="libraryStore.librarySongCount === 0" class="text-center py-12 px-4">
+      <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+      </svg>
+      <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIBRARY_EMPTY }}</h2>
+      <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIBRARY_EMPTY_SUBTITLE }}</p>
+      
+      <button
+        @click="openAddSongDrawer"
+        class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
-        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIBRARY_EMPTY }}</h2>
-        <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIBRARY_EMPTY_SUBTITLE }}</p>
-        
-        <button
-          @click="openAddSongDrawer"
-          class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          {{ I18N.LIBRARY.ADD_FIRST_SONG }}
-        </button>
+        {{ I18N.LIBRARY.ADD_FIRST_SONG }}
+      </button>
+    </div>
+
+    <!-- Library Songs List -->
+    <div v-else class="pb-24">
+      <div v-if="displayedSongs.length === 0 && (searchQuery || selectedTagIds.length > 0 || route.query.artist)" class="text-center py-12 px-4">
+        <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SONGS_MATCH_FILTERS }}</p>
       </div>
-
-      <!-- Library Songs List -->
-      <div v-else class="pb-24">
-        <div v-if="displayedSongs.length === 0 && (searchQuery || selectedTagIds.length > 0 || route.query.artist)" class="text-center py-12 px-4">
-          <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SONGS_MATCH_FILTERS }}</p>
-        </div>
-        <div v-else class="p-4 space-y-4">
-          <BaseCard
-            v-for="librarySong in displayedSongs"
-            :key="librarySong.id"
-            :title="librarySong.custom_title || librarySong.song?.title || ''"
-            :title-segments="libraryStore.getTitleSegments(librarySong)"
-            :text="libraryStore.getSubtitle(librarySong)"
-            :text-segments="libraryStore.getSubtitleSegments(librarySong)"
-            :tags="librarySong.tags"
-            :lists="librarySong.lists"
-            :dropdown-items="getSongDropdownItems(librarySong)"
-            :id="librarySong.id"
-            @click="handleSongClick(librarySong)"
-          />
-        </div>
+      <div v-else class="p-4 space-y-4">
+        <BaseCard
+          v-for="librarySong in displayedSongs"
+          :key="librarySong.id"
+          :title="librarySong.custom_title || librarySong.song?.title || ''"
+          :title-segments="libraryStore.getTitleSegments(librarySong)"
+          :text="libraryStore.getSubtitle(librarySong)"
+          :text-segments="libraryStore.getSubtitleSegments(librarySong)"
+          :tags="librarySong.tags"
+          :lists="librarySong.lists"
+          :dropdown-items="getSongDropdownItems(librarySong)"
+          :id="librarySong.id"
+          @click="handleSongClick(librarySong)"
+        />
       </div>
+    </div>
 
-      <BaseStickyBar
-        v-model:search-query="searchQuery"
-        :all-item-ids="displayedSongs.map(s => s.id)"
-        :filters-enabled="true"
-        :filters-active="selectedTagIds.length > 0"
-        @filters-clicked="handleFiltersClicked"
-        @new-clicked="openAddSongDrawer"
-        @choose-action-clicked="handleChooseAction"
-      />
+    <BaseStickyBar
+      v-model:search-query="searchQuery"
+      :all-item-ids="displayedSongs.map(s => s.id)"
+      :filters-enabled="true"
+      :filters-active="selectedTagIds.length > 0"
+      @filters-clicked="handleFiltersClicked"
+      @new-clicked="openAddSongDrawer"
+      @choose-action-clicked="handleChooseAction"
+    />
 
-      <!-- Modals -->
-      <ManageTagsModal
-        v-if="showManageTagsModal && selectedLibrarySong"
-        :isOpen="true"
-        :librarySongId="selectedLibrarySong.id"
-        :songTitle="selectedLibrarySong.custom_title || selectedLibrarySong.song?.title || 'Song'"
-        :initialTagIds="selectedLibrarySong.tags?.map(t => t.id) || []"
-        @closed="showManageTagsModal = false"
-        @saved="handleTagsUpdated"
-      />
+    <!-- Modals -->
+    <ManageTagsModal
+      v-if="showManageTagsModal && selectedLibrarySong"
+      :isOpen="true"
+      :librarySongId="selectedLibrarySong.id"
+      :songTitle="selectedLibrarySong.custom_title || selectedLibrarySong.song?.title || 'Song'"
+      :initialTagIds="selectedLibrarySong.tags?.map(t => t.id) || []"
+      @closed="showManageTagsModal = false"
+      @saved="handleTagsUpdated"
+    />
 
-      <ManageListsModal
-        v-if="showManageListsModal && selectedLibrarySong"
-        :isOpen="true"
-        :library-song-id="selectedLibrarySong.id"
-        :song-title="selectedLibrarySong.custom_title || selectedLibrarySong.song?.title || 'Song'"
-        :initial-list-ids="selectedLibrarySong.lists?.map(l => l.id) || []"
-        @closed="showManageListsModal = false"
-        @saved="handleListsUpdated"
-      />
+    <ManageListsModal
+      v-if="showManageListsModal && selectedLibrarySong"
+      :isOpen="true"
+      :library-song-id="selectedLibrarySong.id"
+      :song-title="selectedLibrarySong.custom_title || selectedLibrarySong.song?.title || 'Song'"
+      :initial-list-ids="selectedLibrarySong.lists?.map(l => l.id) || []"
+      @closed="showManageListsModal = false"
+      @saved="handleListsUpdated"
+    />
 
 
-    </ion-content>
-  </ion-page>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
@@ -96,7 +94,7 @@ import BulkAssignTagsDrawer from '@/components/BulkAssignTagsDrawer.vue'
 import BulkRemoveTagsDrawer from '@/components/BulkRemoveTagsDrawer.vue'
 import BulkAddToListsDrawer from '@/components/BulkAddToListsDrawer.vue'
 import { useRoute } from 'vue-router'
-import { IonPage, IonContent } from '@ionic/vue'
+import AppPage from '@/components/AppPage.vue'
 import { useLibraryStore } from '@/stores/library'
 import { useTagsStore } from '@/stores/tags'
 import { useListsStore } from '@/stores/lists'
@@ -132,18 +130,16 @@ const uiStore = useUiStore()
 const drawerStore = useDrawerStore()
 const settingsStore = useSettingsStore()
 
-const contentRef = ref<InstanceType<typeof IonContent> | null>(null)
+const contentRef = ref<InstanceType<typeof AppPage> | null>(null)
 let savedScrollTop = 0
 
-async function captureScroll() {
-  const scrollEl = await (contentRef.value as any)?.$el?.getScrollElement()
-  savedScrollTop = scrollEl?.scrollTop ?? 0
+function captureScroll() {
+  savedScrollTop = contentRef.value?.scrollElement?.scrollTop ?? 0
 }
 
 async function restoreScroll() {
   await nextTick()
-  const scrollEl = await (contentRef.value as any)?.$el?.getScrollElement()
-  scrollEl?.scrollTo({ top: savedScrollTop, behavior: 'instant' })
+  contentRef.value?.scrollElement?.scrollTo({ top: savedScrollTop, behavior: 'instant' })
 }
 
 // State
@@ -269,7 +265,7 @@ function handleSongClick(librarySong: LibrarySongWithDetails) {
 
 
 async function handleChooseAction() {
-  await captureScroll()
+  captureScroll()
   const actions: BulkAction[] = [
     { label: I18N.BULK_ACTIONS.DELETE, variant: 'danger', keepDrawerOpen: true, onClick: handleBulkDeleteSongs },
     { label: I18N.BULK_ACTIONS.ADD_TO_LISTS, keepDrawerOpen: true, onClick: handleBulkAddToLists },

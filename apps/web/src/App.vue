@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
-import { IonApp } from '@ionic/vue'
 import * as authService from '@/services/authService'
 import HamburgerMenu from '@/components/HamburgerMenu.vue'
 import ToastNotification from '@/components/ToastNotification.vue'
@@ -71,7 +70,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <ion-app>
+  <div class="fixed inset-0 overflow-hidden bg-gray-900">
     <router-view :key="viewKey" />
 
     <!-- Global Components -->
@@ -83,6 +82,6 @@ onUnmounted(() => {
     <AppUpdateBanner />
     <SyncAvailableBanner />
     <KeepEditingDialog />
-  </ion-app>
+  </div>
 </template>
 

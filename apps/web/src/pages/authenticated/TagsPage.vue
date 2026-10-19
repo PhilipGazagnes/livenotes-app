@@ -1,70 +1,68 @@
 <template>
-  <ion-page>
-    <ion-content>
-      <!-- Header -->
-      <AppHeader
-        :title="I18N.PAGE_TITLES.TAGS"
-        :show-back="true"
-        :show-menu="true"
-      >
-      </AppHeader>
+  <AppPage>
+    <!-- Header -->
+    <AppHeader
+      :title="I18N.PAGE_TITLES.TAGS"
+      :show-back="true"
+      :show-menu="true"
+    >
+    </AppHeader>
 
-      <!-- Empty State -->
-      <CRUDEmptyState
-        v-if="!tagsStore.isLoading && tagsStore.tagCount === 0"
-        :title="MESSAGES.EMPTY_NO_TAGS"
-        :subtitle="MESSAGES.EMPTY_NO_TAGS_SUBTITLE"
-        :ctaText="I18N.EMPTY_STATES.NO_TAGS.CTA"
-        iconPath="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-        @created="openCreateTagDrawer"
+    <!-- Empty State -->
+    <CRUDEmptyState
+      v-if="!tagsStore.isLoading && tagsStore.tagCount === 0"
+      :title="MESSAGES.EMPTY_NO_TAGS"
+      :subtitle="MESSAGES.EMPTY_NO_TAGS_SUBTITLE"
+      :ctaText="I18N.EMPTY_STATES.NO_TAGS.CTA"
+      iconPath="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+      @created="openCreateTagDrawer"
+    />
+
+    <!-- Tags List -->
+    <div v-else class="p-4 space-y-3 pb-24">
+      <BaseCard
+        v-for="tag in filteredTags"
+        :key="tag.id"
+        :id="tag.id"
+        :title="tag.name"
+        :title-segments="getTitleSegments(tag)"
+        :text="getTagText(tag)"
+        :dropdown-items="getTagDropdownItems(tag)"
+        @click="navigateToTag(tag)"
       />
+    </div>
 
-      <!-- Tags List -->
-      <div v-else class="p-4 space-y-3 pb-24">
-        <BaseCard
-          v-for="tag in filteredTags"
-          :key="tag.id"
-          :id="tag.id"
-          :title="tag.name"
-          :title-segments="getTitleSegments(tag)"
-          :text="getTagText(tag)"
-          :dropdown-items="getTagDropdownItems(tag)"
-          @click="navigateToTag(tag)"
-        />
-      </div>
+    <BaseStickyBar
+      v-model:search-query="searchQuery"
+      :all-item-ids="filteredTags.map(t => t.id)"
+      :filters-enabled="false"
+      @new-clicked="openCreateTagDrawer"
+      @choose-action-clicked="handleChooseAction"
+    />
 
-      <BaseStickyBar
-        v-model:search-query="searchQuery"
-        :all-item-ids="filteredTags.map(t => t.id)"
-        :filters-enabled="false"
-        @new-clicked="openCreateTagDrawer"
-        @choose-action-clicked="handleChooseAction"
-      />
-
-      <!-- Rename Modal -->
-      <CRUDModal
-        :isOpen="showRenameModal"
-        :title="I18N.MODALS.RENAME_TAG"
-        :label="I18N.FORM.TAG_NAME"
-        v-model="editItemName"
-        :error="renameError"
-        :placeholder="I18N.PLACEHOLDERS.TAG_NAME"
-        :maxLength="50"
-        :isSubmitting="isRenaming"
-        :submitText="I18N.BUTTONS.SAVE"
-        :loadingText="I18N.LOADING.SAVING"
-        :cancelText="I18N.BUTTONS.CANCEL"
-        @closed="showRenameModal = false"
-        @submitted="handleRenameSubmit"
-      />
-    </ion-content>
-  </ion-page>
+    <!-- Rename Modal -->
+    <CRUDModal
+      :isOpen="showRenameModal"
+      :title="I18N.MODALS.RENAME_TAG"
+      :label="I18N.FORM.TAG_NAME"
+      v-model="editItemName"
+      :error="renameError"
+      :placeholder="I18N.PLACEHOLDERS.TAG_NAME"
+      :maxLength="50"
+      :isSubmitting="isRenaming"
+      :submitText="I18N.BUTTONS.SAVE"
+      :loadingText="I18N.LOADING.SAVING"
+      :cancelText="I18N.BUTTONS.CANCEL"
+      @closed="showRenameModal = false"
+      @submitted="handleRenameSubmit"
+    />
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { IonPage, IonContent } from '@ionic/vue'
+import AppPage from '@/components/AppPage.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import CRUDModal from '@/components/CRUDModal.vue'

@@ -1,117 +1,115 @@
 <template>
-  <ion-page>
-    <ion-content ref="ionContentRef">
-      <AppHeader
-        :title="currentList?.name || I18N.PAGE_TITLES.LIST_DETAIL"
-        :show-back="true"
-        :show-menu="true"
-      />
+  <AppPage ref="pageRef">
+    <AppHeader
+      :title="currentList?.name || I18N.PAGE_TITLES.LIST_DETAIL"
+      :show-back="true"
+      :show-menu="true"
+    />
 
-      <div v-if="!listsStore.isLoading && !currentList" class="text-center py-12 px-4">
-        <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+    <div v-if="!listsStore.isLoading && !currentList" class="text-center py-12 px-4">
+      <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIST_NOT_FOUND.TITLE }}</h2>
+      <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIST_NOT_FOUND.SUBTITLE }}</p>
+    </div>
+
+    <div v-else-if="listItems.length === 0" class="text-center py-12 px-4">
+      <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+      </svg>
+      <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIST_NO_SONGS.TITLE }}</h2>
+      <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIST_NO_SONGS.SUBTITLE }}</p>
+    </div>
+
+    <div v-else class="p-4 pb-32 relative">
+      <VueDraggable
+        v-model="displayedItems"
+        :disabled="uiStore.selectionMode"
+        @end="handleDragEnd"
+        item-key="id"
+        :animation="200"
+        :delay="150"
+        :delay-on-touch-only="true"
+        :force-fallback="true"
+        :scroll="scrollElement || true"
+        :scroll-sensitivity="50"
+        :scroll-speed="20"
+        :bubble-scroll="true"
+        :force-auto-scroll-fallback="true"
+        ghost-class="drag-ghost"
+        chosen-class="drag-chosen"
+        drag-class="drag-active"
+        handle=".drag-handle"
+      >
+        <template #item="{ element: item }">
+          <div class="mb-3">
+            <ListTitleCard
+              v-if="item.type === 'title'"
+              :item="item"
+              :draggable="true"
+              @edited="handleEditTitle(item)"
+              @deleted="handleDeleteTitle(item)"
+            />
+            <BaseCard
+              v-else
+              :title="item.song?.title || ''"
+              :title-segments="getTitleSegments(item as any)"
+              :text="getItemText(item as any)"
+              :text-segments="getSubtitleSegments(item as any)"
+              :tags="getItemTags(item as any)"
+              :lists="getItemLists(item as any)"
+              :dropdown-items="getItemDropdownItems(item as any)"
+              :id="item.id"
+              :draggable="true"
+              @click="handleOpenNotes(item as any)"
+            />
+          </div>
+        </template>
+      </VueDraggable>
+
+      <div v-if="displayedItems.length === 0" class="text-center py-12 px-4">
+        <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
-        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIST_NOT_FOUND.TITLE }}</h2>
-        <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIST_NOT_FOUND.SUBTITLE }}</p>
+        <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_RESULTS }}</p>
       </div>
+    </div>
 
-      <div v-else-if="listItems.length === 0" class="text-center py-12 px-4">
-        <svg class="w-24 h-24 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-        </svg>
-        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.LIST_NO_SONGS.TITLE }}</h2>
-        <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.LIST_NO_SONGS.SUBTITLE }}</p>
-      </div>
+    <BaseStickyBar
+      v-model:search-query="searchQuery"
+      :all-item-ids="displayedItems.filter(i => i.type === 'song').map(i => i.id)"
+      :filters-enabled="false"
+      @new-clicked="handleAddTitle"
+      @choose-action-clicked="handleChooseAction"
+    />
 
-      <div v-else class="p-4 pb-32 relative">
-        <VueDraggable
-          v-model="displayedItems"
-          :disabled="uiStore.selectionMode"
-          @end="handleDragEnd"
-          item-key="id"
-          :animation="200"
-          :delay="150"
-          :delay-on-touch-only="true"
-          :force-fallback="true"
-          :scroll="scrollElement || true"
-          :scroll-sensitivity="50"
-          :scroll-speed="20"
-          :bubble-scroll="true"
-          :force-auto-scroll-fallback="true"
-          ghost-class="drag-ghost"
-          chosen-class="drag-chosen"
-          drag-class="drag-active"
-          handle=".drag-handle"
-        >
-          <template #item="{ element: item }">
-            <div class="mb-3">
-              <ListTitleCard
-                v-if="item.type === 'title'"
-                :item="item"
-                :draggable="true"
-                @edited="handleEditTitle(item)"
-                @deleted="handleDeleteTitle(item)"
-              />
-              <BaseCard
-                v-else
-                :title="item.song?.title || ''"
-                :title-segments="getTitleSegments(item as any)"
-                :text="getItemText(item as any)"
-                :text-segments="getSubtitleSegments(item as any)"
-                :tags="getItemTags(item as any)"
-                :lists="getItemLists(item as any)"
-                :dropdown-items="getItemDropdownItems(item as any)"
-                :id="item.id"
-                :draggable="true"
-                @click="handleOpenNotes(item as any)"
-              />
-            </div>
-          </template>
-        </VueDraggable>
+    <ManageTagsModal
+      v-if="showSongManageTagsModal && selectedSongItem"
+      :isOpen="true"
+      :librarySongId="selectedSongItem.library_song_id ?? undefined"
+      :songTitle="selectedSongItem.song.title"
+      :initialTagIds="selectedSongItem.song.tags?.map(t => t.id) || []"
+      @closed="showSongManageTagsModal = false; selectedSongItem = null"
+      @saved="handleSongTagsSaved"
+    />
 
-        <div v-if="displayedItems.length === 0" class="text-center py-12 px-4">
-          <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-          <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_RESULTS }}</p>
-        </div>
-      </div>
-
-      <BaseStickyBar
-        v-model:search-query="searchQuery"
-        :all-item-ids="displayedItems.filter(i => i.type === 'song').map(i => i.id)"
-        :filters-enabled="false"
-        @new-clicked="handleAddTitle"
-        @choose-action-clicked="handleChooseAction"
-      />
-
-      <ManageTagsModal
-        v-if="showSongManageTagsModal && selectedSongItem"
-        :isOpen="true"
-        :librarySongId="selectedSongItem.library_song_id ?? undefined"
-        :songTitle="selectedSongItem.song.title"
-        :initialTagIds="selectedSongItem.song.tags?.map(t => t.id) || []"
-        @closed="showSongManageTagsModal = false; selectedSongItem = null"
-        @saved="handleSongTagsSaved"
-      />
-
-      <ManageListsModal
-        v-if="showSongManageListsModal && selectedSongItem"
-        :isOpen="true"
-        :librarySongId="selectedSongItem.library_song_id || ''"
-        :songTitle="selectedSongItem.song.title"
-        :initialListIds="selectedSongItem.song.lists?.map(l => l.id) || []"
-        @closed="showSongManageListsModal = false; selectedSongItem = null"
-        @saved="handleSongListsSaved"
-      />
-    </ion-content>
-  </ion-page>
+    <ManageListsModal
+      v-if="showSongManageListsModal && selectedSongItem"
+      :isOpen="true"
+      :librarySongId="selectedSongItem.library_song_id || ''"
+      :songTitle="selectedSongItem.song.title"
+      :initialListIds="selectedSongItem.song.lists?.map(l => l.id) || []"
+      @closed="showSongManageListsModal = false; selectedSongItem = null"
+      @saved="handleSongListsSaved"
+    />
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { IonPage, IonContent } from '@ionic/vue'
+import AppPage from '@/components/AppPage.vue'
 import VueDraggable from 'vuedraggable'
 import { useListsStore } from '@/stores/lists'
 import { useTagsStore } from '@/stores/tags'
@@ -163,12 +161,12 @@ const {
   handleOpenNotes,
 } = useListSongActions(handleRefresh)
 
-const { ionContentRef, scrollElement, initScrollElement, displayedItems, handleDragEnd, getTitleSegments, getSubtitleSegments } =
+const { pageRef, scrollElement, initScrollElement, displayedItems, handleDragEnd, getTitleSegments, getSubtitleSegments } =
   useListReorder(currentList, searchQuery, getItemText)
 
 onMounted(async () => {
   try {
-    await initScrollElement()
+    initScrollElement()
     if (listId.value) {
       const result = await listsStore.fetchListById(listId.value)
       if (!result) { router.push(ROUTES.LISTS); return }

@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
-import type { IonContent } from '@ionic/vue'
+import type AppPage from '@/components/AppPage.vue'
 import { useListsStore } from '@/stores/lists'
 import { useUiStore } from '@/stores/ui'
 import { useFuseSearch } from '@/composables/useFuseSearch'
@@ -21,18 +21,11 @@ export function useListReorder(
   const listsStore = useListsStore()
   const uiStore = useUiStore()
 
-  const ionContentRef = ref<InstanceType<typeof IonContent> | null>(null)
+  const pageRef = ref<InstanceType<typeof AppPage> | null>(null)
   const scrollElement = ref<HTMLElement | null>(null)
 
-  async function initScrollElement() {
-    if (ionContentRef.value) {
-      try {
-        const content = await (ionContentRef.value as any).$el.getScrollElement()
-        scrollElement.value = content
-      } catch {
-        // scroll element unavailable in non-Ionic environments
-      }
-    }
+  function initScrollElement() {
+    scrollElement.value = pageRef.value?.scrollElement ?? null
   }
 
   const allSongItems = computed(
@@ -70,7 +63,7 @@ export function useListReorder(
   }
 
   return {
-    ionContentRef,
+    pageRef,
     scrollElement,
     initScrollElement,
     displayedItems,

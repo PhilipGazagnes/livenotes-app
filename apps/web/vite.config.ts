@@ -69,8 +69,6 @@ export default defineConfig({
         manualChunks: {
           // Vendor chunk for third-party libraries
           'vendor': ['vue', 'vue-router', 'pinia'],
-          // Ionic components in separate chunk
-          'ionic': ['@ionic/vue', '@ionic/vue-router'],
           // Supabase in separate chunk
           'supabase': ['@supabase/supabase-js'],
         },
@@ -80,12 +78,9 @@ export default defineConfig({
     minify: 'esbuild',
     // Note: To remove console.logs, install terser: npm install -D terser
     // Then change minify to 'terser' and add terserOptions
-    // Chunk size warning threshold. The Ionic chunk (~1 MB) is the only one
-    // above 500 KB; back to 500 once Ionic is removed (ADR-003, Phase 2).
-    chunkSizeWarningLimit: 1100,
   },
   // Optimize dependencies
   optimizeDeps: {
-    include: ['vue', 'vue-router', 'pinia', '@ionic/vue'],
+    include: ['vue', 'vue-router', 'pinia'],
   },
 })

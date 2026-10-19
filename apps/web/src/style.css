@@ -7,6 +7,8 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
   }
 
   html, body {
@@ -16,23 +18,30 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* App-like body: no page scroll or pull-to-refresh, each page scrolls inside AppPage
+     (kept from Ionic's structure.css when Ionic was removed, ADR-003) */
+  body {
+    overflow: hidden;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+  }
+
   #app {
     @apply bg-gray-900;
     min-height: 100vh;
     min-height: 100dvh; /* Use dynamic viewport height on mobile */
-  }
-
-  /* Override Ionic defaults */
-  ion-app {
-    @apply bg-gray-900;
-  }
-
-  ion-content {
-    --background: #111827 !important;
-  }
-
-  ion-page {
-    @apply bg-gray-900;
   }
 }
 

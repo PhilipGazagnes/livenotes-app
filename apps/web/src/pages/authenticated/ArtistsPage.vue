@@ -1,94 +1,92 @@
 <template>
-  <ion-page>
-    <ion-content>
-      <!-- Header -->
-      <AppHeader
-        :title="I18N.PAGE_TITLES.ARTISTS"
-        :show-back="true"
-        :show-menu="true"
-      >
-      </AppHeader>
+  <AppPage>
+    <!-- Header -->
+    <AppHeader
+      :title="I18N.PAGE_TITLES.ARTISTS"
+      :show-back="true"
+      :show-menu="true"
+    >
+    </AppHeader>
 
-      <!-- Empty State -->
-      <CRUDEmptyState
-        v-if="!artistsStore.isLoading && artistsWithCount.length === 0"
-        :title="MESSAGES.EMPTY_NO_ARTISTS"
-        :subtitle="I18N.EMPTY_STATES.NO_ARTISTS_SUBTITLE"
-        :ctaText="I18N.MODALS.CREATE_ARTIST"
-        iconPath="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-        @created="showCreateModal = true"
-      />
+    <!-- Empty State -->
+    <CRUDEmptyState
+      v-if="!artistsStore.isLoading && artistsWithCount.length === 0"
+      :title="MESSAGES.EMPTY_NO_ARTISTS"
+      :subtitle="I18N.EMPTY_STATES.NO_ARTISTS_SUBTITLE"
+      :ctaText="I18N.MODALS.CREATE_ARTIST"
+      iconPath="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+      @created="showCreateModal = true"
+    />
 
-      <!-- Artists List -->
-      <div v-else-if="filteredArtists.length > 0" class="pb-24">
-        <div class="p-4 space-y-3">
-          <BaseCard
-            v-for="artist in filteredArtists"
-            :key="artist.id"
-            :id="artist.id"
-            :title="artist.name"
-            :title-segments="getTitleSegments(artist)"
-            :text="getArtistText(artist)"
-            :dropdown-items="getArtistDropdownItems(artist)"
-            @click="navigateToArtist(artist)"
-          />
-        </div>
+    <!-- Artists List -->
+    <div v-else-if="filteredArtists.length > 0" class="pb-24">
+      <div class="p-4 space-y-3">
+        <BaseCard
+          v-for="artist in filteredArtists"
+          :key="artist.id"
+          :id="artist.id"
+          :title="artist.name"
+          :title-segments="getTitleSegments(artist)"
+          :text="getArtistText(artist)"
+          :dropdown-items="getArtistDropdownItems(artist)"
+          @click="navigateToArtist(artist)"
+        />
       </div>
+    </div>
 
-      <!-- Empty Search Results State -->
-      <div v-else-if="artistsWithCount.length > 0 && filteredArtists.length === 0" class="text-center py-12 px-4 pb-24">
-        <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.NO_ARTISTS }}</h2>
-        <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SEARCH_RESULTS }}</p>
-      </div>
+    <!-- Empty Search Results State -->
+    <div v-else-if="artistsWithCount.length > 0 && filteredArtists.length === 0" class="text-center py-12 px-4 pb-24">
+      <svg class="w-16 h-16 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.NO_ARTISTS }}</h2>
+      <p class="text-gray-400">{{ I18N.EMPTY_STATES.NO_SEARCH_RESULTS }}</p>
+    </div>
 
-      <BaseStickyBar
-        v-model:search-query="searchQuery"
-        :all-item-ids="filteredArtists.map(a => a.id)"
-        :filters-enabled="false"
-        @new-clicked="showCreateModal = true"
-        @choose-action-clicked="handleChooseAction"
-      />
+    <BaseStickyBar
+      v-model:search-query="searchQuery"
+      :all-item-ids="filteredArtists.map(a => a.id)"
+      :filters-enabled="false"
+      @new-clicked="showCreateModal = true"
+      @choose-action-clicked="handleChooseAction"
+    />
 
-      <!-- Create Modal -->
-      <CRUDModal
-        :isOpen="showCreateModal"
-        :title="I18N.MODALS.CREATE_ARTIST"
-        :label="I18N.FORM.ARTIST"
-        v-model="newItemName"
-        :error="createError"
-        :placeholder="I18N.PLACEHOLDERS.ARTIST_NAME"
-        :maxLength="100"
-        :isSubmitting="isCreating"
-        :submitText="I18N.BUTTONS.CREATE"
-        :loadingText="I18N.LOADING.CREATING"
-        @closed="showCreateModal = false"
-        @submitted="handleCreate"
-      />
+    <!-- Create Modal -->
+    <CRUDModal
+      :isOpen="showCreateModal"
+      :title="I18N.MODALS.CREATE_ARTIST"
+      :label="I18N.FORM.ARTIST"
+      v-model="newItemName"
+      :error="createError"
+      :placeholder="I18N.PLACEHOLDERS.ARTIST_NAME"
+      :maxLength="100"
+      :isSubmitting="isCreating"
+      :submitText="I18N.BUTTONS.CREATE"
+      :loadingText="I18N.LOADING.CREATING"
+      @closed="showCreateModal = false"
+      @submitted="handleCreate"
+    />
 
-      <!-- Rename Modal -->
-      <CRUDModal
-        :isOpen="showRenameModal"
-        :title="I18N.MODALS.RENAME_ARTIST"
-        :label="I18N.FORM.ARTIST"
-        v-model="editItemName"
-        :error="renameError"
-        :placeholder="I18N.PLACEHOLDERS.ARTIST_NAME"
-        :maxLength="100"
-        :isSubmitting="isRenaming"
-        @closed="showRenameModal = false"
-        @submitted="handleRenameSubmit"
-      />
-    </ion-content>
-  </ion-page>
+    <!-- Rename Modal -->
+    <CRUDModal
+      :isOpen="showRenameModal"
+      :title="I18N.MODALS.RENAME_ARTIST"
+      :label="I18N.FORM.ARTIST"
+      v-model="editItemName"
+      :error="renameError"
+      :placeholder="I18N.PLACEHOLDERS.ARTIST_NAME"
+      :maxLength="100"
+      :isSubmitting="isRenaming"
+      @closed="showRenameModal = false"
+      @submitted="handleRenameSubmit"
+    />
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { IonPage, IonContent } from '@ionic/vue'
+import AppPage from '@/components/AppPage.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import CRUDModal from '@/components/CRUDModal.vue'

@@ -1,158 +1,156 @@
 <template>
-  <ion-page>
-    <ion-content>
-      <AppHeader :title="I18N.PAGE_TITLES.PUBLIC_LIBRARIES" :show-back="true" :show-menu="true">
-      </AppHeader>
+  <AppPage>
+    <AppHeader :title="I18N.PAGE_TITLES.PUBLIC_LIBRARIES" :show-back="true" :show-menu="true">
+    </AppHeader>
 
-      <div class="p-4 space-y-4 pb-24">
-        <!-- No slug warning -->
-        <div v-if="!settingsStore.projectSlug" class="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
-          <p class="text-yellow-300 text-sm">
-            You need to set a project URL slug in Project settings (avatar menu) before your public library URLs will work.
-          </p>
-        </div>
+    <div class="p-4 space-y-4 pb-24">
+      <!-- No slug warning -->
+      <div v-if="!settingsStore.projectSlug" class="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
+        <p class="text-yellow-300 text-sm">
+          You need to set a project URL slug in Project settings (avatar menu) before your public library URLs will work.
+        </p>
+      </div>
 
-        <!-- Library list -->
-        <div v-if="store.isLoading" class="flex justify-center py-12">
-          <BaseLoadingSpinner />
-        </div>
+      <!-- Library list -->
+      <div v-if="store.isLoading" class="flex justify-center py-12">
+        <BaseLoadingSpinner />
+      </div>
 
-        <div v-else-if="store.libraries.length === 0" class="text-center py-12">
-          <svg class="w-20 h-20 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-          </svg>
-          <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.NO_PUBLIC_LIBRARIES.TITLE }}</h2>
-          <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.NO_PUBLIC_LIBRARIES.SUBTITLE }}</p>
-        </div>
+      <div v-else-if="store.libraries.length === 0" class="text-center py-12">
+        <svg class="w-20 h-20 mx-auto text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+        <h2 class="text-xl font-semibold text-white mb-2">{{ I18N.EMPTY_STATES.NO_PUBLIC_LIBRARIES.TITLE }}</h2>
+        <p class="text-gray-400 mb-6">{{ I18N.EMPTY_STATES.NO_PUBLIC_LIBRARIES.SUBTITLE }}</p>
+      </div>
 
-        <div v-else class="space-y-3">
-          <BaseCard
-            v-for="lib in filteredLibraries"
-            :key="lib.id"
-            :id="lib.id"
-            :title="lib.name"
-            :title-segments="getTitleSegments(lib)"
-            :text="settingsStore.projectSlug ? `/${settingsStore.projectSlug}/${lib.slug}` : undefined"
-            :tags="lib.tags"
-            :dropdown-items="getLibraryMenuItems(lib)"
+      <div v-else class="space-y-3">
+        <BaseCard
+          v-for="lib in filteredLibraries"
+          :key="lib.id"
+          :id="lib.id"
+          :title="lib.name"
+          :title-segments="getTitleSegments(lib)"
+          :text="settingsStore.projectSlug ? `/${settingsStore.projectSlug}/${lib.slug}` : undefined"
+          :tags="lib.tags"
+          :dropdown-items="getLibraryMenuItems(lib)"
+        />
+      </div>
+
+    </div>
+
+    <BaseStickyBar
+      v-model:search-query="searchQuery"
+      :all-item-ids="filteredLibraries.map(l => l.id)"
+      :filters-enabled="false"
+      @new-clicked="openCreate"
+      @choose-action-clicked="handleChooseAction"
+    />
+
+    <!-- Create / Edit modal -->
+    <div v-if="showForm" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4">
+      <div class="w-full max-w-md bg-gray-900 rounded-xl border border-gray-700 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-white">{{ editingId ? 'Edit library' : 'New public library' }}</h2>
+
+        <!-- Name -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">{{ I18N.FORM.NAME }}</label>
+          <input
+            v-model="form.name"
+            type="text"
+            maxlength="60"
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            :placeholder="I18N.PLACEHOLDERS.LIBRARY_NAME"
+            @input="onNameInput"
           />
         </div>
 
-      </div>
+        <!-- Slug -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">{{ I18N.FORM.URL_SLUG }}</label>
+          <input
+            v-model="form.slug"
+            type="text"
+            maxlength="40"
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none lowercase"
+            :placeholder="I18N.PLACEHOLDERS.URL_SLUG"
+          />
+          <p v-if="settingsStore.projectSlug" class="text-xs text-gray-500 mt-1">
+            URL: /{{ settingsStore.projectSlug }}/{{ form.slug || '...' }}
+          </p>
+        </div>
 
-      <BaseStickyBar
-        v-model:search-query="searchQuery"
-        :all-item-ids="filteredLibraries.map(l => l.id)"
-        :filters-enabled="false"
-        @new-clicked="openCreate"
-        @choose-action-clicked="handleChooseAction"
-      />
-
-      <!-- Create / Edit modal -->
-      <div v-if="showForm" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4">
-        <div class="w-full max-w-md bg-gray-900 rounded-xl border border-gray-700 p-6 space-y-4">
-          <h2 class="text-lg font-semibold text-white">{{ editingId ? 'Edit library' : 'New public library' }}</h2>
-
-          <!-- Name -->
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">{{ I18N.FORM.NAME }}</label>
-            <input
-              v-model="form.name"
-              type="text"
-              maxlength="60"
-              class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              :placeholder="I18N.PLACEHOLDERS.LIBRARY_NAME"
-              @input="onNameInput"
-            />
-          </div>
-
-          <!-- Slug -->
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">{{ I18N.FORM.URL_SLUG }}</label>
-            <input
-              v-model="form.slug"
-              type="text"
-              maxlength="40"
-              class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none lowercase"
-              :placeholder="I18N.PLACEHOLDERS.URL_SLUG"
-            />
-            <p v-if="settingsStore.projectSlug" class="text-xs text-gray-500 mt-1">
-              URL: /{{ settingsStore.projectSlug }}/{{ form.slug || '...' }}
-            </p>
-          </div>
-
-          <!-- Tags -->
-          <div>
-            <label class="block text-sm text-gray-400 mb-2">{{ I18N.FORM.TAGS_FILTER }}</label>
-            <div v-if="tagsStore.tags.length === 0" class="text-sm text-gray-500">{{ I18N.EMPTY_STATES.NO_TAGS_AVAILABLE }}</div>
-            <div v-else class="flex flex-wrap gap-2">
-              <button
-                v-for="tag in tagsStore.tags"
-                :key="tag.id"
-                @click="toggleTag(tag.id)"
-                class="px-3 py-1 rounded-full text-sm border transition-colors"
-                :class="form.tagIds.includes(tag.id)
-                  ? 'bg-blue-600 border-blue-500 text-white'
-                  : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'"
-              >{{ tag.name }}</button>
-            </div>
-          </div>
-
-          <!-- Header images -->
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Header image — mobile URL <span class="text-gray-600">(shown below 768 px instead of title)</span></label>
-            <input
-              v-model="form.headerImageMobile"
-              type="url"
-              class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              :placeholder="I18N.PLACEHOLDERS.COVER_URL"
-            />
-          </div>
-          <div>
-            <label class="block text-sm text-gray-400 mb-1">Header image — desktop URL <span class="text-gray-600">(shown from 768 px instead of title)</span></label>
-            <input
-              v-model="form.headerImageDesktop"
-              type="url"
-              class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              :placeholder="I18N.PLACEHOLDERS.COVER_URL"
-            />
-          </div>
-
-          <!-- Active toggle (edit only) -->
-          <div v-if="editingId" class="flex items-center justify-between">
-            <span class="text-sm text-gray-300">{{ I18N.SETTINGS.ACTIVE }}</span>
+        <!-- Tags -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-2">{{ I18N.FORM.TAGS_FILTER }}</label>
+          <div v-if="tagsStore.tags.length === 0" class="text-sm text-gray-500">{{ I18N.EMPTY_STATES.NO_TAGS_AVAILABLE }}</div>
+          <div v-else class="flex flex-wrap gap-2">
             <button
-              @click="form.isActive = !form.isActive"
-              class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-              :class="form.isActive ? 'bg-blue-600' : 'bg-gray-600'"
-            >
-              <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                :class="form.isActive ? 'translate-x-6' : 'translate-x-1'" />
-            </button>
-          </div>
-
-          <!-- Actions -->
-          <div class="flex gap-3 pt-2">
-            <button @click="showForm = false" class="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
-              {{ I18N.BUTTONS.CANCEL }}
-            </button>
-            <button
-              @click="handleSubmit"
-              :disabled="!form.name.trim() || !form.slug.trim() || store.isLoading"
-              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {{ store.isLoading ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
-            </button>
+              v-for="tag in tagsStore.tags"
+              :key="tag.id"
+              @click="toggleTag(tag.id)"
+              class="px-3 py-1 rounded-full text-sm border transition-colors"
+              :class="form.tagIds.includes(tag.id)
+                ? 'bg-blue-600 border-blue-500 text-white'
+                : 'bg-gray-800 border-gray-600 text-gray-400 hover:border-gray-500'"
+            >{{ tag.name }}</button>
           </div>
         </div>
+
+        <!-- Header images -->
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">Header image — mobile URL <span class="text-gray-600">(shown below 768 px instead of title)</span></label>
+          <input
+            v-model="form.headerImageMobile"
+            type="url"
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            :placeholder="I18N.PLACEHOLDERS.COVER_URL"
+          />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-400 mb-1">Header image — desktop URL <span class="text-gray-600">(shown from 768 px instead of title)</span></label>
+          <input
+            v-model="form.headerImageDesktop"
+            type="url"
+            class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            :placeholder="I18N.PLACEHOLDERS.COVER_URL"
+          />
+        </div>
+
+        <!-- Active toggle (edit only) -->
+        <div v-if="editingId" class="flex items-center justify-between">
+          <span class="text-sm text-gray-300">{{ I18N.SETTINGS.ACTIVE }}</span>
+          <button
+            @click="form.isActive = !form.isActive"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+            :class="form.isActive ? 'bg-blue-600' : 'bg-gray-600'"
+          >
+            <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
+              :class="form.isActive ? 'translate-x-6' : 'translate-x-1'" />
+          </button>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-2">
+          <button @click="showForm = false" class="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            {{ I18N.BUTTONS.CANCEL }}
+          </button>
+          <button
+            @click="handleSubmit"
+            :disabled="!form.name.trim() || !form.slug.trim() || store.isLoading"
+            class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {{ store.isLoading ? I18N.LOADING.SAVING : I18N.BUTTONS.SAVE }}
+          </button>
+        </div>
       </div>
-    </ion-content>
-  </ion-page>
+    </div>
+  </AppPage>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { IonPage, IonContent } from '@ionic/vue'
+import AppPage from '@/components/AppPage.vue'
 import AppHeader from '@/components/AppHeader.vue'
 import BaseCard from '@/components/BaseCard.vue'
 import BaseLoadingSpinner from '@/components/BaseLoadingSpinner.vue'
