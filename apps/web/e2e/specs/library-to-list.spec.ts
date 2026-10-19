@@ -12,6 +12,11 @@ test.describe('Library → create list → verify song', () => {
     // Capture the first song's title so we can verify it at the end
     const songTitle = await firstCard.locator('h3').innerText()
 
+    // Edit controls are disabled until the user starts editing (ADR-011)
+    await philip.getByTestId('project-menu-btn').click()
+    await philip.getByTestId('start-editing-btn').click()
+    await expect(philip.getByTestId('editing-indicator')).toBeVisible({ timeout: 10_000 })
+
     // ── 2. Open the 3-dots menu on the first song ───────────────────────────
     await firstCard.locator('[data-testid="card-menu-btn"]').click()
 
@@ -53,5 +58,11 @@ test.describe('Library → create list → verify song', () => {
     // ── 10. The song is in the list ──────────────────────────────────────────
     const songCard = philip.locator('[data-testid="card"]').filter({ hasText: songTitle })
     await expect(songCard).toBeVisible({ timeout: 10_000 })
+
+    // ── 11. Leave edit mode so the next run starts from viewing mode ────────
+    await expect(philip.locator('.drawer-panel')).toHaveCount(0)
+    await philip.getByTestId('project-menu-btn').click()
+    await philip.getByTestId('stop-editing-btn').click()
+    await expect(philip.getByTestId('editing-indicator')).toHaveCount(0)
   })
 })

@@ -18,7 +18,7 @@ export class LoginPage {
   }
 
   get errorMessage() {
-    return this.page.locator('.text-red-400')
+    return this.page.getByTestId('login-error')
   }
 
   get submitButton() {

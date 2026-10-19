@@ -10,7 +10,7 @@
 
         <!-- Error message -->
         <div v-if="authStore.error" class="mb-4 p-3 bg-red-900/30 border border-red-700 rounded-lg">
-          <p class="text-red-400 text-sm">{{ authStore.error }}</p>
+          <p class="text-red-400 text-sm" data-testid="login-error">{{ authStore.error }}</p>
         </div>
 
         <!-- Login Form -->
